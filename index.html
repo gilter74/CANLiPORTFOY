@@ -67,12 +67,12 @@
 
   <div class="max-w-7xl mx-auto space-y-6">
 
-    <!-- PİYASA HABERLERİ & ANALİZLER BÖLÜMÜ -->
+    <!-- PİYASA HABERLERİ & ANALİZLER BÖLÜMÜ (TÜRKİYE ODAKLI) -->
     <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
       <div class="bg-slate-900 text-white p-3 md:p-4 px-5 flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <span class="text-xl animate-pulse">📰</span>
-          <h2 class="text-sm md:text-base font-bold tracking-wide">Canlı Piyasa Haberleri & Yorumlar</h2>
+          <span class="text-xl animate-pulse">🇹🇷</span>
+          <h2 class="text-sm md:text-base font-bold tracking-wide">Türkiye Piyasaları: Canlı Haberler & Analizler</h2>
         </div>
         <div class="flex items-center gap-3">
           <span class="text-[10px] text-slate-400 font-mono hidden md:inline">Oto-Güncelleme: 30dk</span>
@@ -85,7 +85,7 @@
         
         <!-- Altın Haberleri -->
         <div class="p-4 md:p-5 flex flex-col h-full">
-          <h3 class="text-xs font-extrabold text-amber-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><span class="text-base">🥇</span> Altın Analizleri</h3>
+          <h3 class="text-xs font-extrabold text-amber-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><span class="text-base">🥇</span> Kapalıçarşı & Altın</h3>
           <div class="space-y-3 flex-1" id="newsList-gold">
             <div class="animate-pulse flex space-x-2"><div class="flex-1 space-y-2"><div class="h-2 bg-slate-200 rounded"></div><div class="h-2 bg-slate-200 rounded w-5/6"></div></div></div>
           </div>
@@ -93,7 +93,7 @@
 
         <!-- Döviz Haberleri -->
         <div class="p-4 md:p-5 flex flex-col h-full">
-          <h3 class="text-xs font-extrabold text-blue-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><span class="text-base">💵</span> Döviz Yorumları</h3>
+          <h3 class="text-xs font-extrabold text-blue-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><span class="text-base">💵</span> Döviz (USD/TRY - EUR/TRY)</h3>
           <div class="space-y-3 flex-1" id="newsList-fx">
              <div class="animate-pulse flex space-x-2"><div class="flex-1 space-y-2"><div class="h-2 bg-slate-200 rounded"></div><div class="h-2 bg-slate-200 rounded w-5/6"></div></div></div>
           </div>
@@ -101,7 +101,7 @@
 
         <!-- Fon / Borsa Haberleri -->
         <div class="p-4 md:p-5 flex flex-col h-full">
-          <h3 class="text-xs font-extrabold text-purple-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><span class="text-base">📈</span> Fon & Borsa</h3>
+          <h3 class="text-xs font-extrabold text-purple-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><span class="text-base">📈</span> BIST & TEFAS Fonları</h3>
           <div class="space-y-3 flex-1" id="newsList-fund">
              <div class="animate-pulse flex space-x-2"><div class="flex-1 space-y-2"><div class="h-2 bg-slate-200 rounded"></div><div class="h-2 bg-slate-200 rounded w-5/6"></div></div></div>
           </div>
@@ -144,7 +144,7 @@
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
           <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <span>📈</span> Canlı Piyasa Verileri & Değerler (09.09.2026)
+            <span>📈</span> Canlı Piyasa Verileri & Değerler (Türkiye Piyasaları)
           </h2>
           <p class="text-xs text-slate-500">Gram Altın, Çeyrek Altın, ONS, Dolar, Euro ve Sterlin anlık piyasa fiyatları</p>
         </div>
@@ -383,7 +383,7 @@
       
       <div class="p-5 overflow-y-auto space-y-4 flex-1 bg-slate-50" id="aiChatHistory">
         <div class="bg-purple-100 text-purple-900 p-3.5 rounded-2xl rounded-tl-sm text-xs md:text-sm max-w-[85%]">
-          Merhaba! Eylül 2026 piyasa verilerine (USD ~48.48 TL, ONS ~$4,398) göre akıllı portföy asistanınızım. Portföyünüz veya takip ettiğiniz fonlar hakkında bana dilediğiniz soruyu sorabilirsiniz!
+          Merhaba! Türkiye piyasaları güncel verilerine (Dolar/TL, Gram Altın, TEFAS fonları) göre akıllı portföy asistanınızım. Portföyünüz veya takip ettiğiniz fonlar hakkında bana dilediğiniz soruyu sorabilirsiniz!
         </div>
       </div>
 
@@ -483,14 +483,14 @@
     let activeCategoryTab = 'all';
     let allocChartInstance = null;
 
-    // Eylül 2026 Canlı Piyasa Güncel Verileri (Doğrulanmış Temel Değerler: USD ~48.48 TL, ONS ~$4,398)
+    // Canlı Piyasa Güncel Verileri (Türkiye Piyasası Bazlı)
     let liveRates = {
-      'USD': { name: 'Dolar ($)', price: 48.48, change: 0.15, category: 'fx' },
-      'EUR': { name: 'Euro (€)', price: 53.60, change: 0.20, category: 'fx' },
-      'GBP': { name: 'Sterlin (£)', price: 63.40, change: -0.05, category: 'fx' },
-      'ONS': { name: 'ONS Altın ($)', price: 4398.23, change: 0.85, category: 'gold' },
-      'GRAM': { name: 'Gram Altın', price: 6852.50, change: 1.10, category: 'gold' },
-      'CEYREK': { name: 'Çeyrek Altın', price: 11200.00, change: 1.05, category: 'gold' }
+      'USD': { name: 'Dolar ($)', price: 34.85, change: 0.15, category: 'fx' },
+      'EUR': { name: 'Euro (€)', price: 36.40, change: 0.20, category: 'fx' },
+      'GBP': { name: 'Sterlin (£)', price: 43.80, change: -0.05, category: 'fx' },
+      'ONS': { name: 'ONS Altın ($)', price: 2920.50, change: 0.85, category: 'gold' },
+      'GRAM': { name: 'Gram Altın', price: 3250.00, change: 1.10, category: 'gold' },
+      'CEYREK': { name: 'Çeyrek Altın', price: 5320.00, change: 1.05, category: 'gold' }
     };
 
     function loadLiveRatesFromStorage() {
@@ -512,8 +512,8 @@
         if (raw) return JSON.parse(raw);
       } catch(e) {}
       return [
-        { id: 'a_1', symbol: 'USD', target: 50.00, active: true },
-        { id: 'a_2', symbol: 'GRAM', target: 7000.00, active: true }
+        { id: 'a_1', symbol: 'USD', target: 36.00, active: true },
+        { id: 'a_2', symbol: 'GRAM', target: 3500.00, active: true }
       ];
     }
     function saveAlarms(list) {
@@ -608,7 +608,7 @@
       saveLiveRatesToStorage();
       renderLiveTicker();
       checkPriceAlarms();
-      showToast("Eylül 2026 güncel canlı piyasa verileri çekildi.", "success");
+      showToast("Türkiye piyasaları canlı verileri güncellendi.", "success");
     }
 
     function renderLiveTicker() {
@@ -1201,12 +1201,12 @@
         const aiDiv = document.createElement('div');
         aiDiv.className = "bg-purple-100 text-purple-900 p-3.5 rounded-2xl rounded-tl-sm text-xs md:text-sm max-w-[85%] mt-2";
         
-        let reply = "Mevcut varlık dağılımınızı ve takip listesindeki fonları incelediğimde, Eylül 2026 piyasa koşullarına göre dengeli bir strateji izlediğinizi görüyorum. Daha detaylı bilgi için spesifik bir varlık sorabilirsiniz.";
+        let reply = "Mevcut varlık dağılımınızı ve Türkiye piyasalarındaki güncel seyri incelediğimde, dengeli bir strateji izlediğinizi görüyorum. Daha detaylı bilgi için spesifik bir varlık sorabilirsiniz.";
         
         if (question.toLowerCase().includes("risk")) {
-            reply = "Eylül 2026 dönemi için portföyünüzdeki altın ve döviz ağırlığı enflasyona karşı koruma sağlarken, izleme listenizdeki teknoloji fonları büyüme potansiyeli sunuyor.";
+            reply = "Türkiye piyasalarındaki enflasyon ve kur beklentileri doğrultusunda portföyünüzdeki altın ve döviz ağırlığı koruma sağlarken, fonlarınız büyüme potansiyeli sunuyor.";
         } else if (question.toLowerCase().includes("avantaj") || question.toLowerCase().includes("hangi")) {
-            reply = "Portföyünüzdeki TEFAS fonları ve altın bileşimi getiri hedeflerinizle uyumlu. İzleme listenizdeki varlıkları kademeli olarak değerlendirebilirsiniz.";
+            reply = "TEFAS fonlarınız ve altın bileşimi getiri hedeflerinizle uyumlu. Takip listenizdeki varlıkları piyasa koşullarına göre kademeli değerlendirebilirsiniz.";
         }
 
         aiDiv.innerHTML = reply;
@@ -1215,12 +1215,13 @@
       }, 1500);
     }
 
-    // --- PİYASA HABERLERİ / RSS ENTEGRASYONU ---
+    // --- TÜRKİYE PİYASALARI HABERLERİ (HÜRRİYET BİGPARA / DÜNYA / INVESTING TR) ---
     async function fetchMarketNews() {
+      // Türkiye finans portalları RSS uç noktaları
       const rssFeeds = {
-        gold: 'https://tr.investing.com/rss/news_285.rss',
-        fx: 'https://tr.investing.com/rss/news_301.rss',
-        fund: 'https://tr.investing.com/rss/news_25.rss'
+        gold: 'https://www.dunya.com/rss/altin',
+        fx: 'https://bigpara.hurriyet.com.tr/rss/',
+        fund: 'https://www.tr.investing.com/rss/news_25.rss'
       };
 
       for (const category of Object.keys(rssFeeds)) {
@@ -1238,9 +1239,9 @@
               continue;
             }
           }
-          renderNewsItems(category, getMockNews2026(category), container);
+          renderNewsItems(category, getMockNewsTurkey(category), container);
         } catch (e) {
-          renderNewsItems(category, getMockNews2026(category), container);
+          renderNewsItems(category, getMockNewsTurkey(category), container);
         }
       }
     }
@@ -1264,7 +1265,7 @@
           dateStr = item.pubDate || 'Az önce';
         }
         
-        const title = item.title || item.title_tr || 'Piyasa Haber Gelişmesi';
+        const title = item.title || item.title_tr || 'Türkiye Piyasası Gelişmesi';
         const link = item.link || '#';
         
         const div = document.createElement('div');
@@ -1282,31 +1283,31 @@
       });
     }
 
-    function getMockNews2026(category) {
+    function getMockNewsTurkey(category) {
       const time = new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
       if (category === 'gold') {
         return [
-          { title: "ONS Altın 4.400$ Direncini Test Ediyor: Analistlerden Yeni Zirve Yorumları", pubDate: time, link: "https://tr.investing.com/commodities/gold" },
-          { title: "İç Piyasada Gram Altın 6.850 TL Seviyelerinde Tutunmaya Çalışıyor", pubDate: time, link: "https://tr.investing.com/commodities/gold" },
-          { title: "FED Faiz Kararı Öncesi Altın Fonlarına Girişler Hızlandı", pubDate: time, link: "https://tr.investing.com/commodities/gold" },
-          { title: "Merkez Bankalarının Altın Alımı Rekor Seviyede", pubDate: time, link: "https://tr.investing.com/commodities/gold" },
-          { title: "Fiziki Altın Talebinde Kapalıçarşı Hareketliliği Sürüyor", pubDate: time, link: "https://tr.investing.com/commodities/gold" }
+          { title: "Kapalıçarşı'da Gram Altın Talebi Sürüyor: Uzmanlardan Yeni Seviye Değerlendirmeleri", pubDate: time, link: "https://bigpara.hurriyet.com.tr/" },
+          { title: "Ons Altında Küresel Dalgalanma ve İç Piyasaya Yansımaları", pubDate: time, link: "https://www.dunya.com/" },
+          { title: "Merkez Bankalarının Rezerv Hamleleri Altın Fiyatlarını Nasıl Etkiliyor?", pubDate: time, link: "https://bigpara.hurriyet.com.tr/" },
+          { title: "Yatırımcılar İçin Fiziki Altın ve Altın Fonları Karşılaştırması", pubDate: time, link: "https://www.tefas.gov.tr/" },
+          { title: "Çeyrek ve Cumhuriyet Altınında Güncel Makas Aralıkları", pubDate: time, link: "https://bigpara.hurriyet.com.tr/" }
         ];
       } else if (category === 'fx') {
         return [
-          { title: "Dolar/TL 48.48 Bandında İşlem Görüyor: Yabancı Kurumların Raporları", pubDate: time, link: "https://tr.investing.com/currencies/usd-try" },
-          { title: "Euro Bölgesi Enflasyon Verisi Sonrası Euro/TL'de Sınırlı Yükseliş", pubDate: time, link: "https://tr.investing.com/currencies/eur-try" },
-          { title: "TCMB Rezervlerinde Son Durum Açıklandı", pubDate: time, link: "https://tr.investing.com/currencies/usd-try" },
-          { title: "İhracatçılardan Kur Seviyesi Yorumu ve Rekabetçilik Vurgusu", pubDate: time, link: "https://tr.investing.com/currencies/usd-try" },
-          { title: "Gelişmekte Olan Ülke Para Birimlerinde Bugün Karışık Seyir", pubDate: time, link: "https://tr.investing.com/currencies/usd-try" }
+          { title: "Dolar/TL ve Euro/TL Kurunda Son Durum: Uzmanlardan Sıkı Para Politikası Vurgusu", pubDate: time, link: "https://bigpara.hurriyet.com.tr/" },
+          { title: "TCMB Haftalık Para ve Banka İstatistikleri Açıklandı", pubDate: time, link: "https://www.tcmb.gov.tr/" },
+          { title: "İhracatçılardan Kur Seviyeleri ve Rekabet Gücü Açıklaması", pubDate: time, link: "https://www.dunya.com/" },
+          { title: "Küresel Piyasalarda Dolar Endeksi (DXY) Seyri", pubDate: time, link: "https://tr.investing.com/" },
+          { title: "Döviz Mevduat Hesaplarında Yabancı Para Pozisyon Raporu", pubDate: time, link: "https://bigpara.hurriyet.com.tr/" }
         ];
       } else {
         return [
-          { title: "Yabancı Hisse Senedi Fonlarında Teknoloji Hisseleri Etkisi", pubDate: time, link: "https://www.tefas.gov.tr/" },
-          { title: "BIST 100 Endeksinde Yabancı Yatırımcı Girişi Bankacılığı Destekledi", pubDate: time, link: "https://tr.investing.com/indices/ise-100" },
-          { title: "Emtia Fonları Jeopolitik Risklerle Yatırımcı Çekiyor", pubDate: time, link: "https://www.tefas.gov.tr/" },
-          { title: "Mevduat Faizlerindeki Geri Çekilme Likit Fonlara İlgiyi Artırdı", pubDate: time, link: "https://www.tefas.gov.tr/" },
-          { title: "Portföy Yöneticilerinden Model Portföy Dağılımı Önerileri", pubDate: time, link: "https://tr.investing.com/" }
+          { title: "TEFAS Fonlarında En Çok Kazandıran Kategoriler Hangileri Oldu?", pubDate: time, link: "https://www.tefas.gov.tr/" },
+          { title: "BIST 100 Endeksinde Yabancı Yatırımcı İşlem Hacmi Artıyor", pubDate: time, link: "https://tr.investing.com/" },
+          { title: "Değişken ve Hisse Senedi Yoğun Fonlarda Portföy Dağılım Stratejileri", pubDate: time, link: "https://www.tefas.gov.tr/" },
+          { title: "Mevduat Faizi Oranları Sonrası Likit Fonlara İlgi Devam Ediyor", pubDate: time, link: "https://bigpara.hurriyet.com.tr/" },
+          { title: "Portföy Yöneticilerinden 2026 Yıl Sonu Varlık Dağılımı Önerileri", pubDate: time, link: "https://www.dunya.com/" }
         ];
       }
     }
@@ -1526,7 +1527,7 @@
           btnRefreshNews.innerHTML = `<span class="animate-spin">⏳</span> Yenileniyor`;
           fetchMarketNews().then(() => {
             setTimeout(() => btnRefreshNews.innerHTML = `<span>🔄</span> Yenile`, 500);
-            showToast('Piyasa haberleri güncellendi.', 'success');
+            showToast('Türkiye piyasaları haberleri güncellendi.', 'success');
           });
         };
       }
