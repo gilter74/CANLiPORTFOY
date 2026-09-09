@@ -116,6 +116,10 @@
           </span>
           <span id="lastUpdated" class="text-xs font-mono text-slate-400">Son Güncelleme: --:--</span>
           <span id="fbSyncStatus" class="text-xs font-mono text-slate-400">☁ Bekleniyor...</span>
+          <span id="sheetSyncStatus" class="text-xs font-mono text-slate-400">📗 Sheet: Bekleniyor...</span>
+          <button id="btnOpenSheetConfig" class="text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-0.5 rounded-full transition-colors" title="Google Sheets bağlantısını düzenle">
+            ⚙️ Sheet Ayarı
+          </button>
           <button id="btnToggleAutoUpdate" class="text-xs px-2.5 py-0.5 rounded-full font-semibold border transition-colors flex items-center gap-1.5" title="Otomatik güncellemeyi aç/kapat">
             <span id="autoUpdateDot" class="w-2 h-2 rounded-full"></span>
             <span id="autoUpdateLabel">Otomatik Güncelleme</span>
@@ -972,6 +976,44 @@
   <!-- TOAST CONTAINER -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
+  <!-- GOOGLE SHEETS CANLI BAĞLANTI AYAR MODALI -->
+  <div id="sheetConfigModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border border-slate-200">
+      <div class="bg-emerald-900 text-white p-4 px-6 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-lg">Google Sheets Canlı Bağlantısı</h3>
+          <p class="text-xs text-emerald-200">Bu sayfadaki portföy her 60 saniyede bir bu Sheet'ten otomatik çekilir.</p>
+        </div>
+        <button id="sheetConfigCloseX" class="text-emerald-200 hover:text-white text-xl">✕</button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="chkSheetEnabled" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+          <label for="chkSheetEnabled" class="text-xs font-medium text-slate-700">Google Sheets ile canlı bağlantıyı etkinleştir</label>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Google Sheets Linki (veya Sheet ID)</label>
+          <input id="sheetConfigUrlInput" type="text" placeholder="https://docs.google.com/spreadsheets/d/.../edit?gid=..." 
+                 class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          <p class="text-[11px] text-slate-400 mt-1">Sekmenin (gid) linkte olduğundan emin olun — linki tarayıcıdan olduğu gibi kopyalayıp yapıştırmanız yeterli.</p>
+        </div>
+
+        <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-[11px] text-emerald-900 space-y-1">
+          <div class="font-bold">📌 Beklenen sütun sırası:</div>
+          <div>Varlık Tipi | Varlık Kodu | Alım Tarihi | Adet/Miktar | Birim Alım Maliyeti | Toplam Maliyet | Güncel Fiyat | ...</div>
+          <div>Sheet'iniz zaten bu sırada olduğu için ek bir işlem yapmanız gerekmiyor.</div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-3">
+        <button id="sheetConfigCancel" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200">İptal</button>
+        <button id="sheetConfigSave" class="px-5 py-2 rounded-lg text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">Kaydet ve Şimdi Senkronize Et</button>
+      </div>
+    </div>
+  </div>
+
   <!-- CONFIRMATION MODAL -->
   <div id="confirmModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden border border-slate-200 p-5 space-y-4">
@@ -1112,6 +1154,209 @@
         dot.className = "w-2 h-2 rounded-full bg-slate-400";
         label.textContent = "Otomatik Güncelleme: Kapalı";
       }
+    }
+
+    // --- Google Sheets Canlı Bağlantı (varsayılan: kullanıcının GÜNCEL PORTFÖY sayfası) ---
+    const DEFAULT_SHEET_ID = '1B66p3v4jeXPZaHDBoL51uVSZKLFzuPbrMaAtdom6qMg';
+    const DEFAULT_SHEET_GID = '1411824524';
+    let sheetSyncTimer = null;
+
+    function getSheetConfigStorageKey() {
+      const code = document.getElementById('authKod')?.value.trim() || 'default-user';
+      return 'portfoy_sheet_config_' + code;
+    }
+
+    function loadSheetConfig() {
+      try {
+        const raw = localStorage.getItem(getSheetConfigStorageKey());
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.sheetId) return parsed;
+        }
+      } catch(e) {}
+      return { sheetId: DEFAULT_SHEET_ID, gid: DEFAULT_SHEET_GID, enabled: true };
+    }
+
+    function saveSheetConfig(cfg) {
+      try { localStorage.setItem(getSheetConfigStorageKey(), JSON.stringify(cfg)); } catch(e) {}
+    }
+
+    function parseSheetUrlOrId(input) {
+      if (!input) return null;
+      const idMatch = input.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      const gidMatch = input.match(/[?&#]gid=(\d+)/);
+      if (idMatch) {
+        return { sheetId: idMatch[1], gid: gidMatch ? gidMatch[1] : '0' };
+      }
+      // Doğrudan ID girilmiş olabilir
+      if (/^[a-zA-Z0-9-_]{20,}$/.test(input.trim())) {
+        return { sheetId: input.trim(), gid: '0' };
+      }
+      return null;
+    }
+
+    // Türkçe (1.234,56) veya standart (1234.56) formatlardan güvenle sayı ayrıştırır
+    function parseFlexibleNumber(raw) {
+      if (raw === null || raw === undefined) return 0;
+      let s = String(raw).trim().replace(/[^\d.,\-]/g, '');
+      if (!s) return 0;
+      const lastComma = s.lastIndexOf(',');
+      const lastDot = s.lastIndexOf('.');
+      if (lastComma === -1 && lastDot === -1) return parseFloat(s) || 0;
+      if (lastComma > lastDot) {
+        s = s.replace(/\./g, '').replace(',', '.');
+      } else if (lastDot > lastComma) {
+        s = s.replace(/,/g, '');
+      }
+      if (s.endsWith('.')) s = s.slice(0, -1);
+      const val = parseFloat(s);
+      return isNaN(val) ? 0 : val;
+    }
+
+    function parseSheetDate(raw) {
+      if (!raw) return '';
+      const str = raw.trim();
+      const monthMap = { jan:'01', feb:'02', mar:'03', apr:'04', may:'05', jun:'06', jul:'07', aug:'08', sep:'09', oct:'10', nov:'11', dec:'12' };
+      // 07.05.2025 / 03.06.2026
+      let m = str.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{2,4})$/);
+      if (m) {
+        let yr = m[3].length === 2 ? '20' + m[3] : m[3];
+        return `${yr}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
+      }
+      // 29May25 / 9Mar26
+      m = str.match(/^(\d{1,2})([A-Za-z]{3})(\d{2,4})$/);
+      if (m && monthMap[m[2].toLowerCase()]) {
+        let yr = m[3].length === 2 ? '20' + m[3] : m[3];
+        return `${yr}-${monthMap[m[2].toLowerCase()]}-${m[1].padStart(2,'0')}`;
+      }
+      return '';
+    }
+
+    // Basit CSV satır ayrıştırıcı (tırnak içi virgülleri korur)
+    function parseCsvLine(line) {
+      const result = [];
+      let cur = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
+          else inQuotes = !inQuotes;
+        } else if (ch === ',' && !inQuotes) {
+          result.push(cur); cur = '';
+        } else {
+          cur += ch;
+        }
+      }
+      result.push(cur);
+      return result;
+    }
+
+    function mapSheetAssetType(typeRaw) {
+      const t = (typeRaw || '').toUpperCase();
+      if (t.includes('FON')) return 'fund';
+      if (t.includes('DÖV') || t.includes('DOV') || t.includes('DÖVİZ') || t.includes('DÖVIZ')) return 'fx';
+      if (t.includes('ALT')) return 'gold';
+      if (t.includes('MEV')) return 'deposit';
+      if (t.includes('EURO')) return 'eurobond';
+      return 'fund';
+    }
+
+    async function fetchSheetCsvText(sheetId, gid) {
+      const targetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
+      // 1. Doğrudan dene (herkese açık sayfalarda gviz endpoint genelde CORS'a izin verir)
+      try {
+        const res = await fetchWithTimeout(targetUrl, { cache: 'no-store' }, 7000);
+        if (res && res.ok) return await res.text();
+      } catch(e) {}
+      // 2. Proxy üzerinden dene
+      const proxies = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
+      ];
+      for (const p of proxies) {
+        try {
+          const res = await fetchWithTimeout(p, { cache: 'no-store' }, 7000);
+          if (res && res.ok) return await res.text();
+        } catch(e) {}
+      }
+      return null;
+    }
+
+    function updateSheetSyncStatus(state, extra) {
+      const el = document.getElementById('sheetSyncStatus');
+      if (!el) return;
+      const now = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      if (state === 'ok') {
+        el.className = 'text-xs font-mono text-emerald-600';
+        el.textContent = `📗 Sheet Bağlı: Son senkron ${now} (${extra || 0} varlık)`;
+      } else if (state === 'off') {
+        el.className = 'text-xs font-mono text-slate-400';
+        el.textContent = '📗 Sheet bağlantısı kapalı';
+      } else {
+        el.className = 'text-xs font-mono text-rose-500';
+        el.textContent = `📗 Sheet'e ulaşılamadı (${now})`;
+      }
+    }
+
+    async function syncPortfolioFromGoogleSheet() {
+      const cfg = loadSheetConfig();
+      if (!cfg || !cfg.enabled || !cfg.sheetId) {
+        updateSheetSyncStatus('off');
+        return { ok: false, reason: 'disabled' };
+      }
+
+      const csvText = await fetchSheetCsvText(cfg.sheetId, cfg.gid || '0');
+      if (!csvText) {
+        updateSheetSyncStatus('error');
+        return { ok: false, reason: 'fetch-failed' };
+      }
+
+      const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
+      const sheetItems = [];
+
+      lines.forEach((line, idx) => {
+        if (idx === 0) return; // başlık satırı
+        const cols = parseCsvLine(line).map(c => c.replace(/^"|"$/g, '').trim());
+        const typeRaw = cols[0] || '';
+        const codeRaw = (cols[1] || '').trim();
+        if (!codeRaw) return;
+
+        const dateRaw = cols[2] || '';
+        const amount = parseFlexibleNumber(cols[3]);
+        const buyPrice = parseFlexibleNumber(cols[4]);
+        const currentPrice = parseFlexibleNumber(cols[6]);
+
+        if (amount <= 0) return;
+
+        const type = mapSheetAssetType(typeRaw);
+        const code = codeRaw.toUpperCase();
+
+        sheetItems.push({
+          id: 'sheet_' + code + '_' + idx,
+          type,
+          code,
+          name: code,
+          amount,
+          buyPrice,
+          currentPrice: currentPrice > 0 ? currentPrice : null,
+          buyDate: parseSheetDate(dateRaw),
+          note: 'Google Sheets (Canlı Bağlantı)'
+        });
+      });
+
+      if (sheetItems.length === 0) {
+        updateSheetSyncStatus('error');
+        return { ok: false, reason: 'no-rows' };
+      }
+
+      const data = loadUserData();
+      const manualItems = (data.portfolio || []).filter(i => !String(i.id).startsWith('sheet_'));
+      const updatedPortfolio = [...manualItems, ...sheetItems];
+      saveUserData({ ...data, portfolio: updatedPortfolio });
+
+      updateSheetSyncStatus('ok', sheetItems.length);
+      return { ok: true, count: sheetItems.length };
     }
 
     const default2026Rates = {
@@ -3036,6 +3281,7 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
         loadLiveRatesFromStorage();
         loadAutoUpdatePref();
         const found = await fetchFromFirebase();
+        try { await syncPortfolioFromGoogleSheet(); } catch(e) {}
         renderApp();
         showToast(found ? 'Portföy verileri Firebase\'den yüklendi.' : 'Bu koda ait kayıtlı veri bulunamadı, yeni portföy başlatıldı.', found ? 'success' : 'info');
       });
@@ -3161,23 +3407,24 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
         btn.innerHTML = '⏳ Güncelleniyor...';
         try {
           const result = await fetchLiveRatesFromAPI();
+          const sheetResult = await syncPortfolioFromGoogleSheet();
           renderApp();
+
+          const parts = [];
           if (result) {
             const total = result.fundOkCount + result.fundFailCount;
             if (total > 0) {
-              if (result.fundFailCount === 0) {
-                showToast(`Kurlar ve ${result.fundOkCount} TEFAS fonu anlık olarak güncellendi.`, 'success');
-              } else if (result.fundOkCount > 0) {
-                showToast(`${result.fundOkCount}/${total} fon güncellendi. ${result.fundFailCount} fon için TEFAS'a şu an ulaşılamadı, önceki fiyat korundu.`, 'info');
-              } else {
-                showToast(`Döviz/altın güncellendi, ancak TEFAS fon fiyatlarına şu an ulaşılamadı (proxy engeli olabilir). Önceki fiyatlar korundu.`, 'error');
-              }
+              if (result.fundFailCount === 0) parts.push(`Kurlar ve ${result.fundOkCount} TEFAS fonu güncellendi`);
+              else if (result.fundOkCount > 0) parts.push(`${result.fundOkCount}/${total} fon güncellendi`);
+              else parts.push('Döviz/altın güncellendi, TEFAS fonlarına şu an ulaşılamadı');
             } else {
-              showToast('Döviz ve altın kurları anlık olarak güncellendi.', 'success');
+              parts.push('Döviz ve altın kurları güncellendi');
             }
-          } else {
-            showToast('Piyasa kurları yenilendi.', 'info');
           }
+          if (sheetResult && sheetResult.ok) parts.push(`Sheet'ten ${sheetResult.count} varlık senkronize edildi`);
+          else if (sheetResult && sheetResult.reason !== 'disabled') parts.push('Sheet\'e şu an ulaşılamadı');
+
+          showToast(parts.length ? parts.join(' • ') + '.' : 'Piyasa kurları yenilendi.', (sheetResult && !sheetResult.ok && sheetResult.reason !== 'disabled') ? 'error' : 'success');
         } finally {
           btn.disabled = false;
           btn.innerHTML = originalHtml;
@@ -3189,6 +3436,38 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
         saveAutoUpdatePref();
         renderAutoUpdateToggle();
         showToast(autoUpdateEnabled ? 'Otomatik güncelleme açıldı (her 60 saniyede bir).' : 'Otomatik güncelleme kapatıldı. "Kurları Yenile" ile istediğinizde anlık güncelleyebilirsiniz.', 'info');
+      });
+
+      // Google Sheets ayar modalı
+      document.getElementById('btnOpenSheetConfig').addEventListener('click', () => {
+        const cfg = loadSheetConfig();
+        document.getElementById('chkSheetEnabled').checked = cfg.enabled !== false;
+        document.getElementById('sheetConfigUrlInput').value = `https://docs.google.com/spreadsheets/d/${cfg.sheetId}/edit?gid=${cfg.gid}`;
+        document.getElementById('sheetConfigModal').style.display = 'flex';
+      });
+      document.getElementById('sheetConfigCloseX').addEventListener('click', () => document.getElementById('sheetConfigModal').style.display = 'none');
+      document.getElementById('sheetConfigCancel').addEventListener('click', () => document.getElementById('sheetConfigModal').style.display = 'none');
+      document.getElementById('sheetConfigSave').addEventListener('click', async () => {
+        const enabled = document.getElementById('chkSheetEnabled').checked;
+        const urlInput = document.getElementById('sheetConfigUrlInput').value.trim();
+        const parsed = parseSheetUrlOrId(urlInput);
+        if (enabled && !parsed) {
+          showToast('Geçerli bir Google Sheets linki veya ID girin.', 'error');
+          return;
+        }
+        const cfg = parsed ? { sheetId: parsed.sheetId, gid: parsed.gid, enabled } : { ...loadSheetConfig(), enabled };
+        saveSheetConfig(cfg);
+        document.getElementById('sheetConfigModal').style.display = 'none';
+        if (enabled) {
+          showToast('Sheet bağlantısı kaydedildi, senkronize ediliyor...', 'info');
+          const res = await syncPortfolioFromGoogleSheet();
+          renderApp();
+          if (res.ok) showToast(`${res.count} varlık Sheet'ten senkronize edildi.`, 'success');
+          else showToast('Sheet\'e ulaşılamadı. Sayfanın "bağlantıya sahip herkes görüntüleyebilir" olduğundan emin olun.', 'error');
+        } else {
+          updateSheetSyncStatus('off');
+          showToast('Sheet bağlantısı kapatıldı.', 'info');
+        }
       });
 
       document.getElementById('btnWatchAdd').addEventListener('click', openAddWatchlistModal);
@@ -3219,6 +3498,7 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
       loadLiveRatesFromStorage();
 
       try { await fetchLiveRatesFromAPI(); } catch(e) {}
+      try { await syncPortfolioFromGoogleSheet(); } catch(e) { updateSheetSyncStatus('error'); }
       renderApp();
 
       if (autoUpdateIntervalId) clearInterval(autoUpdateIntervalId);
@@ -3226,6 +3506,7 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
         if (!autoUpdateEnabled) return; // Kullanıcı otomatik güncellemeyi kapattıysa döngü hiçbir şey yapmaz
         try {
           await fetchLiveRatesFromAPI();
+          await syncPortfolioFromGoogleSheet();
           renderApp();
         } catch(e) {}
       }, 60000);
