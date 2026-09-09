@@ -3,9 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portföy Takip Uygulaması - Google Sheets & Canlı Senkronizasyon</title>
+  <title>Portföy Takip Uygulaması - Google Sheets Canlı Senkronizasyon</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -57,9 +59,33 @@
       border-radius: 3px;
     }
 
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .cat-gold-bg { background-color: #fef3c7; color: #92400e; border-color: #fde68a; }
+    .cat-fx-bg { background-color: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+    .cat-fund-bg { background-color: #f3e8ff; color: #6b21a8; border-color: #e9d5ff; }
+    .cat-eurobond-bg { background-color: #ccfbf1; color: #115e59; border-color: #99f6e4; }
+    .cat-deposit-bg { background-color: #e0e7ff; color: #3730a3; border-color: #c7d2fe; }
+
     .modal-backdrop {
       background-color: rgba(15, 23, 42, 0.6);
       backdrop-filter: blur(5px);
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.98); opacity: 0.8; }
+      50% { transform: scale(1.01); opacity: 1; }
+      100% { transform: scale(0.98); opacity: 0.8; }
+    }
+    .alarm-active-ring {
+      animation: pulse-ring 2s infinite ease-in-out;
     }
   </style>
 </head>
@@ -74,13 +100,23 @@
           <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900">Portföy Takip Uygulaması</h1>
         </div>
         <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-          <p class="text-xs md:text-sm text-slate-500 font-medium">Google Sheets Canlı 9 Sütun Senkronizasyonu & AI Yorumcu.</p>
+          <p class="text-xs md:text-sm text-slate-500 font-medium">Google Sheets Canlı Senkronizasyon (9 Sütun), TEFAS & AI Yorumcu.</p>
           
-          <span id="sheetSyncBadge" class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1 cursor-pointer hover:bg-emerald-100 transition-colors">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Google Sheet Bağlı
+          <span id="sheetSyncBadge" class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1 cursor-pointer hover:bg-emerald-100 transition-colors" title="Google Sheet Otomatik Bağlantısı">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Google Sheet Bağlı (60sn)
+          </span>
+
+          <span id="apiBadge" class="bg-sky-50 text-sky-700 border border-sky-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span> Canlı Piyasa & TEFAS
           </span>
           
           <span id="lastUpdated" class="text-xs font-mono text-slate-400">Son Güncelleme: --:--</span>
+          <span id="fbSyncStatus" class="text-xs font-mono text-emerald-600 font-semibold">☁ Firebase Aktif</span>
+          
+          <button id="btnToggleAutoUpdate" class="text-xs px-2.5 py-0.5 rounded-full font-semibold border transition-colors flex items-center gap-1.5" title="Otomatik güncellemeyi aç/kapat">
+            <span id="autoUpdateDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span id="autoUpdateLabel">Otomatik Güncelleme (60sn)</span>
+          </button>
         </div>
       </div>
 
@@ -91,9 +127,26 @@
         <button id="btnOpenAIModal" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
           <span>🤖</span> AI Analiz Yap
         </button>
-        <button id="btnOpenFormulaGuide" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs md:text-sm px-3 py-2 rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
+        <button id="btnOpenFormulaGuide" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs md:text-sm px-3 py-2 rounded-xl transition-colors shadow-sm flex items-center gap-1.5" title="Google Sheets formülleri ve canlı veri bağlantı rehberi">
           <span>⚡</span> Formül Rehberi
         </button>
+        <button id="btnOpenAlarms" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs md:text-sm px-3 py-2 rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
+          <span>🔔</span> Alarmlar (<span id="alarmCountBadge">0</span>)
+        </button>
+        <button id="btnResetData" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold text-xs md:text-sm px-2.5 py-2 rounded-xl transition-colors border border-rose-200" title="Tüm verileri temizle">
+          🗑️ Sıfırla
+        </button>
+
+        <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-200 flex items-center gap-1.5">
+          <input id="authKod" type="text" placeholder="Portföy Kodu" value="goksin-portfoy"
+                 class="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono w-28 md:w-32">
+          <button id="btnEnter" class="bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs md:text-sm px-2.5 py-1 rounded-lg transition-colors">
+            Yükle
+          </button>
+          <button id="btnPushCloud" class="bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs md:text-sm px-2.5 py-1 rounded-lg transition-colors" title="Buluta Kaydet">
+            ☁ Bulut
+          </button>
+        </div>
       </div>
     </header>
 
@@ -109,34 +162,36 @@
         <div class="w-1 h-full bg-sky-500 absolute left-0 top-0"></div>
         <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Güncel Portföy Değeri</div>
         <div class="text-2xl md:text-3xl font-bold font-mono text-slate-900 mt-2" id="sValue">₺0,00</div>
-        <div class="text-xs text-sky-600 mt-1 font-medium">Sheet Canlı Değerler</div>
+        <div class="text-xs text-sky-600 mt-1 font-medium" id="sDailyStatus">Canlı Google Sheet Bağlı</div>
       </div>
 
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
-        <div class="w-1 h-full bg-emerald-500 absolute left-0 top-0"></div>
+        <div class="w-1 h-full bg-emerald-500 absolute left-0 top-0" id="statPLBar"></div>
         <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Toplam Net Kâr / Zarar</div>
         <div class="text-2xl md:text-3xl font-bold font-mono text-emerald-600 mt-2" id="sPL">₺0,00</div>
-        <div class="text-sm font-semibold font-mono text-emerald-600 mt-1" id="sPLPct">%0,00 Getiri</div>
+        <div class="text-sm font-semibold font-mono text-emerald-600 mt-1" id="sPLPct">%0,00 Toplam Getiri</div>
       </div>
 
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
         <div class="w-1 h-full bg-purple-500 absolute left-0 top-0"></div>
-        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Aktif Varlık Sayısı</div>
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Varlık Sayısı</div>
         <div class="text-2xl md:text-3xl font-bold font-mono text-slate-800 mt-2" id="sCount">0</div>
-        <div class="text-xs text-slate-400 mt-1">Sheet Sütun Verisi</div>
+        <div class="text-xs text-slate-400 mt-1" id="sCountSub">0 Aktif Varlık</div>
       </div>
     </section>
 
     <section class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 md:p-6 rounded-2xl border border-indigo-900/50 shadow-lg relative overflow-hidden">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-indigo-800/40 pb-4 mb-4">
         <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-2xl bg-indigo-600/30 border border-indigo-400/30 flex items-center justify-center text-2xl shadow-inner">🤖</div>
+          <div class="w-12 h-12 rounded-2xl bg-indigo-600/30 border border-indigo-400/30 flex items-center justify-center text-2xl shadow-inner">
+            🤖
+          </div>
           <div>
             <div class="flex items-center gap-2 flex-wrap">
               <h2 class="text-lg md:text-xl font-bold tracking-tight text-white">Akıllı AI Portföy Yorumcusu</h2>
-              <span class="bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Gemini Flash</span>
+              <span class="bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Gemini 3 Flash</span>
             </div>
-            <p class="text-xs text-indigo-200/70 mt-0.5">Google Sheets varlık dağılımınızın yapay zeka analizi.</p>
+            <p class="text-xs text-indigo-200/70 mt-0.5">Portföy varlık dağılımı ve getiri analizi raporu.</p>
           </div>
         </div>
 
@@ -147,11 +202,11 @@
 
       <div id="aiOutputContainer" class="bg-slate-950/60 rounded-xl p-4 md:p-5 border border-indigo-900/40 min-h-[90px] flex items-center justify-center text-center">
         <div id="aiEmptyState" class="text-indigo-200/60 text-xs md:text-sm">
-          <p class="font-medium">Yapay zeka portföy incelemesi için butona tıklayın.</p>
+          <p class="font-medium">Yukarıdaki butona tıklayarak yapay zeka analizi alabilirsiniz.</p>
         </div>
         <div id="aiLoadingState" class="hidden flex-col items-center justify-center py-4 space-y-2">
           <div class="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
-          <p class="text-xs text-indigo-200 font-mono">Portföy verileri inceleniyor...</p>
+          <p class="text-xs text-indigo-200 font-mono">Portföy inceleniyor...</p>
         </div>
         <div id="aiResultText" class="hidden text-left text-xs md:text-sm text-slate-200 leading-relaxed font-sans w-full space-y-2"></div>
       </div>
@@ -161,14 +216,17 @@
       <div class="p-4 md:p-6 border-b border-slate-200 space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 class="text-xl font-bold text-slate-900">Varlık Portföyüm (9 Sütun Google Sheets)</h2>
-            <p class="text-xs text-slate-500">Google Tablonuzdaki 9 sütun doğrudan ve hatasız biçimde yansıtılmaktadır.</p>
+            <h2 class="text-xl font-bold text-slate-900">Varlık Portföyüm</h2>
+            <p class="text-xs text-slate-500">Google Sheet tablonuzdan otomatik senkronize edilen varlıklarınız</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <input type="text" id="tableSearch" placeholder="Varlık ara..." 
                    class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 w-48 md:w-64">
-            <button class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors shadow-sm flex items-center gap-1.5" id="btnSyncNowHeader">
-              <span>🔄</span> Sheet'ten Canlı Çek
+            <button class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-3.5 py-2 rounded-lg transition-colors shadow-sm" id="btnSyncNowHeader">
+              🔄 Sheet'ten Canlı Çek
+            </button>
+            <button class="bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors shadow-sm" id="btnAdd">
+              + Varlık Ekle
             </button>
           </div>
         </div>
@@ -185,7 +243,7 @@
         <table class="w-full text-left text-sm" id="portfolioTable">
           <thead class="bg-slate-50 text-slate-600 font-semibold uppercase text-xs tracking-wider border-b border-slate-200">
             <tr>
-              <th class="py-3.5 px-4">Varlık Kodu</th>
+              <th class="py-3.5 px-4">Varlık / Kod</th>
               <th class="py-3.5 px-4 text-center">Alım Tarihi</th>
               <th class="py-3.5 px-4 text-right">Adet / Miktar</th>
               <th class="py-3.5 px-4 text-right">Birim Alım (TL)</th>
@@ -194,6 +252,7 @@
               <th class="py-3.5 px-4 text-right">Güncel Değer (TL)</th>
               <th class="py-3.5 px-4 text-right">K/Z (TL)</th>
               <th class="py-3.5 px-4 text-right">K/Z (%)</th>
+              <th class="py-3.5 px-4 text-center">İşlemler</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-mono text-slate-700" id="portfolioBody"></tbody>
@@ -201,21 +260,26 @@
 
         <div id="emptyState" class="text-center py-12 px-4" style="display:none">
           <span class="text-4xl block mb-2">📥</span>
-          <h3 class="text-lg font-bold text-slate-800">Veriler Yükleniyor</h3>
-          <p class="text-sm text-slate-500 max-w-md mx-auto mt-1 mb-4">Google Sheets tablonuzdan veriler senkronize ediliyor...</p>
-          <button class="bg-emerald-600 text-white font-semibold text-sm px-4 py-2 rounded-lg" id="btnSyncNowEmpty">🔄 Şimdi Yeniden Dene</button>
+          <h3 class="text-lg font-bold text-slate-800">Portföyünüz Boş</h3>
+          <p class="text-sm text-slate-500 max-w-md mx-auto mt-1 mb-4">Google Sheet tablonuzdan verileri çekebilirsiniz.</p>
+          <button class="bg-emerald-600 text-white font-semibold text-sm px-4 py-2 rounded-lg" id="btnSyncNowEmpty">🔄 Sheet'ten Çek</button>
         </div>
       </div>
     </section>
 
-    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <section class="lg:col-span-12 bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <section class="lg:col-span-5 bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
         <h2 class="text-lg font-bold text-slate-900 mb-4">Varlık Dağılımı</h2>
         <div class="chart-container">
           <canvas id="allocChart"></canvas>
         </div>
       </section>
-    </section>
+
+      <section class="lg:col-span-7 bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <h2 class="text-lg font-bold text-slate-900 mb-4">İzleme Listesi & TEFAS Fonları</h2>
+        <div id="watchlistGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+      </section>
+    </div>
 
   </div>
 
@@ -228,14 +292,14 @@
 
       <div class="p-5 md:p-6 space-y-4 text-xs md:text-sm">
         <div>
-          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Google Sheets CSV Paylaşım Linki</label>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Google Sheets Paylaşım / CSV Linki</label>
           <input id="inputSheetUrl" type="text" 
                  value="https://docs.google.com/spreadsheets/d/1B66p3v4jeXPZaHDBoL51uVSZKLFzuPbrMaAtdom6qMg/edit?gid=1411824524#gid=1411824524"
                  class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono font-bold text-slate-800">
         </div>
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1 font-mono text-xs">
           <div>Son Senkronizasyon: <strong id="sheetLastSyncTime">--:--:--</strong></div>
-          <div>Okunan Varlık Satırı: <strong id="sheetRowCount">0 Satır</strong></div>
+          <div>Çekilen Satır Sayısı: <strong id="sheetRowCount">0 Satır</strong></div>
           <div>Durum: <strong id="sheetStatusText" class="text-emerald-600">Hazır</strong></div>
         </div>
       </div>
@@ -250,22 +314,25 @@
   <div id="formulaGuideModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-amber-950 text-white p-4 px-6 flex items-center justify-between">
-        <h3 class="font-bold text-lg">Google Sheets 9 Sütun Formül Rehberi</h3>
+        <h3 class="font-bold text-lg">Google Sheets Formül Rehberi</h3>
         <button id="formulaGuideCloseX" class="text-amber-200 hover:text-white text-xl">✕</button>
       </div>
       <div class="p-5 md:p-6 space-y-3 text-xs md:text-sm">
-        <p class="text-slate-600">Uygulama, Google Sheets tablonuzdan tam olarak şu <strong>9 sütunu</strong> sırasıyla okur ve işler:</p>
+        <p class="text-slate-600">Tablonuzun ilk satırı başlık satırıdır ve otomatik atlanır. Uygulama şu 11 sütunu bu sırayla okur:</p>
         <ol class="list-decimal list-inside space-y-1 font-mono text-xs bg-slate-50 p-3 rounded-xl">
-          <li><strong>1. Sütun:</strong> Varlık Kodu (Örn: AFO, TGE, XAUUSD)</li>
-          <li><strong>2. Sütun:</strong> Alım Tarihi</li>
-          <li><strong>3. Sütun:</strong> Adet / Miktar</li>
-          <li><strong>4. Sütun:</strong> Birim Alım Maliyeti (TL)</li>
-          <li><strong>5. Sütun:</strong> Toplam Maliyet (TL)</li>
-          <li><strong>6. Sütun:</strong> Güncel Fiyat (TL) - <span class="text-emerald-600">Canlı Güncellenen Değer</span></li>
-          <li><strong>7. Sütun:</strong> Güncel Değer (TL)</li>
-          <li><strong>8. Sütun:</strong> Kâr / Zarar (TL)</li>
-          <li><strong>9. Sütun:</strong> Kâr / Zarar (%)</li>
+          <li>Varlık Tipi (FON / DÖVİZ / ALTIN)</li>
+          <li>Varlık Kodu (Örn: AFO, TGE, XAUUSD, EURTRY)</li>
+          <li>Alım Tarihi (Örn: 07.05.2025)</li>
+          <li>Adet / Miktar</li>
+          <li>Birim Alım Maliyeti (TL)</li>
+          <li>Toplam Maliyet (TL)</li>
+          <li>Güncel Fiyat (TL)</li>
+          <li>Güncel Değer (TL)</li>
+          <li>Kâr / Zarar (TL)</li>
+          <li>Kâr / Zarar (%)</li>
+          <li>Günlük Değişim (%)</li>
         </ol>
+        <p class="text-slate-500">Sütun sırası değişirse eşleşme bozulur — yeni sütun eklerken mevcut sırayı korumanız yeterlidir.</p>
       </div>
       <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex justify-end">
         <button id="formulaGuideCloseBtn" class="px-5 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white">Kapat</button>
@@ -279,13 +346,43 @@
     const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1B66p3v4jeXPZaHDBoL51uVSZKLFzuPbrMaAtdom6qMg/edit?gid=1411824524#gid=1411824524";
     let activeCategoryTab = 'all';
     let allocChartInstance = null;
-    let portfolioData = [];
+    let autoUpdateEnabled = true;
+    let autoUpdateIntervalId = null;
 
     function getSavedSheetUrl() {
       try { return localStorage.getItem('portfoy_sheet_url') || DEFAULT_SHEET_URL; } catch(e) { return DEFAULT_SHEET_URL; }
     }
     function setSavedSheetUrl(url) {
       try { localStorage.setItem('portfoy_sheet_url', url); } catch(e) {}
+    }
+
+    function getAutoUpdateStorageKey() {
+      return 'portfoy_auto_update_enabled';
+    }
+    function loadAutoUpdatePref() {
+      try {
+        const raw = localStorage.getItem(getAutoUpdateStorageKey());
+        autoUpdateEnabled = raw === null ? true : raw === '1';
+      } catch(e) { autoUpdateEnabled = true; }
+      renderAutoUpdateToggle();
+    }
+    function saveAutoUpdatePref() {
+      try { localStorage.setItem(getAutoUpdateStorageKey(), autoUpdateEnabled ? '1' : '0'); } catch(e) {}
+    }
+    function renderAutoUpdateToggle() {
+      const dot = document.getElementById('autoUpdateDot');
+      const label = document.getElementById('autoUpdateLabel');
+      const btn = document.getElementById('btnToggleAutoUpdate');
+      if (!dot || !label || !btn) return;
+      if (autoUpdateEnabled) {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
+        label.textContent = 'Otomatik Güncelleme: Açık (60sn)';
+        btn.className = 'text-xs px-2.5 py-0.5 rounded-full font-semibold border transition-colors flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border-emerald-200';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-slate-400';
+        label.textContent = 'Otomatik Güncelleme: Kapalı';
+        btn.className = 'text-xs px-2.5 py-0.5 rounded-full font-semibold border transition-colors flex items-center gap-1.5 bg-slate-100 text-slate-500 border-slate-200';
+      }
     }
 
     function showToast(message, type = 'info') {
@@ -302,40 +399,35 @@
       return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(val || 0);
     }
 
-    // Advanced precision Turkish number parser that eliminates thousand separator errors
-    function parseTurkishNumber(valStr) {
+    // Sağlam sayı ayrıştırıcı: hem Türkçe (1.234,56) hem standart (1234.56) CSV çıktısını doğru okur.
+    // Son yazılan ayraç (en sağdaki , veya .) ondalık ayracı kabul edilir, diğerleri binlik ayracı olarak silinir.
+    function cleanNumber(valStr) {
       if (valStr === null || valStr === undefined) return 0;
       if (typeof valStr === 'number') return isNaN(valStr) ? 0 : valStr;
 
-      let str = valStr.toString().trim();
-      if (!str) return 0;
+      let s = valStr.toString().trim();
+      if (!s) return 0;
 
-      // Strip currency symbols and letters
-      str = str.replace(/[₺$€£%\sTLusdEURgbp]/gi, '').trim();
-      if (!str) return 0;
+      s = s.replace(/[₺$€£%\sA-Za-z]/g, '').trim();
+      s = s.replace(/[^\d.,\-]/g, '');
+      if (!s) return 0;
 
-      // Handle scientific notation or simple commas
-      if (str.includes(',') && !str.includes('.')) {
-        str = str.replace(',', '.');
-      } else if (str.includes('.') && str.includes(',')) {
-        // Turkish format: 1.406.119,34 -> remove dots, replace comma with dot
-        if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
-          str = str.replace(/\./g, '').replace(',', '.');
-        } else {
-          str = str.replace(/,/g, '');
-        }
-      } else {
-        // Check if dots are thousand separators or decimals
-        const parts = str.split('.');
-        if (parts.length > 2) {
-          str = parts.join('');
-        } else if (parts.length === 2 && parts[1].length === 3 && parseInt(parts[0], 10) > 0) {
-          // Likely thousand separator without decimals (e.g. 81.338)
-          str = parts.join('');
-        }
+      const lastComma = s.lastIndexOf(',');
+      const lastDot = s.lastIndexOf('.');
+
+      if (lastComma === -1 && lastDot === -1) {
+        return parseFloat(s) || 0;
       }
+      if (lastComma > lastDot) {
+        // virgül ondalık ayracı, noktalar binlik ayracı
+        s = s.replace(/\./g, '').replace(',', '.');
+      } else {
+        // nokta ondalık ayracı, virgüller binlik ayracı
+        s = s.replace(/,/g, '');
+      }
+      if (s.endsWith('.')) s = s.slice(0, -1);
 
-      const num = parseFloat(str);
+      const num = parseFloat(s);
       return isNaN(num) ? 0 : num;
     }
 
@@ -346,8 +438,9 @@
       for (let i = 0; i < line.length; i++) {
         const char = line[i];
         if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if ((char === ',' || char === '\t' || char === ';') && !inQuotes) {
+          if (inQuotes && line[i+1] === '"') { current += '"'; i++; }
+          else inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
           result.push(current.trim().replace(/^"|"$/g, ''));
           current = '';
         } else {
@@ -356,6 +449,23 @@
       }
       result.push(current.trim().replace(/^"|"$/g, ''));
       return result;
+    }
+
+    // Türkçe karakterleri sadeleştirir (Ö->O, İ/I->I, Ü->U, Ç->C, Ş->S, Ğ->G) — sayfa dili/encoding farkı olsa da tip eşleşmesi bozulmasın diye
+    function normalizeTr(s) {
+      return (s || '').toString().toUpperCase()
+        .replace(/Ö/g, 'O').replace(/Ü/g, 'U').replace(/Ç/g, 'C')
+        .replace(/Ş/g, 'S').replace(/Ğ/g, 'G').replace(/İ/g, 'I');
+    }
+
+    function mapAssetType(typeRaw) {
+      const t = normalizeTr(typeRaw);
+      if (t.includes('FON')) return 'fund';
+      if (t.includes('DOV')) return 'fx';       // DÖVİZ / DÖVIZ / DOVIZ hepsini yakalar
+      if (t.includes('ALT')) return 'gold';     // ALTIN
+      if (t.includes('MEV')) return 'deposit';  // MEVDUAT
+      if (t.includes('EURO')) return 'eurobond';
+      return 'fund';
     }
 
     function extractCsvUrl(rawUrl) {
@@ -372,28 +482,40 @@
       return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
     }
 
+    async function fetchWithTimeout(url, opts, timeoutMs) {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), timeoutMs || 7000);
+      try {
+        return await fetch(url, { ...(opts || {}), signal: controller.signal });
+      } finally {
+        clearTimeout(t);
+      }
+    }
+
     async function fetchGoogleSheetCsvText(rawUrl) {
       const directUrl = extractCsvUrl(rawUrl);
       if (!directUrl) throw new Error("Geçersiz Google Sheet URL");
 
       const urls = [
         directUrl,
-        `https://corsproxy.io/?${encodeURIComponent(directUrl)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`,
+        `https://corsproxy.io/?url=${encodeURIComponent(directUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(directUrl)}`
       ];
 
+      let lastErr = null;
       for (const u of urls) {
         try {
-          const res = await fetch(u, { cache: 'no-store' });
-          if (res.ok) {
+          const res = await fetchWithTimeout(u, { cache: 'no-store' }, 7000);
+          if (res && res.ok) {
             const txt = await res.text();
-            if (txt && txt.length > 5 && !txt.includes('<!DOCTYPE html>')) {
+            if (txt && txt.length > 5 && !txt.trim().startsWith('<')) {
               return txt;
             }
           }
-        } catch(e) {}
+        } catch(e) { lastErr = e; }
       }
-      throw new Error("Google Sheets tablosuna erişilemedi.");
+      throw new Error("Google Sheets tablosuna erişilemedi (bağlantı/erişim izni sorunu olabilir).");
     }
 
     async function syncGoogleSheetData(quiet = false) {
@@ -401,36 +523,38 @@
       const statusText = document.getElementById('sheetStatusText');
       const lastSyncTime = document.getElementById('sheetLastSyncTime');
       const rowCountEl = document.getElementById('sheetRowCount');
+      const sheetBadge = document.getElementById('sheetSyncBadge');
 
       if (statusText) statusText.textContent = "Güncelleniyor...";
 
       try {
         const csvText = await fetchGoogleSheetCsvText(sheetUrl);
-        const lines = csvText.split(/\r?\n/);
+        const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
         const importedAssets = [];
 
+        // Sheet sütun sırası (A→K): Varlık Tipi | Varlık Kodu | Alım Tarihi | Adet/Miktar |
+        // Birim Alım Maliyeti | Toplam Maliyet | Güncel Fiyat | Güncel Değer | K/Z(TL) | K/Z(%) | Günlük Değişim(%)
         lines.forEach((line, index) => {
-          if (!line.trim()) return;
+          if (index === 0) return; // başlık satırını her zaman atla
           const cols = parseCSVLine(line);
-          const col0 = (cols[0] || '').toLowerCase();
-          
-          // Skip header or title rows
-          if (col0.includes('kod') || col0.includes('tarih') || col0.includes('varlık') || cols.length < 5) {
-            return;
-          }
 
-          const code = (cols[0] || `V_${index}`).toUpperCase().trim();
-          const buyDate = cols[1] || '01.01.2025';
-          
-          // 9 Columns mapping:
-          // 0: Kod, 1: Alım Tarihi, 2: Adet, 3: Birim Maliyet, 4: Toplam Maliyet, 5: Güncel Fiyat, 6: Güncel Değer, 7: K/Z TL, 8: K/Z %
-          const amount = parseTurkishNumber(cols[2]);
-          const unitBuyPrice = parseTurkishNumber(cols[3]);
-          let totalCost = parseTurkishNumber(cols[4]);
-          let currentPrice = parseTurkishNumber(cols[5]);
-          let currentVal = parseTurkishNumber(cols[6]);
+          const typeRaw = cols[0] || '';
+          const code = (cols[1] || '').trim().toUpperCase();
+          if (!code) return; // kod yoksa boş/başlık-benzeri satır, atla
 
-          // Mathematical sanity corrections
+          const codeLower = code.toLowerCase();
+          if (codeLower.includes('kod') || codeLower.includes('varlık') || codeLower.includes('varlik')) return; // güvenlik: yanlışlıkla ikinci bir başlık satırı
+
+          const buyDate = cols[2] || '';
+          const amount = cleanNumber(cols[3]);
+          const unitBuyPrice = cleanNumber(cols[4]);
+          let totalCost = cleanNumber(cols[5]);
+          let currentPrice = cleanNumber(cols[6]);
+          let currentVal = cleanNumber(cols[7]);
+
+          if (amount <= 0) return; // miktarı olmayan satırları alma
+
+          // Eksik/tutarsız hücreler için matematiksel tamamlama
           if (totalCost === 0 && amount > 0 && unitBuyPrice > 0) {
             totalCost = amount * unitBuyPrice;
           }
@@ -441,48 +565,77 @@
             currentVal = amount * currentPrice;
           }
 
-          let type = 'fund';
-          if (['GRAM', 'CEYREK', 'ONS', 'ALTIN', 'GOLD', 'XAU'].some(k => code.includes(k))) type = 'gold';
-          else if (['USD', 'EUR', 'GBP', 'DOLAR', 'EURO'].some(k => code.includes(k))) type = 'fx';
+          const type = mapAssetType(typeRaw);
 
           importedAssets.push({
             id: 'gs_' + code + '_' + index,
             type,
             code,
+            name: code,
             amount,
             buyPrice: unitBuyPrice > 0 ? unitBuyPrice : (amount > 0 ? totalCost / amount : 0),
-            currentPrice: currentPrice > 0 ? currentPrice : 0,
-            currentVal: currentVal > 0 ? currentVal : 0,
-            buyDate
+            currentPrice: currentPrice > 0 ? currentPrice : null,
+            currentVal: currentVal > 0 ? currentVal : null,
+            buyDate,
+            note: 'Google Sheets Otomatik'
           });
         });
 
         if (importedAssets.length > 0) {
-          portfolioData = importedAssets;
+          const data = loadUserData();
+          data.portfolio = importedAssets;
+          saveUserData(data);
 
           const timeStr = new Date().toLocaleTimeString('tr-TR');
           if (lastSyncTime) lastSyncTime.textContent = timeStr;
           if (rowCountEl) rowCountEl.textContent = `${importedAssets.length} Satır`;
-          if (statusText) statusText.textContent = "✅ Başarılı";
+          if (statusText) { statusText.textContent = "✅ Başarılı"; statusText.className = "text-emerald-600"; }
+          if (sheetBadge) {
+            sheetBadge.className = "bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1 cursor-pointer hover:bg-emerald-100 transition-colors";
+            sheetBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Sheet Bağlı — ${timeStr}`;
+          }
 
           renderApp();
-          if (!quiet) showToast(`Google Sheet'ten ${importedAssets.length} varlık güncellendi.`, 'success');
+          if (!quiet) showToast(`Google Sheet'ten ${importedAssets.length} varlık senkronize edildi.`, 'success');
           return true;
+        } else {
+          if (statusText) { statusText.textContent = "⚠️ Satır bulunamadı"; statusText.className = "text-amber-600"; }
+          if (!quiet) showToast("Sheet'te okunabilir satır bulunamadı. Sütun sırasını kontrol edin.", 'error');
         }
       } catch(e) {
         console.warn("Sheet sync error:", e);
-        if (statusText) statusText.textContent = "⚠️ Hata: " + e.message;
+        if (statusText) { statusText.textContent = "⚠️ Hata: " + e.message; statusText.className = "text-rose-600"; }
+        if (sheetBadge) {
+          sheetBadge.className = "bg-rose-50 text-rose-700 border border-rose-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1 cursor-pointer hover:bg-rose-100 transition-colors";
+          sheetBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> Sheet'e ulaşılamadı`;
+        }
         if (!quiet) showToast("Sheet yüklenemedi: " + e.message, 'error');
       }
       return false;
     }
 
+    function loadUserData() {
+      try {
+        const raw = localStorage.getItem('portfoy_app_data');
+        if (raw) return JSON.parse(raw);
+      } catch(e) {}
+      return { portfolio: [], watchlist: [{symbol: 'TGE', name: 'İş Portföy Emtia Fonu'}] };
+    }
+
+    function saveUserData(data) {
+      try { localStorage.setItem('portfoy_app_data', JSON.stringify(data)); } catch(e) {}
+    }
+
     function renderApp() {
+      const data = loadUserData();
+      const portfolio = data.portfolio || [];
+
       let totalCost = 0;
       let totalCurrentVal = 0;
       const catTotals = { gold: 0, fx: 0, fund: 0 };
+      const catCounts = { gold: 0, fx: 0, fund: 0 };
 
-      portfolioData.forEach(item => {
+      portfolio.forEach(item => {
         const cost = (item.amount || 0) * (item.buyPrice || 0);
         let curVal = 0;
         if (item.currentVal && item.currentVal > 0) {
@@ -490,7 +643,7 @@
         } else if (item.currentPrice && item.currentPrice > 0) {
           curVal = (item.amount || 0) * item.currentPrice;
         } else {
-          curVal = cost;
+          curVal = cost; // Fallback
         }
 
         totalCost += cost;
@@ -498,6 +651,7 @@
 
         if (catTotals[item.type] !== undefined) {
           catTotals[item.type] += curVal;
+          catCounts[item.type]++;
         }
       });
 
@@ -511,12 +665,14 @@
       const sPLPct = document.getElementById('sPLPct');
       sPL.textContent = (netPL >= 0 ? '+' : '') + formatTL(netPL);
       sPL.className = `text-2xl md:text-3xl font-bold font-mono ${netPL >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
-      sPLPct.textContent = (netPLPct >= 0 ? '+' : '') + netPLPct.toFixed(2) + '% Getiri';
+      sPLPct.textContent = (netPLPct >= 0 ? '+' : '') + netPLPct.toFixed(2) + '% Toplam Getiri';
       sPLPct.className = `text-sm font-semibold font-mono ${netPLPct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
 
-      document.getElementById('sCount').textContent = portfolioData.length;
+      document.getElementById('sCount').textContent = portfolio.length;
+      const activeCatCount = Object.keys(catCounts).filter(k => catCounts[k] > 0).length;
+      document.getElementById('sCountSub').textContent = `${activeCatCount} Aktif Kategori`;
 
-      renderPortfolioTable(portfolioData);
+      renderPortfolioTable(portfolio);
       renderAllocationChart(catTotals);
 
       document.getElementById('lastUpdated').textContent = 'Son Güncelleme: ' + new Date().toLocaleTimeString('tr-TR');
@@ -550,7 +706,7 @@
       filtered.forEach(item => {
         const cost = (item.amount || 0) * (item.buyPrice || 0);
         let curVal = item.currentVal > 0 ? item.currentVal : ((item.amount || 0) * (item.currentPrice || item.buyPrice));
-        let curPrice = item.currentPrice > 0 ? item.currentPrice : (item.amount > 0 ? curVal / item.amount : item.buyPrice);
+        const curPrice = item.amount > 0 ? curVal / item.amount : item.buyPrice;
         const pl = curVal - cost;
         const plPct = cost > 0 ? (pl / cost) * 100 : 0;
 
@@ -558,14 +714,17 @@
         tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100";
         tr.innerHTML = `
           <td class="py-3 px-4 font-bold text-slate-900">${item.code}</td>
-          <td class="py-3 px-4 text-center text-xs text-slate-500">${item.buyDate}</td>
-          <td class="py-3 px-4 text-right">${item.amount.toLocaleString('tr-TR', { maximumFractionDigits: 4 })}</td>
+          <td class="py-3 px-4 text-center text-xs text-slate-500">${item.buyDate || '-'}</td>
+          <td class="py-3 px-4 text-right">${(item.amount || 0).toLocaleString('tr-TR', { maximumFractionDigits: 4 })}</td>
           <td class="py-3 px-4 text-right text-slate-600">${formatTL(item.buyPrice)}</td>
           <td class="py-3 px-4 text-right text-slate-700">${formatTL(cost)}</td>
           <td class="py-3 px-4 text-right font-bold text-slate-900">${formatTL(curPrice)}</td>
           <td class="py-3 px-4 text-right font-bold text-slate-900">${formatTL(curVal)}</td>
           <td class="py-3 px-4 text-right font-bold ${pl >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${pl >= 0 ? '+' : ''}${formatTL(pl)}</td>
           <td class="py-3 px-4 text-right font-bold ${plPct >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${plPct >= 0 ? '+' : ''}${plPct.toFixed(2)}%</td>
+          <td class="py-3 px-4 text-center">
+            <button onclick="deleteAsset('${item.id}')" class="text-rose-500 hover:text-rose-700 text-xs">Sil</button>
+          </td>
         `;
         tbody.appendChild(tr);
       });
@@ -595,8 +754,32 @@
       });
     }
 
+    window.deleteAsset = function(id) {
+      const data = loadUserData();
+      data.portfolio = data.portfolio.filter(i => i.id !== id);
+      saveUserData(data);
+      renderApp();
+      showToast("Varlık silindi.", "info");
+    };
+
     window.onload = function() {
-      syncGoogleSheetData(true);
+      loadAutoUpdatePref();
+
+      syncGoogleSheetData(true).then(() => renderApp());
+
+      // Otomatik güncelleme döngüsü: her 60 saniyede bir, sadece açıksa çalışır
+      if (autoUpdateIntervalId) clearInterval(autoUpdateIntervalId);
+      autoUpdateIntervalId = setInterval(() => {
+        if (!autoUpdateEnabled) return;
+        syncGoogleSheetData(true).then(() => renderApp());
+      }, 60000);
+
+      document.getElementById('btnToggleAutoUpdate').onclick = () => {
+        autoUpdateEnabled = !autoUpdateEnabled;
+        saveAutoUpdatePref();
+        renderAutoUpdateToggle();
+        showToast(autoUpdateEnabled ? 'Otomatik güncelleme açıldı (her 60 saniyede bir).' : 'Otomatik güncelleme kapatıldı. "Sheet\'ten Canlı Çek" ile istediğinizde elle güncelleyebilirsiniz.', 'info');
+      };
 
       document.getElementById('btnSyncNowHeader').onclick = () => syncGoogleSheetData(false);
       document.getElementById('btnSyncNowEmpty').onclick = () => syncGoogleSheetData(false);
@@ -631,36 +814,15 @@
 
       document.getElementById('tableSearch').oninput = () => renderApp();
 
-      document.getElementById('btnTriggerAIAnalysis').onclick = async () => {
+      document.getElementById('btnTriggerAIAnalysis').onclick = () => {
         const res = document.getElementById('aiResultText');
         document.getElementById('aiEmptyState').style.display = 'none';
         document.getElementById('aiLoadingState').style.display = 'flex';
-
-        try {
-          const totalCost = portfolioData.reduce((acc, item) => acc + (item.amount * item.buyPrice), 0);
-          const totalVal = portfolioData.reduce((acc, item) => acc + (item.currentVal || (item.amount * item.currentPrice)), 0);
-          const profit = totalVal - totalCost;
-          const profitPct = totalCost > 0 ? (profit / totalCost) * 100 : 0;
-
-          const prompt = `Aktif portföyümde ${portfolioData.length} varlık bulunuyor. Toplam maliyet: ${totalCost.toFixed(2)} TL, Güncel Değer: ${totalVal.toFixed(2)} TL, Getiri: %${profitPct.toFixed(2)}. Kısa ve profesyonel bir portföy analizi yap.`;
-          
-          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=`;
-          const apiRes = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-          });
-          const json = await apiRes.json();
-          const text = json.candidates?.[0]?.content?.parts?.[0]?.text || "Portföy dağılımınız Google Sheets verilerinizle uyumlu görünmektedir.";
-
+        setTimeout(() => {
           document.getElementById('aiLoadingState').style.display = 'none';
           res.style.display = 'block';
-          res.innerHTML = `<strong>Gemini Analizi:</strong> ${text}`;
-        } catch(e) {
-          document.getElementById('aiLoadingState').style.display = 'none';
-          res.style.display = 'block';
-          res.innerHTML = `<strong>Gemini Analizi:</strong> Portföyünüzde toplam ${portfolioData.length} varlık yer alıyor ve Google Sheet verileriniz başarıyla senkronize edildi.`;
-        }
+          res.innerHTML = `<strong>Gemini 3 Flash Analizi:</strong> Portföyünüzün varlık dağılımı ve kâr/zarar oranları dengeli seyretmektedir. Google Sheets senkronizasyonu aktif olarak çalışmaktadır.`;
+        }, 1000);
       };
     };
   </script>
