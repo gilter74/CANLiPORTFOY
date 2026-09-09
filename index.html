@@ -140,6 +140,9 @@
           <button id="btnEnter" class="bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs md:text-sm px-3 py-1 rounded-lg transition-colors">
             Yükle
           </button>
+          <button id="btnPushCloud" class="bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs md:text-sm px-3 py-1 rounded-lg transition-colors" title="Bu cihazdaki mevcut portföy verisini Firebase'e gönderir (diğer cihazlar bunu görsün diye)">
+            ☁ Buluta Gönder
+          </button>
         </div>
       </div>
     </header>
@@ -2445,6 +2448,15 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
         const found = await fetchFromFirebase();
         renderApp();
         showToast(found ? 'Portföy verileri Firebase\'den yüklendi.' : 'Bu koda ait kayıtlı veri bulunamadı, yeni portföy başlatıldı.', found ? 'success' : 'info');
+      });
+
+      document.getElementById('btnPushCloud').addEventListener('click', () => {
+        showConfirmModal('Bu cihazdaki mevcut portföy verisi Firebase\'e gönderilecek ve bu koda kayıtlı bulut verisinin üzerine yazılacak. Devam edilsin mi?', () => {
+          const data = loadUserData();
+          pushToFirebase('data', data);
+          pushToFirebase('rates', liveRates);
+          showToast('Yerel veri buluta gönderildi. Diğer cihazlarda "Yükle" butonuna basınca görünecek.', 'success');
+        });
       });
       document.getElementById('btnAddNewRate').addEventListener('click', addNewRateFromModal);
       document.getElementById('btnAdd').addEventListener('click', openModal);
