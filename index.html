@@ -575,7 +575,7 @@
           </p>
         </div>
 
-        <!-- Interactive Formula Generator Generator -->
+        <!-- Interactive Formula Generator -->
         <div class="bg-slate-900 text-white p-4 rounded-xl space-y-3 shadow-sm border border-slate-800">
           <div class="font-bold text-xs uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
             <span>🛠️</span> Hızlı Formül Üretici
@@ -1116,7 +1116,7 @@
     let activeChartDays = 90;
     let currentEditingId = null;
     let converterRateMode = 'sell'; 
-    let autoUpdateEnabled = true; // 60sn otomatik güncelleme döngüsü
+    let autoUpdateEnabled = true;
     let autoUpdateIntervalId = null;
 
     function getAutoUpdateStorageKey() {
@@ -1301,15 +1301,81 @@
       return `https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${encodeURIComponent(symbol.toUpperCase())}`;
     }
 
+    // Robust Turkish Number Cleaner & Parser
+    function cleanTurkishNumber(valStr) {
+      if (valStr === null || valStr === undefined) return 0;
+      if (typeof valStr === 'number') return isNaN(valStr) ? 0 : valStr;
+
+      let str = valStr.toString().trim();
+      if (!str) return 0;
+
+      // Remove currency symbols, spaces, percent signs
+      str = str.replace(/[₺$€£%\sTLusdEURgbp]/gi, '').trim();
+      if (!str) return 0;
+
+      const hasComma = str.includes(',');
+      const hasDot = str.includes('.');
+
+      if (hasComma && hasDot) {
+        const lastComma = str.lastIndexOf(',');
+        const lastDot = str.lastIndexOf('.');
+        if (lastComma > lastDot) {
+          // e.g. 1.234,56 (Turkish format)
+          str = str.replace(/\./g, '').replace(',', '.');
+        } else {
+          // e.g. 1,234.56 (US format)
+          str = str.replace(/,/g, '');
+        }
+      } else if (hasComma) {
+        // e.g. 1234,56 or 1,5
+        str = str.replace(',', '.');
+      } else if (hasDot) {
+        // e.g. 1.500 or 38.85
+        const parts = str.split('.');
+        if (parts.length === 2) {
+          // If 3 digits after single dot (e.g. 1.500 or 100.000) and integer part is integer > 0, treat as thousand separator
+          if (parts[1].length === 3 && parseInt(parts[0], 10) > 0 && !str.startsWith('0.')) {
+            str = parts.join('');
+          }
+        } else if (parts.length > 2) {
+          str = parts.join('');
+        }
+      }
+
+      const num = parseFloat(str);
+      return isNaN(num) ? 0 : num;
+    }
+
+    function parseTurkishDate(dateStr) {
+      if (!dateStr) return new Date().toISOString().split('T')[0];
+      const str = dateStr.trim();
+      const parts = str.split(/[./-]/);
+      if (parts.length === 3) {
+        if (parts[0].length === 2 && parts[2].length === 4) {
+          return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        } else if (parts[0].length === 4) {
+          return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+        }
+      }
+      return new Date().toISOString().split('T')[0];
+    }
+
     function getCurrentUnitPrice(item) {
       if (!item) return 0;
-      if (item.type === 'deposit') return item.currentPrice || item.buyPrice || 0;
-      if (item.code && liveRates[item.code] && liveRates[item.code].price > 0) {
-        return liveRates[item.code].price;
-      }
+      
+      // 1. Primary Source: If currentPrice is explicitly present from Google Sheet or manual edit, use it!
       if (item.currentPrice && item.currentPrice > 0) {
         return item.currentPrice;
       }
+
+      if (item.type === 'deposit') return item.buyPrice || 0;
+
+      // 2. Secondary Source: Live Rates dictionary
+      if (item.code && liveRates[item.code] && liveRates[item.code].price > 0) {
+        return liveRates[item.code].price;
+      }
+
+      // 3. Fallback: Purchase Price
       return item.buyPrice || 0;
     }
 
@@ -1538,7 +1604,7 @@
             const html = await res.text();
             const match = html.match(/MainContent_PriceReturnBar_lblPrice[^>]*>([\d.,]+)</i) || html.match(/class="top-list-item"[^>]*>([\d.,]+)</i);
             if (match && match[1]) {
-              const priceNum = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
+              const priceNum = cleanTurkishNumber(match[1]);
               if (priceNum > 0) return priceNum;
             }
           }
@@ -2728,33 +2794,6 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
       showToast('Fiyat alarmı kuruldu.', 'success');
     }
 
-    function cleanTurkishNumber(valStr) {
-      if (!valStr) return 0;
-      let clean = valStr.toString().replace(/[^0-9.,-]/g, '').trim();
-      if (!clean) return 0;
-      
-      if (clean.includes(',') && clean.includes('.')) {
-        clean = clean.replace(/\./g, '').replace(',', '.');
-      } else if (clean.includes(',')) {
-        clean = clean.replace(',', '.');
-      }
-      return parseFloat(clean) || 0;
-    }
-
-    function parseTurkishDate(dateStr) {
-      if (!dateStr) return new Date().toISOString().split('T')[0];
-      const str = dateStr.trim();
-      const parts = str.split(/[./-]/);
-      if (parts.length === 3) {
-        if (parts[0].length === 2 && parts[2].length === 4) {
-          return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-        } else if (parts[0].length === 4) {
-          return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-        }
-      }
-      return new Date().toISOString().split('T')[0];
-    }
-
     function updateFormulaGuideGenerator() {
       const type = document.getElementById('fgType').value;
       const code = (document.getElementById('fgCode').value || 'TGE').trim().toUpperCase();
@@ -3292,7 +3331,7 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
         btn.disabled = true;
         btn.innerHTML = '⏳ Güncelleniyor...';
         try {
-          const result = await fetchLiveRatesFromAPI();
+          await fetchLiveRatesFromAPI();
           await syncGoogleSheetData(true);
           renderApp();
           showToast('Piyasa kurları ve Google Sheet verisi güncellendi.', 'success');
