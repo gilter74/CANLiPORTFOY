@@ -6,6 +6,8 @@
   <title>Portföy Takip Uygulaması - Grafik Analizli & AI Yorumculu</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -113,6 +115,7 @@
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Canlı Piyasa Bağlı
           </span>
           <span id="lastUpdated" class="text-xs font-mono text-slate-400">Son Güncelleme: --:--</span>
+          <span id="fbSyncStatus" class="text-xs font-mono text-slate-400">☁ Bekleniyor...</span>
         </div>
       </div>
 
@@ -780,6 +783,73 @@
   </div>
 
   <script>
+    // --- Firebase Kurulumu (Realtime Database, auth yok) ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyArF8yUBBgaMN5w7wVvqA0351aR3CVIQYw",
+      authDomain: "canliportfoy.firebaseapp.com",
+      databaseURL: "https://canliportfoy-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "canliportfoy",
+      storageBucket: "canliportfoy.firebasestorage.app",
+      messagingSenderId: "621684856167",
+      appId: "1:621684856167:web:4697f3c4f0599d45d9cbc2"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const fbDb = firebase.database();
+
+    function sanitizeCode(code) {
+      return (code || 'default-user').replace(/[.#$\[\]\/]/g, '_');
+    }
+
+    function getFirebasePath() {
+      const code = sanitizeCode(document.getElementById('authKod')?.value.trim());
+      return 'portfoyler/' + code;
+    }
+
+    function updateFirebaseStatus(ok) {
+      const el = document.getElementById('fbSyncStatus');
+      if (!el) return;
+      if (ok) {
+        el.textContent = '☁ Senkron (' + new Date().toLocaleTimeString('tr-TR') + ')';
+        el.className = 'text-xs font-mono text-emerald-500';
+      } else {
+        el.textContent = '☁ Bağlantı hatası';
+        el.className = 'text-xs font-mono text-rose-500';
+      }
+    }
+
+    function pushToFirebase(node, payload) {
+      try {
+        const path = getFirebasePath() + '/' + node;
+        fbDb.ref(path).set(payload)
+          .then(() => updateFirebaseStatus(true))
+          .catch((e) => { console.error('Firebase yazma hatası:', e); updateFirebaseStatus(false); });
+      } catch(e) { console.error(e); }
+    }
+
+    async function fetchFromFirebase() {
+      try {
+        const path = getFirebasePath();
+        const snap = await fbDb.ref(path).once('value');
+        const val = snap.val();
+        updateFirebaseStatus(true);
+        if (val) {
+          if (val.data) {
+            localStorage.setItem(getStorageKey(), JSON.stringify(val.data));
+          }
+          if (val.rates) {
+            liveRates = { ...default2026Rates, ...val.rates };
+            localStorage.setItem(getRatesStorageKey(), JSON.stringify(liveRates));
+          }
+          return true;
+        }
+        return false;
+      } catch(e) {
+        console.error('Firebase okuma hatası:', e);
+        updateFirebaseStatus(false);
+        return false;
+      }
+    }
+
     let confirmCallback = null;
     let activeCategoryTab = 'all';
     let allocChartInstance = null;
@@ -832,6 +902,7 @@
       try {
         localStorage.setItem(getRatesStorageKey(), JSON.stringify(liveRates));
       } catch(e) {}
+      pushToFirebase('rates', liveRates);
     }
 
     function loadLiveRatesFromStorage() {
@@ -892,6 +963,7 @@
       } catch(e) {
         console.error("Local storage save error:", e);
       }
+      pushToFirebase('data', data);
     }
 
     function getCurrentUnitPrice(item) {
@@ -2324,6 +2396,8 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
 
     document.addEventListener('DOMContentLoaded', async () => {
       loadLiveRatesFromStorage();
+      await fetchFromFirebase();
+      loadLiveRatesFromStorage();
 
       const savedAiKey = localStorage.getItem('portfoy_gemini_api_key');
       if (savedAiKey && document.getElementById('aiApiKey')) {
@@ -2366,9 +2440,11 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
         }
       });
 
-      document.getElementById('btnEnter').addEventListener('click', () => {
+      document.getElementById('btnEnter').addEventListener('click', async () => {
         loadLiveRatesFromStorage();
+        const found = await fetchFromFirebase();
         renderApp();
+        showToast(found ? 'Portföy verileri Firebase\'den yüklendi.' : 'Bu koda ait kayıtlı veri bulunamadı, yeni portföy başlatıldı.', found ? 'success' : 'info');
       });
       document.getElementById('btnAddNewRate').addEventListener('click', addNewRateFromModal);
       document.getElementById('btnAdd').addEventListener('click', openModal);
