@@ -116,6 +116,10 @@
           </span>
           <span id="lastUpdated" class="text-xs font-mono text-slate-400">Son Güncelleme: --:--</span>
           <span id="fbSyncStatus" class="text-xs font-mono text-slate-400">☁ Bekleniyor...</span>
+          <button id="btnToggleAutoUpdate" class="text-xs px-2.5 py-0.5 rounded-full font-semibold border transition-colors flex items-center gap-1.5" title="Otomatik güncellemeyi aç/kapat">
+            <span id="autoUpdateDot" class="w-2 h-2 rounded-full"></span>
+            <span id="autoUpdateLabel">Otomatik Güncelleme</span>
+          </button>
         </div>
       </div>
 
@@ -1074,6 +1078,41 @@
     let activeChartDays = 90;
     let currentEditingId = null;
     let converterRateMode = 'sell'; // Default to 'sell' (Satış Kuru) for target conversion
+    let autoUpdateEnabled = true; // Otomatik (60sn) piyasa güncellemesi açık/kapalı
+    let autoUpdateIntervalId = null;
+
+    function getAutoUpdateStorageKey() {
+      const code = document.getElementById('authKod')?.value.trim() || 'default-user';
+      return 'portfoy_auto_update_' + code;
+    }
+
+    function loadAutoUpdatePref() {
+      try {
+        const raw = localStorage.getItem(getAutoUpdateStorageKey());
+        autoUpdateEnabled = raw === null ? true : raw === '1';
+      } catch(e) { autoUpdateEnabled = true; }
+      renderAutoUpdateToggle();
+    }
+
+    function saveAutoUpdatePref() {
+      try { localStorage.setItem(getAutoUpdateStorageKey(), autoUpdateEnabled ? '1' : '0'); } catch(e) {}
+    }
+
+    function renderAutoUpdateToggle() {
+      const btn = document.getElementById('btnToggleAutoUpdate');
+      const dot = document.getElementById('autoUpdateDot');
+      const label = document.getElementById('autoUpdateLabel');
+      if (!btn || !dot || !label) return;
+      if (autoUpdateEnabled) {
+        btn.className = "text-xs px-2.5 py-0.5 rounded-full font-semibold border transition-colors flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border-emerald-200";
+        dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
+        label.textContent = "Otomatik Güncelleme: Açık (60sn)";
+      } else {
+        btn.className = "text-xs px-2.5 py-0.5 rounded-full font-semibold border transition-colors flex items-center gap-1.5 bg-slate-100 text-slate-500 border-slate-200";
+        dot.className = "w-2 h-2 rounded-full bg-slate-400";
+        label.textContent = "Otomatik Güncelleme: Kapalı";
+      }
+    }
 
     const default2026Rates = {
       'GRAM': { name: 'Gram Altın (TL)', price: 3780.00, sellPrice: 3810.00, change: 0.85, category: 'gold' },
@@ -1243,22 +1282,36 @@
       deposit: { label: 'Mevduat & Katılım', shortLabel: 'Mevduat', icon: '🏦', badgeClass: 'cat-deposit-bg border', borderClass: 'border-l-4 border-indigo-500', bgCardClass: 'bg-gradient-to-br from-indigo-50/60 to-white border-indigo-200', textAccent: 'text-indigo-700', chartColor: '#6366f1' }
     };
 
+    async function fetchWithTimeout(url, opts, timeoutMs) {
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), timeoutMs || 6000);
+      try {
+        const res = await fetch(url, { ...(opts || {}), signal: controller.signal });
+        return res;
+      } finally {
+        clearTimeout(t);
+      }
+    }
+
     async function fetchTefasFundPriceProxy(fundCode) {
       if (!fundCode) return null;
       const cleanCode = fundCode.toUpperCase().trim();
       const targetUrl = `https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${cleanCode}`;
-      
+
+      // Birden fazla CORS proxy denenir; biri yavaş/kapalıysa diğerine geçilir (timeout ile).
       const proxies = [
-        `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+        `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
+        `https://thingproxy.freeboard.io/fetch/${targetUrl}`
       ];
 
       for (const proxyUrl of proxies) {
         try {
-          const res = await fetch(proxyUrl, { cache: "no-store" });
-          if (res.ok) {
+          const res = await fetchWithTimeout(proxyUrl, { cache: "no-store" }, 6000);
+          if (res && res.ok) {
             const html = await res.text();
-            // Search for price span in TEFAS html: id="MainContent_PriceReturnBar_lblPrice"
+            // TEFAS sayfasındaki fiyat alanını yakala: id="MainContent_PriceReturnBar_lblPrice"
             const match = html.match(/MainContent_PriceReturnBar_lblPrice[^>]*>([\d.,]+)</i) || html.match(/class="top-list-item"[^>]*>([\d.,]+)</i);
             if (match && match[1]) {
               const priceNum = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
@@ -1266,7 +1319,7 @@
             }
           }
         } catch (e) {
-          // silently continue to next proxy
+          // Bu proxy başarısız oldu, sıradakine geç
         }
       }
       return null;
@@ -1276,6 +1329,8 @@
       const apiBadge = document.getElementById('apiBadge');
       const lastUpdated = document.getElementById('lastUpdated');
       let fxSuccess = false;
+      let fundOkCount = 0;
+      let fundFailCount = 0;
 
       // 1. Fetch Currency Exchange Rates
       try {
@@ -1350,6 +1405,9 @@
             const liveTefasPrice = await fetchTefasFundPriceProxy(sym);
             if (liveTefasPrice && liveTefasPrice > 0) {
               liveRates[sym].price = parseFloat(liveTefasPrice.toFixed(4));
+              fundOkCount++;
+            } else {
+              fundFailCount++;
             }
           }
         }
@@ -1371,6 +1429,8 @@
 
       saveLiveRatesToStorage();
       try { evaluatePriceAlarms(); } catch(e) {}
+
+      return { fxSuccess, fundOkCount, fundFailCount, timeStr };
     }
 
     function updateGoldFromOns() {
@@ -2974,6 +3034,7 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
 
       document.getElementById('btnEnter').addEventListener('click', async () => {
         loadLiveRatesFromStorage();
+        loadAutoUpdatePref();
         const found = await fetchFromFirebase();
         renderApp();
         showToast(found ? 'Portföy verileri Firebase\'den yüklendi.' : 'Bu koda ait kayıtlı veri bulunamadı, yeni portföy başlatıldı.', found ? 'success' : 'info');
@@ -3093,10 +3154,41 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
       document.getElementById('btnSave').addEventListener('click', saveAsset);
       document.getElementById('fType').addEventListener('change', updateFormFields);
 
-      document.getElementById('btnRefreshMarket').addEventListener('click', async () => {
-        await fetchLiveRatesFromAPI();
-        renderApp();
-        showToast('Piyasa kurları yenilendi.', 'info');
+      document.getElementById('btnRefreshMarket').addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '⏳ Güncelleniyor...';
+        try {
+          const result = await fetchLiveRatesFromAPI();
+          renderApp();
+          if (result) {
+            const total = result.fundOkCount + result.fundFailCount;
+            if (total > 0) {
+              if (result.fundFailCount === 0) {
+                showToast(`Kurlar ve ${result.fundOkCount} TEFAS fonu anlık olarak güncellendi.`, 'success');
+              } else if (result.fundOkCount > 0) {
+                showToast(`${result.fundOkCount}/${total} fon güncellendi. ${result.fundFailCount} fon için TEFAS'a şu an ulaşılamadı, önceki fiyat korundu.`, 'info');
+              } else {
+                showToast(`Döviz/altın güncellendi, ancak TEFAS fon fiyatlarına şu an ulaşılamadı (proxy engeli olabilir). Önceki fiyatlar korundu.`, 'error');
+              }
+            } else {
+              showToast('Döviz ve altın kurları anlık olarak güncellendi.', 'success');
+            }
+          } else {
+            showToast('Piyasa kurları yenilendi.', 'info');
+          }
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = originalHtml;
+        }
+      });
+
+      document.getElementById('btnToggleAutoUpdate').addEventListener('click', () => {
+        autoUpdateEnabled = !autoUpdateEnabled;
+        saveAutoUpdatePref();
+        renderAutoUpdateToggle();
+        showToast(autoUpdateEnabled ? 'Otomatik güncelleme açıldı (her 60 saniyede bir).' : 'Otomatik güncelleme kapatıldı. "Kurları Yenile" ile istediğinizde anlık güncelleyebilirsiniz.', 'info');
       });
 
       document.getElementById('btnWatchAdd').addEventListener('click', openAddWatchlistModal);
@@ -3122,13 +3214,16 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
 
       // Initial Firebase fetch & live price fetch on startup
       loadLiveRatesFromStorage();
+      loadAutoUpdatePref();
       try { await fetchFromFirebase(); } catch(e) {}
       loadLiveRatesFromStorage();
 
       try { await fetchLiveRatesFromAPI(); } catch(e) {}
       renderApp();
 
-      setInterval(async () => {
+      if (autoUpdateIntervalId) clearInterval(autoUpdateIntervalId);
+      autoUpdateIntervalId = setInterval(async () => {
+        if (!autoUpdateEnabled) return; // Kullanıcı otomatik güncellemeyi kapattıysa döngü hiçbir şey yapmaz
         try {
           await fetchLiveRatesFromAPI();
           renderApp();
