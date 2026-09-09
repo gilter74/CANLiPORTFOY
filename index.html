@@ -984,6 +984,29 @@
   </div>
 
   <script>
+    // --- Firebase Initialization ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyArF8yUBBgaMN5w7wVvqA0351aR3CVIQYw",
+      authDomain: "canliportfoy.firebaseapp.com",
+      databaseURL: "https://canliportfoy-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "canliportfoy",
+      storageBucket: "canliportfoy.firebasestorage.app",
+      messagingSenderId: "621684856167",
+      appId: "1:621684856167:web:4697f3c4f0599d45d9cbc2"
+    };
+
+    let fbDb = null;
+    try {
+      if (typeof firebase !== 'undefined') {
+        if (!firebase.apps || !firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        fbDb = firebase.database();
+      }
+    } catch(e) {
+      console.warn("Firebase başlatma uyarısı:", e);
+    }
+
     function sanitizeCode(code) {
       return (code || 'default-user').replace(/[.#$\[\]\/]/g, '_');
     }
@@ -3097,7 +3120,11 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
         renderPortfolioTable(loadUserData().portfolio || []);
       });
 
-      // Initial live price fetch and periodic auto-refresh timer (every 60 seconds)
+      // Initial Firebase fetch & live price fetch on startup
+      loadLiveRatesFromStorage();
+      try { await fetchFromFirebase(); } catch(e) {}
+      loadLiveRatesFromStorage();
+
       try { await fetchLiveRatesFromAPI(); } catch(e) {}
       renderApp();
 
@@ -3109,3 +3136,5 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
       }, 60000);
     });
   </script>
+</body>
+</html>
