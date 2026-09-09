@@ -558,7 +558,7 @@
 
       <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-3">
         <button id="importCancel" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200">İptal</button>
-        <button id="importSubmit" class="px-5 py-2 rounded-lg text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">Varlıkları Aktar</button>
+        <button id="importSubmit" class="px-5 py-2 rounded-lg text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">Ekle ve Kaydet</button>
       </div>
     </div>
   </div>
@@ -823,10 +823,10 @@
     function pushToFirebase(node, payload) {
       try {
         const path = getFirebasePath() + '/' + node;
-        fbDb.ref(path).set(payload)
-          .then(() => updateFirebaseStatus(true))
-          .catch((e) => { console.error('Firebase yazma hatası:', e); updateFirebaseStatus(false); });
-      } catch(e) { console.error(e); }
+        return fbDb.ref(path).set(payload)
+          .then(() => { updateFirebaseStatus(true); return true; })
+          .catch((e) => { console.error('Firebase yazma hatası:', e); updateFirebaseStatus(false); return false; });
+      } catch(e) { console.error(e); return Promise.resolve(false); }
     }
 
     async function fetchFromFirebase() {
@@ -877,6 +877,22 @@
 
     let liveRates = JSON.parse(JSON.stringify(default2026Rates));
 
+    function showCloudSavedBanner(count, ok = true) {
+      const existing = document.getElementById('cloudSavedBanner');
+      if (existing) existing.remove();
+      const banner = document.createElement('div');
+      banner.id = 'cloudSavedBanner';
+      banner.className = `fixed top-4 left-1/2 -translate-x-1/2 z-[9999] px-6 py-3 rounded-xl shadow-lg font-bold text-sm flex items-center gap-2 transition-opacity duration-500 ${ok ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`;
+      banner.innerHTML = ok
+        ? `<span>✅</span><span>${count} varlık kaydedildi ve buluta gönderildi</span>`
+        : `<span>⚠️</span><span>Kaydedildi ama buluta gönderilemedi — bağlantını kontrol et</span>`;
+      document.body.appendChild(banner);
+      setTimeout(() => {
+        banner.style.opacity = '0';
+        setTimeout(() => banner.remove(), 500);
+      }, 4000);
+    }
+
     function showToast(message, type = 'info') {
       try {
         const container = document.getElementById('toastContainer');
@@ -905,7 +921,7 @@
       try {
         localStorage.setItem(getRatesStorageKey(), JSON.stringify(liveRates));
       } catch(e) {}
-      pushToFirebase('rates', liveRates);
+      return pushToFirebase('rates', liveRates);
     }
 
     function loadLiveRatesFromStorage() {
@@ -966,7 +982,7 @@
       } catch(e) {
         console.error("Local storage save error:", e);
       }
-      pushToFirebase('data', data);
+      return pushToFirebase('data', data);
     }
 
     function getCurrentUnitPrice(item) {
@@ -2071,12 +2087,15 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
       const data = loadUserData();
       let updatedPortfolio = replaceAll ? importedAssets : [...(data.portfolio || []), ...importedAssets];
 
-      saveUserData({ ...data, portfolio: updatedPortfolio });
+      const syncPromise = saveUserData({ ...data, portfolio: updatedPortfolio });
       document.getElementById('importModal').style.display = 'none';
       document.getElementById('importRawText').value = '';
       renderApp();
 
       showToast(`${importedAssets.length} adet varlık içe aktarıldı!`, 'success');
+      Promise.resolve(syncPromise).then((ok) => {
+        showCloudSavedBanner(importedAssets.length, ok !== false);
+      });
     }
 
     function updateFormFields() {
