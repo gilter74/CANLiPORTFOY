@@ -1204,8 +1204,25 @@
     function renderNewsItems(category, items, container) {
       container.innerHTML = '';
       items.forEach(item => {
-        const dateStr = item.pubDate ? new Date(item.pubDate).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'}) : 'Az önce';
-        const title = item.title || item.title_tr;
+        let dateStr = 'Az önce';
+        try {
+          if (item.pubDate) {
+            // Eğer veri zaten sadece "14:30" gibi bir saat formatındaysa doğrudan kullan
+            if (item.pubDate.length <= 5 && item.pubDate.includes(':')) {
+              dateStr = item.pubDate;
+            } else {
+              // Rss2Json "YYYY-MM-DD HH:MM:SS" formatında döndürür, JS Date için düzeltelim
+              const d = new Date(item.pubDate.replace(' ', 'T'));
+              if (!isNaN(d.getTime())) {
+                dateStr = d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
+              }
+            }
+          }
+        } catch (e) {
+          dateStr = item.pubDate || 'Az önce';
+        }
+        
+        const title = item.title || item.title_tr || 'Piyasa Haber Gelişmesi';
         const link = item.link || '#';
         
         const div = document.createElement('div');
@@ -1252,6 +1269,56 @@
         ];
       }
     }
+
+    let activeEditAssetId = null;
+
+    window.openEditModal = function(assetId) {
+      const data = loadUserData();
+      const item = (data.portfolio || []).find(i => i.id === assetId);
+      if (!item) return;
+      activeEditAssetId = assetId;
+
+      document.getElementById('editCode').value = item.code || '';
+      document.getElementById('editType').value = item.type || 'fund';
+      document.getElementById('editAmount').value = item.amount || 0;
+      document.getElementById('editBuyPrice').value = item.buyPrice || 0;
+
+      document.getElementById('editAssetModal').style.display = 'flex';
+    };
+
+    window.saveEditedAsset = function() {
+      const data = loadUserData();
+      const idx = (data.portfolio || []).findIndex(i => i.id === activeEditAssetId);
+      if (idx === -1) return;
+
+      const code = document.getElementById('editCode').value.trim().toUpperCase();
+      const type = document.getElementById('editType').value;
+      const amount = parseFloat(document.getElementById('editAmount').value) || 0;
+      const buyPrice = parseFloat(document.getElementById('editBuyPrice').value) || 0;
+
+      if (!code || amount <= 0) {
+        showToast('Kod ve miktar geçerli olmalı.', 'error');
+        return;
+      }
+
+      data.portfolio[idx] = {
+        ...data.portfolio[idx],
+        code, type, amount, buyPrice,
+        name: code
+      };
+      saveUserData(data);
+      document.getElementById('editAssetModal').style.display = 'none';
+      renderApp();
+      showToast('Varlık güncellendi.', 'success');
+    };
+
+    window.deleteAsset = function(id) {
+      const data = loadUserData();
+      data.portfolio = (data.portfolio || []).filter(i => i.id !== id);
+      saveUserData(data);
+      renderApp();
+      showToast("Varlık silindi.", "info");
+    };
 
     window.onload = function() {
       loadLiveRatesFromStorage();
