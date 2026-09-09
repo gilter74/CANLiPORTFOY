@@ -6,8 +6,6 @@
   <title>Portföy Takip Uygulaması - Google Sheets Canlı Senkronizasyon</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
@@ -57,15 +55,6 @@
     ::-webkit-scrollbar-thumb {
       background: #cbd5e1;
       border-radius: 3px;
-    }
-
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.25rem 0.6rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 600;
     }
 
     .modal-backdrop {
@@ -170,7 +159,7 @@
       <div class="flex items-center gap-2 mb-3">
         <input id="aiApiKey" type="password" placeholder="Gemini API Key (Opsiyonel)" title="Kendi Gemini API anahtarınızı girerseniz gerçek AI analizi kullanılır"
                class="bg-slate-950/80 border border-indigo-800/60 rounded-xl px-3 py-2 text-xs text-indigo-100 placeholder-indigo-300/40 focus:outline-none focus:ring-1 focus:ring-indigo-400 w-56 font-mono">
-        <span class="text-[11px] text-indigo-300/60">Boş bırakılırsa gerçek portföy verinizle otomatik algoritmik analiz kullanılır.</span>
+        <span class="text-[11px] text-indigo-300/60">Boş bırakılırsa gerçek portföy verinizle otomatik akıllı analiz kullanılır.</span>
       </div>
 
       <div id="aiOutputContainer" class="bg-slate-950/60 rounded-xl p-4 md:p-5 border border-indigo-900/40 min-h-[90px] flex items-center justify-center text-center">
@@ -499,7 +488,7 @@
     let autoUpdateIntervalId = null;
     let converterInitialized = false;
 
-    // --- Canlı Piyasa Fiyatları (Altın / Döviz / TEFAS) ---
+    // --- Live Market Rates (Gold / FX / TEFAS) ---
     const defaultLiveRates = {
       'GRAM': { name: 'Gram Altın (TL)', price: 3780.00, change: 0, category: 'gold' },
       'CEYREK': { name: 'Çeyrek Altın (TL)', price: 6180.00, change: 0, category: 'gold' },
@@ -539,6 +528,7 @@
       try { localStorage.setItem(getWatchlistStorageKey(), JSON.stringify(list)); } catch(e) {}
     }
 
+    // --- TEFAS Link Helper ---
     function getTefasUrl(symbol) {
       if (!symbol) return 'https://www.tefas.gov.tr/';
       const clean = symbol.toUpperCase().trim();
@@ -1042,7 +1032,7 @@
       showToast("Varlık silindi.", "info");
     };
 
-    // --- Grafik & Dönemsel Analiz Modalı ---
+    // --- Chart Modal & Historical Analysis ---
     let activeChartAssetId = null;
     let activeChartDays = 90;
     let detailChartInstance = null;
@@ -1127,8 +1117,8 @@
         dataPoints = [buyPrice, curPrice];
         qualityNote.style.display = 'block';
         qualityNote.textContent = item.type === 'fund'
-          ? '⚠️ TEFAS, altyapı değişikliği (2026) sonrası fonlar için ücretsiz genel erişime açık geçmiş fiyat verisi sağlamıyor. Burada gösterilen yalnızca gerçek iki nokta: alım fiyatınız ve şu anki güncel fiyat — ara dönemler için uydurma veri gösterilmiyor.'
-          : '⚠️ Bu varlık türü için güvenilir ücretsiz geçmiş veri kaynağı yok. Gösterilen yalnızca alım fiyatınız ile güncel fiyat.';
+          ? '⚠️ TEFAS altyapı kısıtlamaları nedeniyle geçmiş fon verileri için gerçek günlük API akışı bulunmuyor. Gösterilen noktalar alım fiyatınız ve güncel fiyattır.'
+          : '⚠️ Bu varlık için gerçek günlük geçmiş fiyat akışı bulunamadı. Alım ve güncel fiyat noktaları gösterilmektedir.';
       } else {
         qualityNote.style.display = 'none';
       }
@@ -1147,7 +1137,7 @@
         data: {
           labels,
           datasets: [{
-            label: isRealHistory ? 'Gerçek Piyasa Fiyatı' : 'Bilinen Gerçek Noktalar (Alım → Güncel)',
+            label: isRealHistory ? 'Gerçek Piyasa Fiyatı' : 'Alım → Güncel Değer',
             data: dataPoints,
             borderColor: lineColor,
             backgroundColor: isGain ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)',
@@ -1174,7 +1164,7 @@
       });
     }
 
-    // --- Varlık Düzenleme Modalı ---
+    // --- Asset Edit Modal ---
     let activeEditAssetId = null;
 
     window.openEditModal = function(assetId) {
@@ -1228,7 +1218,7 @@
       showToast('Varlık güncellendi.', 'success');
     }
 
-    // --- İzleme Listesi ---
+    // --- Watchlist Rendering ---
     function renderWatchlist() {
       const grid = document.getElementById('watchlistGrid');
       const empty = document.getElementById('watchlistEmpty');
@@ -1313,7 +1303,7 @@
       });
     }
 
-    // --- Anlık Çevirici ---
+    // --- Currency Converter ---
     function initConverterOptions() {
       const convFrom = document.getElementById('convFrom');
       const convTo = document.getElementById('convTo');
@@ -1352,7 +1342,7 @@
       document.getElementById('convNote').textContent = `1 ${fromKey} = ${(fromPrice / (toPrice || 1)).toLocaleString('tr-TR', { maximumFractionDigits: 4 })} ${toKey}`;
     }
 
-    // --- AI Analiz ---
+    // --- AI Analysis ---
     function generateAlgorithmicAnalysis(portfolio, totalCost, totalValue, netPL, netPLPct) {
       let healthScore = 70;
       if (netPLPct > 0) healthScore += Math.min(25, netPLPct * 0.4);
@@ -1451,10 +1441,13 @@
         autoUpdateEnabled = !autoUpdateEnabled;
         saveAutoUpdatePref();
         renderAutoUpdateToggle();
-        showToast(autoUpdateEnabled ? 'Otomatik güncelleme açıldı (her 60 saniyede bir).' : 'Otomatik güncelleme kapatıldı.', 'info');
+        showToast(autoUpdateEnabled ? 'Otomatik güncelleme açıldı.' : 'Otomatik güncelleme kapatıldı.', 'info');
       };
 
       document.getElementById('btnSyncNowHeader').onclick = () => {
+        Promise.all([syncGoogleSheetData(false), fetchLiveRatesFromAPI()]).then(() => renderApp());
+      };
+      document.getElementById('btnSyncNowEmpty').onclick = () => {
         Promise.all([syncGoogleSheetData(false), fetchLiveRatesFromAPI()]).then(() => renderApp());
       };
 
