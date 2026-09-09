@@ -1569,33 +1569,90 @@
     }
 
     // --- TÜRKİYE PİYASALARI HABERLERİ (HÜRRİYET BİGPARA / DÜNYA / INVESTING TR) ---
-    async function fetchMarketNews() {
-      const rssFeeds = {
-        gold: 'https://www.dunya.com/rss/altin',
-        fx: 'https://bigpara.hurriyet.com.tr/rss/',
-        fund: 'https://www.tr.investing.com/rss/news_25.rss'
-      };
+    // Gerçek, doğrulanmış Türkçe finans RSS kaynakları (rss2json'a bağımlı değil, XML doğrudan ayrıştırılıyor)
+    const REAL_NEWS_FEEDS = [
+      'https://www.doviz.com/news/rss',
+      'https://www.bloomberght.com/rss'
+    ];
 
-      for (const category of Object.keys(rssFeeds)) {
-        const container = document.getElementById(`newsList-${category}`);
-        if (!container) continue;
-
+    async function fetchRssXml(feedUrl) {
+      const attempts = [
+        feedUrl, // bazı feed'ler doğrudan CORS'a izin veriyor, önce onu dene
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(feedUrl)}`,
+        `https://corsproxy.io/?url=${encodeURIComponent(feedUrl)}`
+      ];
+      for (const url of attempts) {
         try {
-          const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssFeeds[category])}`;
-          const res = await fetchWithTimeout(proxyUrl, {}, 8000);
-          
+          const res = await fetchWithTimeout(url, { cache: 'no-store' }, 8000);
           if (res && res.ok) {
-            const data = await res.json();
-            if (data && data.items && data.items.length > 0) {
-              renderNewsItems(category, data.items.slice(0, 5), container);
-              continue;
-            }
+            const text = await res.text();
+            if (text && text.includes('<item')) return text;
           }
-          renderNewsUnavailable(category, container);
-        } catch (e) {
-          renderNewsUnavailable(category, container);
-        }
+        } catch(e) {}
       }
+      return null;
+    }
+
+    function parseRssItems(xmlText) {
+      try {
+        const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+        if (doc.querySelector('parsererror')) return [];
+        return Array.from(doc.querySelectorAll('item')).map(item => ({
+          title: (item.querySelector('title')?.textContent || '').trim(),
+          link: (item.querySelector('link')?.textContent || '#').trim(),
+          pubDate: (item.querySelector('pubDate')?.textContent || '').trim()
+        })).filter(i => i.title);
+      } catch(e) { return []; }
+    }
+
+    function classifyNewsItem(title) {
+      const t = normalizeTr(title);
+      if (t.includes('ALTIN') || t.includes('ONS ') || t.includes('KIYMETLI MADEN')) return 'gold';
+      if (t.includes('DOLAR') || t.includes('EURO') || t.includes('KUR') || t.includes('DOVIZ') || t.includes('TCMB') || t.includes('FAIZ')) return 'fx';
+      if (t.includes('BORSA') || t.includes('BIST') || t.includes('HISSE') || t.includes(' FON') || t.includes('TEFAS') || t.includes('YATIRIMCI')) return 'fund';
+      return null;
+    }
+
+    async function fetchMarketNews() {
+      let allItems = [];
+      for (const feedUrl of REAL_NEWS_FEEDS) {
+        const xml = await fetchRssXml(feedUrl);
+        if (xml) allItems = allItems.concat(parseRssItems(xml));
+      }
+
+      if (allItems.length === 0) {
+        ['gold', 'fx', 'fund'].forEach(cat => {
+          const container = document.getElementById(`newsList-${cat}`);
+          if (container) renderNewsUnavailable(cat, container);
+        });
+        return;
+      }
+
+      allItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+
+      const buckets = { gold: [], fx: [], fund: [] };
+      const overflow = [];
+      allItems.forEach(item => {
+        const cat = classifyNewsItem(item.title);
+        if (cat) buckets[cat].push(item);
+        else overflow.push(item);
+      });
+
+      // Sınıflandırılamayan (genel ekonomi/gündem) haberlerle boş kalan panelleri sırayla doldur
+      let oi = 0;
+      ['gold', 'fx', 'fund'].forEach(cat => {
+        while (buckets[cat].length < 5 && oi < overflow.length) {
+          buckets[cat].push(overflow[oi]); oi++;
+        }
+      });
+
+      ['gold', 'fx', 'fund'].forEach(cat => {
+        const container = document.getElementById(`newsList-${cat}`);
+        if (!container) return;
+        if (buckets[cat].length > 0) renderNewsItems(cat, buckets[cat].slice(0, 5), container);
+        else renderNewsUnavailable(cat, container);
+      });
     }
 
     function renderNewsItems(category, items, container) {
@@ -1604,7 +1661,7 @@
         let dateStr = 'Az önce';
         try {
           if (item.pubDate) {
-            const d = new Date(item.pubDate.replace(' ', 'T'));
+            const d = new Date(item.pubDate);
             if (!isNaN(d.getTime())) dateStr = d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
           }
         } catch (e) {}
@@ -1629,14 +1686,14 @@
 
     function renderNewsUnavailable(category, container) {
       const sourceLinks = {
-        gold: 'https://www.dunya.com/rss/altin',
-        fx: 'https://bigpara.hurriyet.com.tr/',
+        gold: 'https://www.doviz.com/haber/emtia-haberleri',
+        fx: 'https://www.doviz.com/',
         fund: 'https://www.tefas.gov.tr/'
       };
       container.innerHTML = `
         <div class="text-center py-4">
           <span class="text-lg block mb-1">📡</span>
-          <p class="text-[11px] text-slate-400 leading-snug">Canlı haber şu anda alınamadı (kaynak servis yanıt vermiyor).</p>
+          <p class="text-[11px] text-slate-400 leading-snug">Canlı haber şu anda alınamadı (kaynak servise ulaşılamadı).</p>
           <a href="${sourceLinks[category] || '#'}" target="_blank" rel="noopener noreferrer" class="text-[10px] font-bold text-sky-600 hover:underline mt-1 inline-block">Kaynağı doğrudan aç ↗</a>
         </div>
       `;
