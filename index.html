@@ -1155,7 +1155,9 @@
     }
 
     function renderAllocationChart(catTotals) {
-      const ctx = document.getElementById('allocChart')?.getContext('2d');
+      const canvas = document.getElementById('allocChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
       if (!ctx) return;
       if (allocChartInstance) allocChartInstance.destroy();
       
@@ -1394,12 +1396,10 @@
       renderAlarmsList();
       checkPriceAlarms();
 
-      // Setup Realtime Firebase listener so mobile/desktop updates instantly
       if (dbRef) {
         dbRef.on('value', (snapshot) => {
           const cloudData = snapshot.val();
           if (cloudData && typeof cloudData === 'object') {
-            const localData = loadUserData();
             localStorage.setItem('portfoy_app_data', JSON.stringify(cloudData));
             renderApp();
           }
