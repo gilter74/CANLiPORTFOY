@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portföy Takip Uygulaması - Otomatik Tablo Bağlantılı & AI Yorumculu</title>
+  <title>Portföy Takip Uygulaması - Otomatik Google Sheets Bağlantılı & AI Yorumculu</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -109,50 +109,54 @@
           <span class="text-3xl">💼</span>
           <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900">Portföy Takip Uygulaması</h1>
         </div>
-        <div class="flex items-center gap-3 mt-1.5 flex-wrap">
-          <p class="text-xs md:text-sm text-slate-500 font-medium">Haftalık/Aylık Grafik Analizi, Otomatik Tablo Senkronizasyonu & AI Yorumcu.</p>
-          <span id="apiBadge" class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Canlı Piyasa & TEFAS Bağlı
+        <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+          <p class="text-xs md:text-sm text-slate-500 font-medium">Google Sheets Canlı Senkronizasyon, TEFAS & AI Yorumcu.</p>
+          
+          <!-- Google Sheets Live Status Badge -->
+          <span id="sheetSyncBadge" class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1 cursor-pointer hover:bg-emerald-100 transition-colors" title="Google Sheet Otomatik Bağlantısı">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Google Sheet Bağlı (60sn)
           </span>
+
+          <span id="apiBadge" class="bg-sky-50 text-sky-700 border border-sky-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-sky-500 animate-pulse"></span> Canlı Piyasa & TEFAS
+          </span>
+          
           <span id="lastUpdated" class="text-xs font-mono text-slate-400">Son Güncelleme: --:--</span>
           <span id="fbSyncStatus" class="text-xs font-mono text-slate-400">☁ Bekleniyor...</span>
-          <span id="sheetSyncStatus" class="text-xs font-mono text-slate-400">📗 Sheet: Bekleniyor...</span>
-          <button id="btnOpenSheetConfig" class="text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-2.5 py-0.5 rounded-full transition-colors" title="Google Sheets bağlantısını düzenle">
-            ⚙️ Sheet Ayarı
-          </button>
+          
           <button id="btnToggleAutoUpdate" class="text-xs px-2.5 py-0.5 rounded-full font-semibold border transition-colors flex items-center gap-1.5" title="Otomatik güncellemeyi aç/kapat">
-            <span id="autoUpdateDot" class="w-2 h-2 rounded-full"></span>
-            <span id="autoUpdateLabel">Otomatik Güncelleme</span>
+            <span id="autoUpdateDot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span id="autoUpdateLabel">Otomatik Güncelleme (60sn)</span>
           </button>
         </div>
       </div>
 
       <!-- Action Toolbar -->
       <div class="flex flex-wrap items-center gap-2">
-        <button id="btnOpenAIModal" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs md:text-sm px-4 py-2 rounded-xl transition-all shadow-md flex items-center gap-2 transform active:scale-95">
+        <button id="btnOpenSheetSettings" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
+          <span>📊</span> Sheet Bağlantısı
+        </button>
+        <button id="btnOpenAIModal" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5 transform active:scale-95">
           <span>🤖</span> AI Analiz Yap
         </button>
-        <button id="btnOpenFormulaGuide" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors shadow-sm flex items-center gap-1.5" title="Google Sheets formülleri ve canlı veri bağlantı rehberi">
-          <span>⚡</span> Formül & Tablo Rehberi
+        <button id="btnOpenFormulaGuide" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 font-bold text-xs md:text-sm px-3 py-2 rounded-xl transition-colors shadow-sm flex items-center gap-1.5" title="Google Sheets formülleri ve canlı veri bağlantı rehberi">
+          <span>⚡</span> Formül Rehberi
         </button>
-        <button id="btnOpenImport" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
-          <span>📊</span> Tablodan Aktar
-        </button>
-        <button id="btnOpenAlarms" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
+        <button id="btnOpenAlarms" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs md:text-sm px-3 py-2 rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
           <span>🔔</span> Alarmlar (<span id="alarmCountBadge">0</span>)
         </button>
-        <button id="btnResetData" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold text-xs md:text-sm px-3 py-2 rounded-xl transition-colors border border-rose-200" title="Tüm verileri temizle">
+        <button id="btnResetData" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold text-xs md:text-sm px-2.5 py-2 rounded-xl transition-colors border border-rose-200" title="Tüm verileri temizle">
           🗑️ Sıfırla
         </button>
 
-        <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-200 flex items-center gap-2">
+        <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-200 flex items-center gap-1.5">
           <input id="authKod" type="text" placeholder="Portföy Kodu" value="goksin-portfoy"
                  class="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono w-28 md:w-32">
-          <button id="btnEnter" class="bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs md:text-sm px-3 py-1 rounded-lg transition-colors">
+          <button id="btnEnter" class="bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs md:text-sm px-2.5 py-1 rounded-lg transition-colors">
             Yükle
           </button>
-          <button id="btnPushCloud" class="bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs md:text-sm px-3 py-1 rounded-lg transition-colors" title="Bu cihazdaki mevcut portföy verisini Firebase'e gönderir">
-            ☁ Buluta Gönder
+          <button id="btnPushCloud" class="bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs md:text-sm px-2.5 py-1 rounded-lg transition-colors" title="Bu cihazdaki mevcut portföy verisini Firebase'e gönderir">
+            ☁ Bulut
           </button>
         </div>
       </div>
@@ -174,7 +178,7 @@
         <div class="w-1 h-full bg-sky-500 absolute left-0 top-0"></div>
         <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Güncel Portföy Değeri</div>
         <div class="text-2xl md:text-3xl font-bold font-mono text-slate-900 mt-2" id="sValue">₺0,00</div>
-        <div class="text-xs text-sky-600 mt-1 font-medium" id="sDailyStatus">Canlı Piyasa ve TEFAS Fiyatları Bağlı</div>
+        <div class="text-xs text-sky-600 mt-1 font-medium" id="sDailyStatus">Canlı Google Sheet ve TEFAS Bağlı</div>
       </div>
 
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
@@ -281,13 +285,16 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 class="text-xl font-bold text-slate-900">Varlık Portföyüm</h2>
-            <p class="text-xs text-slate-500">Portföyünüzdeki tüm enstrümanların detayları, TEFAS analiz bağlantıları ve canlı fiyat takibi</p>
+            <p class="text-xs text-slate-500">Google Sheet tablonuzdan otomatik senkronize edilen ve canlı takip edilen varlıklarınız</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <input type="text" id="tableSearch" placeholder="Varlık ara (Kod veya İsim)..." 
                    class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 w-48 md:w-64">
+            <button class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-3.5 py-2 rounded-lg transition-colors shadow-sm" id="btnSyncNowHeader">
+              🔄 Sheet'ten Canlı Çek
+            </button>
             <button class="bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors shadow-sm" id="btnAdd">
-              + Manuel Varlık Ekle
+              + Manuel Ekle
             </button>
           </div>
         </div>
@@ -342,11 +349,11 @@
           <span class="text-4xl block mb-2">📥</span>
           <h3 class="text-lg font-bold text-slate-800">Portföyünüz Henüz Boş</h3>
           <p class="text-sm text-slate-500 max-w-md mx-auto mt-1 mb-4">
-            Google Sheets tablonuzdan kopyaladığınız satırları aktarabilir veya manuel varlık ekleyebilirsiniz.
+            Bağlı Google Sheet tablonuzdan verileri çekebilir, kopyaladığınız satırları yapıştırabilir veya manuel varlık ekleyebilirsiniz.
           </p>
           <div class="flex items-center justify-center gap-3">
-            <button class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors" id="btnEmptyImport">
-              📊 Tablodan Yapıştır
+            <button class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors" id="btnSyncNowEmpty">
+              🔄 Google Sheet'ten Otomatik Çek
             </button>
             <button class="bg-sky-600 hover:bg-sky-700 text-white font-medium text-sm px-4 py-2 rounded-lg transition-colors" id="btnEmptyAdd">
               + Manuel Ekle
@@ -470,6 +477,78 @@
 
   </div>
 
+  <!-- GOOGLE SHEETS DIRECT LINK & SYNC MODAL -->
+  <div id="sheetSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200">
+      <div class="bg-emerald-900 text-white p-4 px-6 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">📊</span>
+          <div>
+            <h3 class="font-bold text-lg">Google Sheets Canlı Bağlantı Ayarları</h3>
+            <p class="text-xs text-emerald-200">Tablonuz her 60 saniyede bir otomatik sorgulanır ve varlıklarınız güncellenir.</p>
+          </div>
+        </div>
+        <button id="sheetSettingsCloseX" class="text-emerald-200 hover:text-white text-xl">✕</button>
+      </div>
+
+      <div class="p-5 md:p-6 space-y-4 max-h-[80vh] overflow-y-auto text-xs md:text-sm">
+        
+        <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl space-y-2 text-emerald-950">
+          <div class="font-bold flex items-center gap-2 text-sm text-emerald-900">
+            <span>⚡</span> Aktif Google Sheet Tablosu
+          </div>
+          <p class="text-xs leading-relaxed text-emerald-800">
+            Tablonuzun web erişimine ("Bağlantıya sahip herkes görüntüleyebilir") açık olduğundan emin olun. 
+            Aşağıdaki adresten her 60 saniyede bir canlı CSV verisi çekilmektedir.
+          </p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Google Sheets Düzenleme / Paylaşım Linki</label>
+          <input id="inputSheetUrl" type="text" 
+                 value="https://docs.google.com/spreadsheets/d/1B66p3v4jeXPZaHDBoL51uVSZKLFzuPbrMaAtdom6qMg/edit?gid=1411824524#gid=1411824524"
+                 placeholder="https://docs.google.com/spreadsheets/d/.../edit?gid=..." 
+                 class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 font-bold">
+        </div>
+
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1 font-mono text-xs text-slate-600">
+          <div class="flex justify-between items-center">
+            <span>Son Otomatik Senkronizasyon:</span>
+            <strong id="sheetLastSyncTime" class="text-slate-900">--:--:--</strong>
+          </div>
+          <div class="flex justify-between items-center">
+            <span>Çekilen Satır Sayısı:</span>
+            <strong id="sheetRowCount" class="text-emerald-700">0 Satır</strong>
+          </div>
+          <div class="flex justify-between items-center">
+            <span>Durum:</span>
+            <strong id="sheetStatusText" class="text-emerald-600">Hazır</strong>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 pt-2">
+          <input type="checkbox" id="chkAutoSyncSheet" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+          <label for="chkAutoSyncSheet" class="text-xs font-semibold text-slate-700">Her 60 saniyede bir bu tablodan otomatik güncellensin</label>
+        </div>
+
+      </div>
+
+      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between flex-wrap gap-2">
+        <button id="btnOpenSheetDirectLink" class="text-xs font-bold text-emerald-800 hover:underline flex items-center gap-1">
+          🔗 Tabloyu Google Sheets'te Aç ↗
+        </button>
+        <div class="flex items-center gap-2">
+          <button id="btnForceSyncNow" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm flex items-center gap-1.5">
+            <span>🔄</span> Şimdi Canlı Senkronize Et
+          </button>
+          <button id="sheetSettingsCloseBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors">
+            Kapat
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- GOOGLE SHEETS / EXCEL FORMULA GUIDE MODAL -->
   <div id="formulaGuideModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden border border-slate-200">
@@ -492,7 +571,7 @@
           </h4>
           <p class="text-xs leading-relaxed text-amber-800">
             Google Sheets tablonuzu hazırlarken güncel fiyat sütununa aşağıdaki formülleri yazarsanız tablonuz kendini sürekli canlı tutar.
-            Bu tabloyu uygulamaya kopyaladığınızda uygulama fiyatları <strong>otomatik algılar ve eşleştirir</strong>.
+            Bu tabloyu uygulamaya bağladığınızda uygulama fiyatları <strong>otomatik algılar ve eşleştirir</strong>.
           </p>
         </div>
 
@@ -653,54 +732,6 @@
         <button id="chartModalCloseBtn" class="px-5 py-2 rounded-xl text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors ml-auto">
           Kapat
         </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- BULK IMPORT MODAL -->
-  <div id="importModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
-    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200">
-      <div class="bg-emerald-900 text-white p-4 px-6 flex items-center justify-between">
-        <div>
-          <h3 class="font-bold text-lg">Google Sheets / Excel'den Toplu Yapıştır</h3>
-          <p class="text-xs text-emerald-200">5 Sütunlu veya 9 Sütunlu Tablolar Tam Desteklenir.</p>
-        </div>
-        <button id="importCloseX" class="text-emerald-200 hover:text-white text-xl">✕</button>
-      </div>
-
-      <div class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
-        <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl text-xs text-emerald-950 space-y-2">
-          <div class="font-bold flex items-center gap-1 text-sm text-emerald-900">
-            <span>📋</span> Desteklenen Sütun Sıralaması (5 veya 9 Sütun):
-          </div>
-          <div class="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-9 gap-1 text-center font-mono text-[10px] font-semibold">
-            <div class="bg-white p-1 rounded border border-emerald-300">1. Varlık Kodu</div>
-            <div class="bg-white p-1 rounded border border-emerald-300">2. Alım Tarihi</div>
-            <div class="bg-white p-1 rounded border border-emerald-300">3. Adet/Maliyet</div>
-            <div class="bg-white p-1 rounded border border-emerald-300">4. Birim Alış</div>
-            <div class="bg-white p-1 rounded border border-emerald-300">5. Toplam Maliyet</div>
-            <div class="bg-white p-1 rounded border border-emerald-300">6. Güncel Fiyat</div>
-            <div class="bg-white p-1 rounded border border-emerald-300">7. Güncel Değer</div>
-            <div class="bg-white p-1 rounded border border-emerald-300">8. Kâr / Zarar</div>
-            <div class="bg-white p-1 rounded border border-emerald-300">9. K/Z (%)</div>
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Kopyalanan Tablo Verileri</label>
-          <textarea id="importRawText" rows="7" placeholder="Google Sheets'ten kopyaladığınız satırları buraya yapıştırın (CTRL+V)..." 
-                    class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <input type="checkbox" id="chkReplaceAll" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
-          <label for="chkReplaceAll" class="text-xs font-medium text-slate-700">Mevcut listemi temizle ve bu verilerle değiştir</label>
-        </div>
-      </div>
-
-      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-3">
-        <button id="importCancel" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200">İptal</button>
-        <button id="importSubmit" class="px-5 py-2 rounded-lg text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">Ekle ve Kaydet</button>
       </div>
     </div>
   </div>
@@ -976,44 +1007,6 @@
   <!-- TOAST CONTAINER -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-  <!-- GOOGLE SHEETS CANLI BAĞLANTI AYAR MODALI -->
-  <div id="sheetConfigModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
-    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border border-slate-200">
-      <div class="bg-emerald-900 text-white p-4 px-6 flex items-center justify-between">
-        <div>
-          <h3 class="font-bold text-lg">Google Sheets Canlı Bağlantısı</h3>
-          <p class="text-xs text-emerald-200">Bu sayfadaki portföy her 60 saniyede bir bu Sheet'ten otomatik çekilir.</p>
-        </div>
-        <button id="sheetConfigCloseX" class="text-emerald-200 hover:text-white text-xl">✕</button>
-      </div>
-
-      <div class="p-6 space-y-4">
-        <div class="flex items-center gap-2">
-          <input type="checkbox" id="chkSheetEnabled" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
-          <label for="chkSheetEnabled" class="text-xs font-medium text-slate-700">Google Sheets ile canlı bağlantıyı etkinleştir</label>
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Google Sheets Linki (veya Sheet ID)</label>
-          <input id="sheetConfigUrlInput" type="text" placeholder="https://docs.google.com/spreadsheets/d/.../edit?gid=..." 
-                 class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500">
-          <p class="text-[11px] text-slate-400 mt-1">Sekmenin (gid) linkte olduğundan emin olun — linki tarayıcıdan olduğu gibi kopyalayıp yapıştırmanız yeterli.</p>
-        </div>
-
-        <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-[11px] text-emerald-900 space-y-1">
-          <div class="font-bold">📌 Beklenen sütun sırası:</div>
-          <div>Varlık Tipi | Varlık Kodu | Alım Tarihi | Adet/Miktar | Birim Alım Maliyeti | Toplam Maliyet | Güncel Fiyat | ...</div>
-          <div>Sheet'iniz zaten bu sırada olduğu için ek bir işlem yapmanız gerekmiyor.</div>
-        </div>
-      </div>
-
-      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-3">
-        <button id="sheetConfigCancel" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200">İptal</button>
-        <button id="sheetConfigSave" class="px-5 py-2 rounded-lg text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">Kaydet ve Şimdi Senkronize Et</button>
-      </div>
-    </div>
-  </div>
-
   <!-- CONFIRMATION MODAL -->
   <div id="confirmModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden border border-slate-200 p-5 space-y-4">
@@ -1052,6 +1045,9 @@
     } catch(e) {
       console.warn("Firebase başlatma uyarısı:", e);
     }
+
+    // Default Target Google Sheet URL
+    const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1B66p3v4jeXPZaHDBoL51uVSZKLFzuPbrMaAtdom6qMg/edit?gid=1411824524#gid=1411824524";
 
     function sanitizeCode(code) {
       return (code || 'default-user').replace(/[.#$\[\]\/]/g, '_');
@@ -1119,13 +1115,30 @@
     let activeDetailAsset = null;
     let activeChartDays = 90;
     let currentEditingId = null;
-    let converterRateMode = 'sell'; // Default to 'sell' (Satış Kuru) for target conversion
-    let autoUpdateEnabled = true; // Otomatik (60sn) piyasa güncellemesi açık/kapalı
+    let converterRateMode = 'sell'; 
+    let autoUpdateEnabled = true; // 60sn otomatik güncelleme döngüsü
     let autoUpdateIntervalId = null;
 
     function getAutoUpdateStorageKey() {
       const code = document.getElementById('authKod')?.value.trim() || 'default-user';
       return 'portfoy_auto_update_' + code;
+    }
+
+    function getSheetUrlStorageKey() {
+      const code = document.getElementById('authKod')?.value.trim() || 'default-user';
+      return 'portfoy_sheet_url_' + code;
+    }
+
+    function getSavedSheetUrl() {
+      try {
+        return localStorage.getItem(getSheetUrlStorageKey()) || DEFAULT_SHEET_URL;
+      } catch(e) { return DEFAULT_SHEET_URL; }
+    }
+
+    function setSavedSheetUrl(url) {
+      try {
+        localStorage.setItem(getSheetUrlStorageKey(), url);
+      } catch(e) {}
     }
 
     function loadAutoUpdatePref() {
@@ -1148,215 +1161,12 @@
       if (autoUpdateEnabled) {
         btn.className = "text-xs px-2.5 py-0.5 rounded-full font-semibold border transition-colors flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border-emerald-200";
         dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-pulse";
-        label.textContent = "Otomatik Güncelleme: Açık (60sn)";
+        label.textContent = "Otomatik Güncelleme (60sn): Açık";
       } else {
         btn.className = "text-xs px-2.5 py-0.5 rounded-full font-semibold border transition-colors flex items-center gap-1.5 bg-slate-100 text-slate-500 border-slate-200";
         dot.className = "w-2 h-2 rounded-full bg-slate-400";
         label.textContent = "Otomatik Güncelleme: Kapalı";
       }
-    }
-
-    // --- Google Sheets Canlı Bağlantı (varsayılan: kullanıcının GÜNCEL PORTFÖY sayfası) ---
-    const DEFAULT_SHEET_ID = '1B66p3v4jeXPZaHDBoL51uVSZKLFzuPbrMaAtdom6qMg';
-    const DEFAULT_SHEET_GID = '1411824524';
-    let sheetSyncTimer = null;
-
-    function getSheetConfigStorageKey() {
-      const code = document.getElementById('authKod')?.value.trim() || 'default-user';
-      return 'portfoy_sheet_config_' + code;
-    }
-
-    function loadSheetConfig() {
-      try {
-        const raw = localStorage.getItem(getSheetConfigStorageKey());
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && parsed.sheetId) return parsed;
-        }
-      } catch(e) {}
-      return { sheetId: DEFAULT_SHEET_ID, gid: DEFAULT_SHEET_GID, enabled: true };
-    }
-
-    function saveSheetConfig(cfg) {
-      try { localStorage.setItem(getSheetConfigStorageKey(), JSON.stringify(cfg)); } catch(e) {}
-    }
-
-    function parseSheetUrlOrId(input) {
-      if (!input) return null;
-      const idMatch = input.match(/\/d\/([a-zA-Z0-9-_]+)/);
-      const gidMatch = input.match(/[?&#]gid=(\d+)/);
-      if (idMatch) {
-        return { sheetId: idMatch[1], gid: gidMatch ? gidMatch[1] : '0' };
-      }
-      // Doğrudan ID girilmiş olabilir
-      if (/^[a-zA-Z0-9-_]{20,}$/.test(input.trim())) {
-        return { sheetId: input.trim(), gid: '0' };
-      }
-      return null;
-    }
-
-    // Türkçe (1.234,56) veya standart (1234.56) formatlardan güvenle sayı ayrıştırır
-    function parseFlexibleNumber(raw) {
-      if (raw === null || raw === undefined) return 0;
-      let s = String(raw).trim().replace(/[^\d.,\-]/g, '');
-      if (!s) return 0;
-      const lastComma = s.lastIndexOf(',');
-      const lastDot = s.lastIndexOf('.');
-      if (lastComma === -1 && lastDot === -1) return parseFloat(s) || 0;
-      if (lastComma > lastDot) {
-        s = s.replace(/\./g, '').replace(',', '.');
-      } else if (lastDot > lastComma) {
-        s = s.replace(/,/g, '');
-      }
-      if (s.endsWith('.')) s = s.slice(0, -1);
-      const val = parseFloat(s);
-      return isNaN(val) ? 0 : val;
-    }
-
-    function parseSheetDate(raw) {
-      if (!raw) return '';
-      const str = raw.trim();
-      const monthMap = { jan:'01', feb:'02', mar:'03', apr:'04', may:'05', jun:'06', jul:'07', aug:'08', sep:'09', oct:'10', nov:'11', dec:'12' };
-      // 07.05.2025 / 03.06.2026
-      let m = str.match(/^(\d{1,2})[.\/](\d{1,2})[.\/](\d{2,4})$/);
-      if (m) {
-        let yr = m[3].length === 2 ? '20' + m[3] : m[3];
-        return `${yr}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;
-      }
-      // 29May25 / 9Mar26
-      m = str.match(/^(\d{1,2})([A-Za-z]{3})(\d{2,4})$/);
-      if (m && monthMap[m[2].toLowerCase()]) {
-        let yr = m[3].length === 2 ? '20' + m[3] : m[3];
-        return `${yr}-${monthMap[m[2].toLowerCase()]}-${m[1].padStart(2,'0')}`;
-      }
-      return '';
-    }
-
-    // Basit CSV satır ayrıştırıcı (tırnak içi virgülleri korur)
-    function parseCsvLine(line) {
-      const result = [];
-      let cur = '';
-      let inQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (ch === '"') {
-          if (inQuotes && line[i+1] === '"') { cur += '"'; i++; }
-          else inQuotes = !inQuotes;
-        } else if (ch === ',' && !inQuotes) {
-          result.push(cur); cur = '';
-        } else {
-          cur += ch;
-        }
-      }
-      result.push(cur);
-      return result;
-    }
-
-    function mapSheetAssetType(typeRaw) {
-      const t = (typeRaw || '').toUpperCase();
-      if (t.includes('FON')) return 'fund';
-      if (t.includes('DÖV') || t.includes('DOV') || t.includes('DÖVİZ') || t.includes('DÖVIZ')) return 'fx';
-      if (t.includes('ALT')) return 'gold';
-      if (t.includes('MEV')) return 'deposit';
-      if (t.includes('EURO')) return 'eurobond';
-      return 'fund';
-    }
-
-    async function fetchSheetCsvText(sheetId, gid) {
-      const targetUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
-      // 1. Doğrudan dene (herkese açık sayfalarda gviz endpoint genelde CORS'a izin verir)
-      try {
-        const res = await fetchWithTimeout(targetUrl, { cache: 'no-store' }, 7000);
-        if (res && res.ok) return await res.text();
-      } catch(e) {}
-      // 2. Proxy üzerinden dene
-      const proxies = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
-      ];
-      for (const p of proxies) {
-        try {
-          const res = await fetchWithTimeout(p, { cache: 'no-store' }, 7000);
-          if (res && res.ok) return await res.text();
-        } catch(e) {}
-      }
-      return null;
-    }
-
-    function updateSheetSyncStatus(state, extra) {
-      const el = document.getElementById('sheetSyncStatus');
-      if (!el) return;
-      const now = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-      if (state === 'ok') {
-        el.className = 'text-xs font-mono text-emerald-600';
-        el.textContent = `📗 Sheet Bağlı: Son senkron ${now} (${extra || 0} varlık)`;
-      } else if (state === 'off') {
-        el.className = 'text-xs font-mono text-slate-400';
-        el.textContent = '📗 Sheet bağlantısı kapalı';
-      } else {
-        el.className = 'text-xs font-mono text-rose-500';
-        el.textContent = `📗 Sheet'e ulaşılamadı (${now})`;
-      }
-    }
-
-    async function syncPortfolioFromGoogleSheet() {
-      const cfg = loadSheetConfig();
-      if (!cfg || !cfg.enabled || !cfg.sheetId) {
-        updateSheetSyncStatus('off');
-        return { ok: false, reason: 'disabled' };
-      }
-
-      const csvText = await fetchSheetCsvText(cfg.sheetId, cfg.gid || '0');
-      if (!csvText) {
-        updateSheetSyncStatus('error');
-        return { ok: false, reason: 'fetch-failed' };
-      }
-
-      const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
-      const sheetItems = [];
-
-      lines.forEach((line, idx) => {
-        if (idx === 0) return; // başlık satırı
-        const cols = parseCsvLine(line).map(c => c.replace(/^"|"$/g, '').trim());
-        const typeRaw = cols[0] || '';
-        const codeRaw = (cols[1] || '').trim();
-        if (!codeRaw) return;
-
-        const dateRaw = cols[2] || '';
-        const amount = parseFlexibleNumber(cols[3]);
-        const buyPrice = parseFlexibleNumber(cols[4]);
-        const currentPrice = parseFlexibleNumber(cols[6]);
-
-        if (amount <= 0) return;
-
-        const type = mapSheetAssetType(typeRaw);
-        const code = codeRaw.toUpperCase();
-
-        sheetItems.push({
-          id: 'sheet_' + code + '_' + idx,
-          type,
-          code,
-          name: code,
-          amount,
-          buyPrice,
-          currentPrice: currentPrice > 0 ? currentPrice : null,
-          buyDate: parseSheetDate(dateRaw),
-          note: 'Google Sheets (Canlı Bağlantı)'
-        });
-      });
-
-      if (sheetItems.length === 0) {
-        updateSheetSyncStatus('error');
-        return { ok: false, reason: 'no-rows' };
-      }
-
-      const data = loadUserData();
-      const manualItems = (data.portfolio || []).filter(i => !String(i.id).startsWith('sheet_'));
-      const updatedPortfolio = [...manualItems, ...sheetItems];
-      saveUserData({ ...data, portfolio: updatedPortfolio });
-
-      updateSheetSyncStatus('ok', sheetItems.length);
-      return { ok: true, count: sheetItems.length };
     }
 
     const default2026Rates = {
@@ -1377,22 +1187,6 @@
     };
 
     let liveRates = JSON.parse(JSON.stringify(default2026Rates));
-
-    function showCloudSavedBanner(count, ok = true) {
-      const existing = document.getElementById('cloudSavedBanner');
-      if (existing) existing.remove();
-      const banner = document.createElement('div');
-      banner.id = 'cloudSavedBanner';
-      banner.className = `fixed top-4 left-1/2 -translate-x-1/2 z-[9999] px-6 py-3 rounded-xl shadow-lg font-bold text-sm flex items-center gap-2 transition-opacity duration-500 ${ok ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`;
-      banner.innerHTML = ok
-        ? `<span>✅</span><span>${count} varlık kaydedildi ve buluta gönderildi</span>`
-        : `<span>⚠️</span><span>Kaydedildi ama buluta gönderilemedi — bağlantını kontrol et</span>`;
-      document.body.appendChild(banner);
-      setTimeout(() => {
-        banner.style.opacity = '0';
-        setTimeout(() => banner.remove(), 500);
-      }, 4000);
-    }
 
     function showToast(message, type = 'info') {
       try {
@@ -1527,6 +1321,194 @@
       deposit: { label: 'Mevduat & Katılım', shortLabel: 'Mevduat', icon: '🏦', badgeClass: 'cat-deposit-bg border', borderClass: 'border-l-4 border-indigo-500', bgCardClass: 'bg-gradient-to-br from-indigo-50/60 to-white border-indigo-200', textAccent: 'text-indigo-700', chartColor: '#6366f1' }
     };
 
+    // --- GOOGLE SHEETS LIVE CSV FETCH & PARSER ENGINE ---
+    function extractGoogleSheetCsvUrl(rawUrl) {
+      if (!rawUrl) return null;
+      let sheetId = null;
+      let gid = "0";
+
+      const idMatch = rawUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      if (idMatch && idMatch[1]) sheetId = idMatch[1];
+
+      const gidMatch = rawUrl.match(/gid=([0-9]+)/);
+      if (gidMatch && gidMatch[1]) gid = gidMatch[1];
+
+      if (!sheetId) return null;
+
+      return {
+        directUrl: `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`,
+        exportUrl: `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`
+      };
+    }
+
+    async function fetchGoogleSheetCsvText(rawUrl) {
+      const endpoints = extractGoogleSheetCsvUrl(rawUrl);
+      if (!endpoints) throw new Error("Geçersiz Google Sheet URL yapısı");
+
+      const urlsToTry = [
+        endpoints.directUrl,
+        endpoints.exportUrl,
+        `https://corsproxy.io/?${encodeURIComponent(endpoints.directUrl)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(endpoints.directUrl)}`
+      ];
+
+      for (const url of urlsToTry) {
+        try {
+          const controller = new AbortController();
+          const t = setTimeout(() => controller.abort(), 6000);
+          const res = await fetch(url, { cache: "no-store", signal: controller.signal });
+          clearTimeout(t);
+          if (res.ok) {
+            const text = await res.text();
+            if (text && text.length > 5 && !text.includes('<!DOCTYPE html>')) {
+              return text;
+            }
+          }
+        } catch(e) {}
+      }
+      throw new Error("Google Sheets tablosuna erişilemedi. Lütfen bağlantı izinlerini kontrol edin.");
+    }
+
+    function parseCSVLine(line) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if ((char === ',' || char === '\t' || char === ';') && !inQuotes) {
+          result.push(current.trim().replace(/^"|"$/g, ''));
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      result.push(current.trim().replace(/^"|"$/g, ''));
+      return result;
+    }
+
+    async function syncGoogleSheetData(quiet = false) {
+      const sheetUrl = getSavedSheetUrl();
+      const statusText = document.getElementById('sheetStatusText');
+      const lastSyncTime = document.getElementById('sheetLastSyncTime');
+      const rowCountEl = document.getElementById('sheetRowCount');
+      const badge = document.getElementById('sheetSyncBadge');
+
+      if (statusText) statusText.textContent = "Güncelleniyor...";
+
+      try {
+        const csvText = await fetchGoogleSheetCsvText(sheetUrl);
+        const lines = csvText.split(/\r?\n/);
+        const importedAssets = [];
+
+        lines.forEach((line, index) => {
+          if (!line.trim()) return;
+
+          const cols = parseCSVLine(line);
+          const lowerCode = (cols[0] || '').toLowerCase();
+          if (lowerCode.includes('kod') || lowerCode.includes('tarih') || lowerCode.includes('varlık') || lowerCode.includes('maliyet')) {
+            return;
+          }
+
+          const rawCode = cols[0] || `VARLIK_${index + 1}`;
+          const rawDate = cols[1] || '';
+          const rawAmount = cols[2] || '1';
+          const rawUnitPrice = cols[3] || '0';
+          const rawTotalCost = cols[4] || '0';
+          const rawCurrentPrice = cols[5] || '';
+          const rawCurrentTotalValue = cols[6] || '';
+
+          let amount = cleanTurkishNumber(rawAmount) || 1;
+          let unitPrice = cleanTurkishNumber(rawUnitPrice);
+          const totalCost = cleanTurkishNumber(rawTotalCost);
+
+          if (unitPrice === 0 && totalCost > 0 && amount > 0) {
+            unitPrice = totalCost / amount;
+          }
+
+          let currentPrice = cleanTurkishNumber(rawCurrentPrice);
+          const currentTotalVal = cleanTurkishNumber(rawCurrentTotalValue);
+
+          if (currentPrice === 0 && currentTotalVal > 0 && amount > 0) {
+            currentPrice = currentTotalVal / amount;
+          }
+
+          const buyDate = parseTurkishDate(rawDate);
+          let upperCode = rawCode.toUpperCase().trim();
+          let type = 'fund';
+          
+          if (['GRAM', 'CEYREK', 'ONS', 'ALTIN', 'GOLD', 'XAU'].some(k => upperCode.includes(k))) {
+            type = 'gold';
+          } else if (['USD', 'EUR', 'GBP', 'DOLAR', 'EURO', 'STERLIN', 'CHF'].some(k => upperCode.includes(k))) {
+            type = 'fx';
+          } else if (upperCode.includes('MEVDUAT') || upperCode.includes('VADELI')) {
+            type = 'deposit';
+          } else if (upperCode.includes('EUROBOND') || upperCode.startsWith('TR0') || upperCode.startsWith('US')) {
+            type = 'eurobond';
+          } else {
+            type = 'fund';
+          }
+
+          let fullName = rawCode;
+          if (liveRates[upperCode]) fullName = liveRates[upperCode].name;
+          else if (type === 'fund') fullName = `${upperCode} TEFAS Fonu`;
+
+          if (!liveRates[upperCode]) {
+            liveRates[upperCode] = {
+              name: fullName,
+              price: currentPrice > 0 ? currentPrice : unitPrice,
+              change: 0,
+              category: type
+            };
+          } else if (currentPrice > 0) {
+            liveRates[upperCode].price = currentPrice;
+          }
+
+          importedAssets.push({
+            id: 'gs_' + upperCode + '_' + index,
+            type,
+            code: upperCode,
+            name: fullName,
+            amount,
+            buyPrice: unitPrice,
+            currentPrice: currentPrice > 0 ? currentPrice : null,
+            buyDate,
+            note: 'Google Sheet Otomatik Senkron'
+          });
+        });
+
+        if (importedAssets.length > 0) {
+          saveLiveRatesToStorage();
+          const data = loadUserData();
+          saveUserData({ ...data, portfolio: importedAssets });
+
+          const nowStr = new Date().toLocaleTimeString('tr-TR');
+          if (lastSyncTime) lastSyncTime.textContent = nowStr;
+          if (rowCountEl) rowCountEl.textContent = `${importedAssets.length} Satır Yüklendi`;
+          if (statusText) statusText.textContent = "✅ Senkronizasyon Başarılı";
+
+          if (badge) {
+            badge.className = "bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1 cursor-pointer hover:bg-emerald-100 transition-colors";
+            badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Google Sheet Bağlı (${nowStr})`;
+          }
+
+          renderApp();
+          if (!quiet) showToast(`Google Sheet'ten ${importedAssets.length} varlık anlık senkronize edildi.`, 'success');
+          return true;
+        }
+      } catch(e) {
+        console.warn("Google Sheet sync notice:", e);
+        if (statusText) statusText.textContent = "⚠️ " + (e.message || "Erişim Hatası");
+        if (badge) {
+          badge.className = "bg-amber-50 text-amber-700 border border-amber-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1 cursor-pointer";
+          badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500"></span> Google Sheet Bağlantısı`;
+        }
+        if (!quiet) showToast("Google Sheet yüklenemedi: " + e.message, 'error');
+      }
+      return false;
+    }
+
     async function fetchWithTimeout(url, opts, timeoutMs) {
       const controller = new AbortController();
       const t = setTimeout(() => controller.abort(), timeoutMs || 6000);
@@ -1543,12 +1525,10 @@
       const cleanCode = fundCode.toUpperCase().trim();
       const targetUrl = `https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${cleanCode}`;
 
-      // Birden fazla CORS proxy denenir; biri yavaş/kapalıysa diğerine geçilir (timeout ile).
       const proxies = [
         `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
         `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
-        `https://thingproxy.freeboard.io/fetch/${targetUrl}`
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
       ];
 
       for (const proxyUrl of proxies) {
@@ -1556,16 +1536,13 @@
           const res = await fetchWithTimeout(proxyUrl, { cache: "no-store" }, 6000);
           if (res && res.ok) {
             const html = await res.text();
-            // TEFAS sayfasındaki fiyat alanını yakala: id="MainContent_PriceReturnBar_lblPrice"
             const match = html.match(/MainContent_PriceReturnBar_lblPrice[^>]*>([\d.,]+)</i) || html.match(/class="top-list-item"[^>]*>([\d.,]+)</i);
             if (match && match[1]) {
               const priceNum = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
               if (priceNum > 0) return priceNum;
             }
           }
-        } catch (e) {
-          // Bu proxy başarısız oldu, sıradakine geç
-        }
+        } catch (e) {}
       }
       return null;
     }
@@ -1586,7 +1563,7 @@
             const usdTry = data.rates.TRY;
             if (liveRates['USD']) {
               liveRates['USD'].price = parseFloat(usdTry.toFixed(2));
-              liveRates['USD'].sellPrice = parseFloat((usdTry * 1.006).toFixed(2)); // Apply standard bank sell spread
+              liveRates['USD'].sellPrice = parseFloat((usdTry * 1.006).toFixed(2));
             }
             if (liveRates['EUR'] && data.rates.EUR) {
               const eurTry = usdTry / data.rates.EUR;
@@ -1624,7 +1601,7 @@
         updateGoldFromOns();
       } catch(e) {}
 
-      // 4. Ensure prices for all Watchlist & Portfolio TEFAS Fund Items exist in liveRates & fetch live if possible
+      // 4. TEFAS Fund Scraper for Watchlist & Portfolio
       try {
         const userData = loadUserData();
         const allSymbols = new Set();
@@ -1645,7 +1622,6 @@
             };
           }
 
-          // Try live TEFAS scraper fetch for TEFAS funds
           if (cat === 'fund') {
             const liveTefasPrice = await fetchTefasFundPriceProxy(sym);
             if (liveTefasPrice && liveTefasPrice > 0) {
@@ -2513,7 +2489,6 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
       showToast(`${symbol} izleme listesine eklendi ve canlı takibe alındı!`, 'success');
     }
 
-    /* Renders Gold and FX market prices grid */
     function renderLivePrices() {
       const container = document.getElementById('livePrices');
       if (!container) return;
@@ -2780,124 +2755,6 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
       return new Date().toISOString().split('T')[0];
     }
 
-    function processBulkImport() {
-      const rawText = document.getElementById('importRawText').value.trim();
-      const replaceAll = document.getElementById('chkReplaceAll').checked;
-
-      if (!rawText) {
-        showToast('Lütfen yapıştırılacak tablo verisini girin.', 'error');
-        return;
-      }
-
-      const lines = rawText.split('\n');
-      const importedAssets = [];
-
-      lines.forEach((line, index) => {
-        if (!line.trim()) return;
-
-        const lowerLine = line.toLowerCase();
-        if (lowerLine.includes('kod') || lowerLine.includes('tarih') || lowerLine.includes('varlık') || lowerLine.includes('maliyet')) {
-          return;
-        }
-
-        let cols = line.split('\t');
-        if (cols.length <= 1) cols = line.split(';');
-        if (cols.length <= 1 && line.includes(',')) cols = line.split(',');
-
-        cols = cols.map(c => c.trim());
-
-        const rawCode = cols[0] || `VARLIK_${index + 1}`;
-        const rawDate = cols[1] || '';
-        const rawAmount = cols[2] || '1';
-        const rawUnitPrice = cols[3] || '0';
-        const rawTotalCost = cols[4] || '0';
-        const rawCurrentPrice = cols[5] || '';
-        const rawCurrentTotalValue = cols[6] || '';
-
-        let amount = cleanTurkishNumber(rawAmount) || 1;
-        let unitPrice = cleanTurkishNumber(rawUnitPrice);
-        const totalCost = cleanTurkishNumber(rawTotalCost);
-
-        if (unitPrice === 0 && totalCost > 0 && amount > 0) {
-          unitPrice = totalCost / amount;
-        }
-
-        let currentPrice = cleanTurkishNumber(rawCurrentPrice);
-        const currentTotalVal = cleanTurkishNumber(rawCurrentTotalValue);
-
-        if (currentPrice === 0 && currentTotalVal > 0 && amount > 0) {
-          currentPrice = currentTotalVal / amount;
-        }
-
-        const buyDate = parseTurkishDate(rawDate);
-        let upperCode = rawCode.toUpperCase().trim();
-        let type = 'fund';
-        
-        if (['GRAM', 'CEYREK', 'ONS', 'ALTIN', 'GOLD', 'XAU'].some(k => upperCode.includes(k))) {
-          type = 'gold';
-        } else if (['USD', 'EUR', 'GBP', 'DOLAR', 'EURO', 'STERLIN', 'CHF'].some(k => upperCode.includes(k))) {
-          type = 'fx';
-        } else if (upperCode.includes('MEVDUAT') || upperCode.includes('VADELI')) {
-          type = 'deposit';
-        } else if (upperCode.includes('EUROBOND') || upperCode.startsWith('TR0') || upperCode.startsWith('US')) {
-          type = 'eurobond';
-        } else {
-          type = 'fund';
-        }
-
-        let fullName = rawCode;
-        if (liveRates[upperCode]) fullName = liveRates[upperCode].name;
-        else if (type === 'fund') fullName = `${upperCode} TEFAS Fonu`;
-
-        // Automatically bind symbol into live rates dictionary
-        if (!liveRates[upperCode]) {
-          liveRates[upperCode] = {
-            name: fullName,
-            price: currentPrice > 0 ? currentPrice : unitPrice,
-            change: 0,
-            category: type
-          };
-        } else if (currentPrice > 0) {
-          liveRates[upperCode].price = currentPrice;
-        }
-
-        importedAssets.push({
-          id: Date.now().toString() + '_' + index,
-          type,
-          code: upperCode,
-          name: fullName,
-          amount,
-          buyPrice: unitPrice,
-          currentPrice: currentPrice > 0 ? currentPrice : null,
-          buyDate,
-          note: 'Google Sheets Aktarımı'
-        });
-      });
-
-      if (importedAssets.length === 0) {
-        showToast('Geçerli bir veri satırı bulunamadı.', 'error');
-        return;
-      }
-
-      saveLiveRatesToStorage();
-      const data = loadUserData();
-      let updatedPortfolio = replaceAll ? importedAssets : [...(data.portfolio || []), ...importedAssets];
-
-      const syncPromise = saveUserData({ ...data, portfolio: updatedPortfolio });
-      document.getElementById('importModal').style.display = 'none';
-      document.getElementById('importRawText').value = '';
-      
-      // Trigger immediate live refresh for newly imported symbols
-      fetchLiveRatesFromAPI().then(() => {
-        renderApp();
-      });
-
-      showToast(`${importedAssets.length} adet varlık içe aktarıldı ve canlı takibe bağlandı!`, 'success');
-      Promise.resolve(syncPromise).then((ok) => {
-        showCloudSavedBanner(importedAssets.length, ok !== false);
-      });
-    }
-
     function updateFormulaGuideGenerator() {
       const type = document.getElementById('fgType').value;
       const code = (document.getElementById('fgCode').value || 'TGE').trim().toUpperCase();
@@ -3142,7 +2999,6 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
       const fromKey = convFrom.value;
       const toKey = convTo.value;
 
-      // Determine price based on converterRateMode ('buy' vs 'sell')
       const getUnitPrice = (key, isTarget) => {
         if (key === 'TRY') return 1;
         const rateObj = liveRates[key];
@@ -3221,6 +3077,44 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
 
     document.addEventListener('DOMContentLoaded', async () => {
       loadLiveRatesFromStorage();
+      
+      const inputSheetUrl = document.getElementById('inputSheetUrl');
+      if (inputSheetUrl) {
+        inputSheetUrl.value = getSavedSheetUrl();
+        inputSheetUrl.addEventListener('change', () => {
+          setSavedSheetUrl(inputSheetUrl.value.trim());
+        });
+      }
+
+      // Sheet modal openers
+      const openSheetSettingsModal = () => {
+        const modal = document.getElementById('sheetSettingsModal');
+        if (modal) modal.style.display = 'flex';
+      };
+
+      document.getElementById('sheetSyncBadge')?.addEventListener('click', openSheetSettingsModal);
+      document.getElementById('btnOpenSheetSettings')?.addEventListener('click', openSheetSettingsModal);
+      document.getElementById('sheetSettingsCloseX')?.addEventListener('click', () => {
+        document.getElementById('sheetSettingsModal').style.display = 'none';
+      });
+      document.getElementById('sheetSettingsCloseBtn')?.addEventListener('click', () => {
+        document.getElementById('sheetSettingsModal').style.display = 'none';
+      });
+
+      document.getElementById('btnOpenSheetDirectLink')?.addEventListener('click', () => {
+        window.open(getSavedSheetUrl(), '_blank');
+      });
+
+      const handleForceSheetSync = async () => {
+        const newUrl = document.getElementById('inputSheetUrl')?.value.trim();
+        if (newUrl) setSavedSheetUrl(newUrl);
+        await syncGoogleSheetData(false);
+      };
+
+      document.getElementById('btnForceSyncNow')?.addEventListener('click', handleForceSheetSync);
+      document.getElementById('btnSyncNowHeader')?.addEventListener('click', handleForceSheetSync);
+      document.getElementById('btnSyncNowEmpty')?.addEventListener('click', handleForceSheetSync);
+
       // Converter Rate Mode Switchers
       const btnConvRateBuy = document.getElementById('btnConvRateBuy');
       const btnConvRateSell = document.getElementById('btnConvRateSell');
@@ -3281,7 +3175,6 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
         loadLiveRatesFromStorage();
         loadAutoUpdatePref();
         const found = await fetchFromFirebase();
-        try { await syncPortfolioFromGoogleSheet(); } catch(e) {}
         renderApp();
         showToast(found ? 'Portföy verileri Firebase\'den yüklendi.' : 'Bu koda ait kayıtlı veri bulunamadı, yeni portföy başlatıldı.', found ? 'success' : 'info');
       });
@@ -3367,13 +3260,6 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
         document.getElementById('chartDetailModal').style.display = 'none';
       });
 
-      const openImport = () => document.getElementById('importModal').style.display = 'flex';
-      document.getElementById('btnOpenImport').addEventListener('click', openImport);
-      document.getElementById('btnEmptyImport').addEventListener('click', openImport);
-      document.getElementById('importCloseX').addEventListener('click', () => document.getElementById('importModal').style.display = 'none');
-      document.getElementById('importCancel').addEventListener('click', () => document.getElementById('importModal').style.display = 'none');
-      document.getElementById('importSubmit').addEventListener('click', processBulkImport);
-
       document.getElementById('btnOpenAlarms').addEventListener('click', () => {
         document.getElementById('alarmsPanelSection').scrollIntoView({ behavior: 'smooth' });
       });
@@ -3407,24 +3293,9 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
         btn.innerHTML = '⏳ Güncelleniyor...';
         try {
           const result = await fetchLiveRatesFromAPI();
-          const sheetResult = await syncPortfolioFromGoogleSheet();
+          await syncGoogleSheetData(true);
           renderApp();
-
-          const parts = [];
-          if (result) {
-            const total = result.fundOkCount + result.fundFailCount;
-            if (total > 0) {
-              if (result.fundFailCount === 0) parts.push(`Kurlar ve ${result.fundOkCount} TEFAS fonu güncellendi`);
-              else if (result.fundOkCount > 0) parts.push(`${result.fundOkCount}/${total} fon güncellendi`);
-              else parts.push('Döviz/altın güncellendi, TEFAS fonlarına şu an ulaşılamadı');
-            } else {
-              parts.push('Döviz ve altın kurları güncellendi');
-            }
-          }
-          if (sheetResult && sheetResult.ok) parts.push(`Sheet'ten ${sheetResult.count} varlık senkronize edildi`);
-          else if (sheetResult && sheetResult.reason !== 'disabled') parts.push('Sheet\'e şu an ulaşılamadı');
-
-          showToast(parts.length ? parts.join(' • ') + '.' : 'Piyasa kurları yenilendi.', (sheetResult && !sheetResult.ok && sheetResult.reason !== 'disabled') ? 'error' : 'success');
+          showToast('Piyasa kurları ve Google Sheet verisi güncellendi.', 'success');
         } finally {
           btn.disabled = false;
           btn.innerHTML = originalHtml;
@@ -3435,39 +3306,7 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
         autoUpdateEnabled = !autoUpdateEnabled;
         saveAutoUpdatePref();
         renderAutoUpdateToggle();
-        showToast(autoUpdateEnabled ? 'Otomatik güncelleme açıldı (her 60 saniyede bir).' : 'Otomatik güncelleme kapatıldı. "Kurları Yenile" ile istediğinizde anlık güncelleyebilirsiniz.', 'info');
-      });
-
-      // Google Sheets ayar modalı
-      document.getElementById('btnOpenSheetConfig').addEventListener('click', () => {
-        const cfg = loadSheetConfig();
-        document.getElementById('chkSheetEnabled').checked = cfg.enabled !== false;
-        document.getElementById('sheetConfigUrlInput').value = `https://docs.google.com/spreadsheets/d/${cfg.sheetId}/edit?gid=${cfg.gid}`;
-        document.getElementById('sheetConfigModal').style.display = 'flex';
-      });
-      document.getElementById('sheetConfigCloseX').addEventListener('click', () => document.getElementById('sheetConfigModal').style.display = 'none');
-      document.getElementById('sheetConfigCancel').addEventListener('click', () => document.getElementById('sheetConfigModal').style.display = 'none');
-      document.getElementById('sheetConfigSave').addEventListener('click', async () => {
-        const enabled = document.getElementById('chkSheetEnabled').checked;
-        const urlInput = document.getElementById('sheetConfigUrlInput').value.trim();
-        const parsed = parseSheetUrlOrId(urlInput);
-        if (enabled && !parsed) {
-          showToast('Geçerli bir Google Sheets linki veya ID girin.', 'error');
-          return;
-        }
-        const cfg = parsed ? { sheetId: parsed.sheetId, gid: parsed.gid, enabled } : { ...loadSheetConfig(), enabled };
-        saveSheetConfig(cfg);
-        document.getElementById('sheetConfigModal').style.display = 'none';
-        if (enabled) {
-          showToast('Sheet bağlantısı kaydedildi, senkronize ediliyor...', 'info');
-          const res = await syncPortfolioFromGoogleSheet();
-          renderApp();
-          if (res.ok) showToast(`${res.count} varlık Sheet'ten senkronize edildi.`, 'success');
-          else showToast('Sheet\'e ulaşılamadı. Sayfanın "bağlantıya sahip herkes görüntüleyebilir" olduğundan emin olun.', 'error');
-        } else {
-          updateSheetSyncStatus('off');
-          showToast('Sheet bağlantısı kapatıldı.', 'info');
-        }
+        showToast(autoUpdateEnabled ? 'Otomatik güncelleme açıldı (her 60 saniyede bir).' : 'Otomatik güncelleme kapatıldı.', 'info');
       });
 
       document.getElementById('btnWatchAdd').addEventListener('click', openAddWatchlistModal);
@@ -3491,22 +3330,24 @@ Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadı
         renderPortfolioTable(loadUserData().portfolio || []);
       });
 
-      // Initial Firebase fetch & live price fetch on startup
+      // Initial startup routine
       loadLiveRatesFromStorage();
       loadAutoUpdatePref();
       try { await fetchFromFirebase(); } catch(e) {}
       loadLiveRatesFromStorage();
 
+      // Execute Google Sheet sync on application boot
+      await syncGoogleSheetData(true);
       try { await fetchLiveRatesFromAPI(); } catch(e) {}
-      try { await syncPortfolioFromGoogleSheet(); } catch(e) { updateSheetSyncStatus('error'); }
       renderApp();
 
+      // Set 60-second automatic background update loop
       if (autoUpdateIntervalId) clearInterval(autoUpdateIntervalId);
       autoUpdateIntervalId = setInterval(async () => {
-        if (!autoUpdateEnabled) return; // Kullanıcı otomatik güncellemeyi kapattıysa döngü hiçbir şey yapmaz
+        if (!autoUpdateEnabled) return; 
         try {
+          await syncGoogleSheetData(true);
           await fetchLiveRatesFromAPI();
-          await syncPortfolioFromGoogleSheet();
           renderApp();
         } catch(e) {}
       }, 60000);
