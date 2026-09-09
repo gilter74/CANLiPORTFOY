@@ -196,8 +196,14 @@
         </div>
 
         <button id="btnTriggerAIAnalysis" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs md:text-sm px-5 py-2.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 shrink-0">
-          <span>⚡</span> <span>Portföyü AI ile Analiz Et</span>
+          <span id="aiBtnIcon">⚡</span> <span id="aiBtnText">Portföyü AI ile Analiz Et</span>
         </button>
+      </div>
+
+      <div class="flex items-center gap-2 mb-3">
+        <input id="aiApiKey" type="password" placeholder="Gemini API Key (Opsiyonel)" title="Kendi Gemini API anahtarınızı girerseniz gerçek AI analizi kullanılır"
+               class="bg-slate-950/80 border border-indigo-800/60 rounded-xl px-3 py-2 text-xs text-indigo-100 placeholder-indigo-300/40 focus:outline-none focus:ring-1 focus:ring-indigo-400 w-56 font-mono">
+        <span class="text-[11px] text-indigo-300/60">Boş bırakılırsa gerçek portföy verinizle otomatik algoritmik analiz kullanılır.</span>
       </div>
 
       <div id="aiOutputContainer" class="bg-slate-950/60 rounded-xl p-4 md:p-5 border border-indigo-900/40 min-h-[90px] flex items-center justify-center text-center">
@@ -276,8 +282,46 @@
       </section>
 
       <section class="lg:col-span-7 bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <h2 class="text-lg font-bold text-slate-900 mb-4">İzleme Listesi & TEFAS Fonları</h2>
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">İzleme Listesi & TEFAS Fonları</h2>
+            <p class="text-xs text-slate-500">Canlı TEFAS fiyatları — her 60 saniyede otomatik güncellenir</p>
+          </div>
+          <button id="btnWatchAdd" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold text-xs px-3.5 py-2 rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
+            <span>➕</span> Takip Ekle
+          </button>
+        </div>
         <div id="watchlistGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+        <div id="watchlistEmpty" class="text-center py-6 text-slate-400 text-sm" style="display:none">Henüz izleme listenizde bir fon/varlık yok.</div>
+      </section>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <section class="lg:col-span-12 bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <h2 class="text-lg font-bold text-slate-900 mb-1">Anlık Altın / Döviz Çevirici</h2>
+        <p class="text-xs text-slate-500 mb-4">Canlı piyasa fiyatlarıyla TL, döviz ve altın birimleri arasında hesaplama</p>
+        <div class="flex flex-col md:flex-row items-center gap-3">
+          <div class="w-full md:w-1/3">
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Miktar</label>
+            <input id="convAmountFrom" type="number" step="any" value="1"
+                   class="w-full mt-1 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-sky-500">
+          </div>
+          <div class="w-full md:w-1/3">
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Kaynak Birim</label>
+            <select id="convFrom" class="w-full mt-1 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"></select>
+          </div>
+          <button id="convSwap" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold w-9 h-9 rounded-full shrink-0 mt-5">⇅</button>
+          <div class="w-full md:w-1/3">
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Hedef Birim</label>
+            <select id="convTo" class="w-full mt-1 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"></select>
+          </div>
+          <div class="w-full md:w-1/3">
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Sonuç</label>
+            <input id="convAmountTo" type="text" readonly
+                   class="w-full mt-1 bg-slate-100 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono font-bold text-slate-900">
+          </div>
+        </div>
+        <div id="convNote" class="text-xs font-mono text-slate-500 bg-slate-50 p-2.5 rounded-lg border border-slate-200 mt-3">Hesaplanıyor...</div>
       </section>
     </div>
 
@@ -307,6 +351,54 @@
       <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-2">
         <button id="btnForceSyncNow" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white">🔄 Şimdi Senkronize Et</button>
         <button id="sheetSettingsCloseBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="addWatchlistModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200">
+      <div class="bg-purple-900 text-white p-4 px-6 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span>👁️</span>
+          <h3 class="font-bold text-lg">İzleme Listesine TEFAS Fonu / Varlık Ekle</h3>
+        </div>
+        <button id="watchlistCloseX" class="text-purple-200 hover:text-white text-xl">✕</button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Hızlı Seçim</label>
+          <select id="watchPresetSelect" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono">
+            <option value="">-- Özel Kod Gir veya Hazır Seç --</option>
+            <optgroup label="📈 Popüler TEFAS Fonları">
+              <option value="TGE">TGE - İş Portföy Emtia Yabancı BYF Fonu</option>
+              <option value="IPB">IPB - İstanbul Portföy Birinci Değişken Fon</option>
+              <option value="AFT">AFT - Ak Portföy Yeni Teknolojiler Fonu</option>
+              <option value="NNF">NNF - Hedef Portföy Birinci Hisse Fonu</option>
+              <option value="GTA">GTA - Garanti Portföy Altın Fonu</option>
+            </optgroup>
+            <optgroup label="🥇 Altın & Döviz">
+              <option value="GRAM">Gram Altın (TL)</option>
+              <option value="CEYREK">Çeyrek Altın (TL)</option>
+              <option value="USD">Dolar ($)</option>
+              <option value="EUR">Euro (€)</option>
+              <option value="GBP">Sterlin (£)</option>
+            </optgroup>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Varlık / TEFAS Kodu</label>
+          <input id="watchSymbolInput" type="text" placeholder="Örn: MAC, GZE, USD"
+                 class="uppercase w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">İsim (Opsiyonel)</label>
+          <input id="watchNameInput" type="text" placeholder="Örn: İş Portföy Hisse Fonu"
+                 class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+      </div>
+      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-2">
+        <button id="watchlistCancelBtn" class="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-200">İptal</button>
+        <button id="watchlistSaveBtn" class="px-5 py-2 rounded-lg text-sm font-medium bg-purple-600 hover:bg-purple-700 text-white shadow-sm">Listeye Ekle</button>
       </div>
     </div>
   </div>
@@ -348,6 +440,132 @@
     let allocChartInstance = null;
     let autoUpdateEnabled = true;
     let autoUpdateIntervalId = null;
+    let converterInitialized = false;
+
+    // --- Canlı Piyasa Fiyatları (Altın / Döviz / TEFAS) — izleme listesi, çevirici ve TEFAS bağlantısı bunu kullanır ---
+    const defaultLiveRates = {
+      'GRAM': { name: 'Gram Altın (TL)', price: 3780.00, change: 0, category: 'gold' },
+      'CEYREK': { name: 'Çeyrek Altın (TL)', price: 6180.00, change: 0, category: 'gold' },
+      'ONS': { name: 'ONS Altın ($)', price: 3040.00, change: 0, category: 'gold' },
+      'USD': { name: 'Dolar ($)', price: 38.85, change: 0, category: 'fx' },
+      'EUR': { name: 'Euro (€)', price: 41.20, change: 0, category: 'fx' },
+      'GBP': { name: 'Sterlin (£)', price: 48.60, change: 0, category: 'fx' }
+    };
+    let liveRates = JSON.parse(JSON.stringify(defaultLiveRates));
+
+    function getRatesStorageKey() { return 'portfoy_live_rates'; }
+    function saveLiveRatesToStorage() {
+      try { localStorage.setItem(getRatesStorageKey(), JSON.stringify(liveRates)); } catch(e) {}
+    }
+    function loadLiveRatesFromStorage() {
+      try {
+        const raw = localStorage.getItem(getRatesStorageKey());
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') liveRates = { ...defaultLiveRates, ...parsed };
+        }
+      } catch(e) {}
+    }
+
+    function getWatchlistStorageKey() { return 'portfoy_watchlist'; }
+    function loadWatchlist() {
+      try {
+        const raw = localStorage.getItem(getWatchlistStorageKey());
+        if (raw) return JSON.parse(raw);
+      } catch(e) {}
+      return [
+        { id: 'w_1', symbol: 'TGE', name: 'İş Portföy Emtia Fonu' },
+        { id: 'w_2', symbol: 'IPB', name: 'İstanbul Portföy Değişken' }
+      ];
+    }
+    function saveWatchlist(list) {
+      try { localStorage.setItem(getWatchlistStorageKey(), JSON.stringify(list)); } catch(e) {}
+    }
+
+    function getTefasUrl(symbol) {
+      if (!symbol) return 'https://www.tefas.gov.tr/';
+      return `https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${encodeURIComponent(symbol.toUpperCase())}`;
+    }
+
+    async function fetchTefasFundPriceProxy(fundCode) {
+      if (!fundCode) return null;
+      const cleanCode = fundCode.toUpperCase().trim();
+      const targetUrl = `https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${cleanCode}`;
+      const proxies = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
+        `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
+      ];
+      for (const proxyUrl of proxies) {
+        try {
+          const res = await fetchWithTimeout(proxyUrl, { cache: 'no-store' }, 6000);
+          if (res && res.ok) {
+            const html = await res.text();
+            const match = html.match(/MainContent_PriceReturnBar_lblPrice[^>]*>([\d.,]+)</i) || html.match(/class="top-list-item"[^>]*>([\d.,]+)</i);
+            if (match && match[1]) {
+              const priceNum = cleanNumber(match[1]);
+              if (priceNum > 0) return priceNum;
+            }
+          }
+        } catch(e) {}
+      }
+      return null;
+    }
+
+    async function fetchLiveRatesFromAPI() {
+      let fxOk = false;
+      try {
+        const res = await fetchWithTimeout('https://open.er-api.com/v6/latest/USD', {}, 6000);
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data && data.rates && data.rates.TRY) {
+            const usdTry = data.rates.TRY;
+            liveRates['USD'].price = parseFloat(usdTry.toFixed(2));
+            if (data.rates.EUR) liveRates['EUR'].price = parseFloat((usdTry / data.rates.EUR).toFixed(2));
+            if (data.rates.GBP) liveRates['GBP'].price = parseFloat((usdTry / data.rates.GBP).toFixed(2));
+            fxOk = true;
+          }
+        }
+      } catch(e) {}
+
+      try {
+        const resGold = await fetchWithTimeout('https://api.gold-api.com/price/XAU', {}, 6000);
+        if (resGold && resGold.ok) {
+          const g = await resGold.json();
+          if (g && g.price) liveRates['ONS'].price = parseFloat(g.price.toFixed(2));
+        }
+      } catch(e) {}
+
+      if (liveRates['ONS'].price > 0 && liveRates['USD'].price > 0) {
+        const gram = (liveRates['ONS'].price * liveRates['USD'].price) / 31.1034768;
+        liveRates['GRAM'].price = parseFloat(gram.toFixed(2));
+        liveRates['CEYREK'].price = parseFloat((gram * 1.635).toFixed(2));
+      }
+
+      // İzleme listesindeki ve portföydeki FON kodları için TEFAS'tan canlı fiyat çek
+      let fundOk = 0, fundFail = 0;
+      try {
+        const watchlist = loadWatchlist();
+        const data = loadUserData();
+        const fundSymbols = new Set();
+        watchlist.forEach(w => { if (w.symbol && !liveRates[w.symbol.toUpperCase()]) fundSymbols.add(w.symbol.toUpperCase()); });
+        watchlist.forEach(w => { if (w.symbol && liveRates[w.symbol.toUpperCase()]) fundSymbols.add(w.symbol.toUpperCase()); });
+        (data.portfolio || []).forEach(p => { if (p.type === 'fund' && p.code) fundSymbols.add(p.code.toUpperCase()); });
+
+        for (const sym of fundSymbols) {
+          if (['GRAM','CEYREK','ONS','USD','EUR','GBP'].includes(sym)) continue;
+          if (!liveRates[sym]) {
+            liveRates[sym] = { name: sym + ' TEFAS Fonu', price: 0, change: 0, category: 'fund' };
+          }
+          const price = await fetchTefasFundPriceProxy(sym);
+          if (price && price > 0) { liveRates[sym].price = price; fundOk++; }
+          else fundFail++;
+        }
+      } catch(e) {}
+
+      saveLiveRatesToStorage();
+      return { fxOk, fundOk, fundFail };
+    }
 
     function getSavedSheetUrl() {
       try { return localStorage.getItem('portfoy_sheet_url') || DEFAULT_SHEET_URL; } catch(e) { return DEFAULT_SHEET_URL; }
@@ -674,6 +892,8 @@
 
       renderPortfolioTable(portfolio);
       renderAllocationChart(catTotals);
+      renderWatchlist();
+      updateConverter();
 
       document.getElementById('lastUpdated').textContent = 'Son Güncelleme: ' + new Date().toLocaleTimeString('tr-TR');
     }
@@ -762,16 +982,226 @@
       showToast("Varlık silindi.", "info");
     };
 
+    // --- İzleme Listesi (Watchlist) ---
+    function renderWatchlist() {
+      const grid = document.getElementById('watchlistGrid');
+      const empty = document.getElementById('watchlistEmpty');
+      if (!grid) return;
+      const watchlist = loadWatchlist();
+      grid.innerHTML = '';
+
+      if (watchlist.length === 0) {
+        if (empty) empty.style.display = 'block';
+        return;
+      }
+      if (empty) empty.style.display = 'none';
+
+      watchlist.forEach(item => {
+        const sym = (item.symbol || '').toUpperCase();
+        const rate = liveRates[sym] || { name: item.name || sym, price: 0, change: 0 };
+        const tefasUrl = getTefasUrl(sym);
+        const card = document.createElement('div');
+        card.className = "bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between group hover:border-purple-300 transition-all";
+        card.innerHTML = `
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-800 flex items-center justify-center font-bold text-xs font-mono shrink-0">${sym.substring(0,3)}</div>
+            <div class="min-w-0">
+              <div class="font-bold text-sm text-slate-900 font-mono flex items-center gap-1.5">
+                <span class="truncate">${sym}</span>
+                <a href="${tefasUrl}" target="_blank" rel="noopener noreferrer" class="text-[10px] font-bold text-purple-700 bg-purple-100 hover:bg-purple-200 px-1.5 py-0.5 rounded transition-colors shrink-0" title="TEFAS'ta İncele">🔗 TEFAS</a>
+              </div>
+              <div class="text-xs text-slate-500 truncate max-w-[150px]">${item.name || rate.name || sym}</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <div class="text-right">
+              <div class="font-mono font-bold text-sm text-slate-900">${rate.price > 0 ? formatTL(rate.price) : '—'}</div>
+            </div>
+            <button data-watch-del="${item.id}" class="text-xs hover:bg-rose-100 p-1.5 rounded-lg text-rose-600 transition-colors" title="Sil">🗑️</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      grid.querySelectorAll('[data-watch-del]').forEach(btn => {
+        btn.onclick = () => {
+          const id = btn.getAttribute('data-watch-del');
+          const wl = loadWatchlist().filter(w => w.id !== id);
+          saveWatchlist(wl);
+          renderWatchlist();
+          showToast('İzleme listesinden çıkarıldı.', 'info');
+        };
+      });
+    }
+
+    function openWatchlistModal() {
+      document.getElementById('watchPresetSelect').value = '';
+      document.getElementById('watchSymbolInput').value = '';
+      document.getElementById('watchNameInput').value = '';
+      document.getElementById('addWatchlistModal').style.display = 'flex';
+    }
+
+    function saveNewWatchlistItem() {
+      const symbol = document.getElementById('watchSymbolInput').value.trim().toUpperCase();
+      const name = document.getElementById('watchNameInput').value.trim();
+      if (!symbol) { showToast('Lütfen geçerli bir kod girin.', 'error'); return; }
+
+      const wl = loadWatchlist();
+      if (wl.some(w => (w.symbol || '').toUpperCase() === symbol)) {
+        showToast(`${symbol} zaten izleme listenizde.`, 'info');
+        document.getElementById('addWatchlistModal').style.display = 'none';
+        return;
+      }
+      wl.push({ id: 'w_' + Date.now(), symbol, name: name || symbol });
+      saveWatchlist(wl);
+      document.getElementById('addWatchlistModal').style.display = 'none';
+      renderWatchlist();
+      showToast(`${symbol} izleme listesine eklendi, canlı fiyatı çekiliyor...`, 'success');
+
+      // Yeni eklenen sembol için hemen fiyat çekmeyi dene
+      if (!liveRates[symbol]) liveRates[symbol] = { name: name || symbol, price: 0, change: 0, category: 'fund' };
+      fetchTefasFundPriceProxy(symbol).then(price => {
+        if (price && price > 0) {
+          liveRates[symbol].price = price;
+          saveLiveRatesToStorage();
+          renderWatchlist();
+        }
+      });
+    }
+
+    // --- Anlık Çevirici ---
+    function initConverterOptions() {
+      const convFrom = document.getElementById('convFrom');
+      const convTo = document.getElementById('convTo');
+      if (!convFrom || !convTo) return;
+      let opts = `<option value="TRY">Türk Lirası (₺)</option>`;
+      Object.keys(liveRates).forEach(k => {
+        if (liveRates[k].category === 'fund') return; // çevirici sadece döviz/altın için
+        opts += `<option value="${k}">${liveRates[k].name || k}</option>`;
+      });
+      convFrom.innerHTML = opts;
+      convTo.innerHTML = opts;
+      convFrom.value = 'USD';
+      convTo.value = 'TRY';
+    }
+
+    function updateConverter() {
+      const convFrom = document.getElementById('convFrom');
+      const convTo = document.getElementById('convTo');
+      const amountFromEl = document.getElementById('convAmountFrom');
+      if (!convFrom || !convTo || !amountFromEl) return;
+      if (!converterInitialized || convFrom.options.length === 0) {
+        initConverterOptions();
+        converterInitialized = true;
+      }
+
+      const amount = parseFloat(amountFromEl.value) || 0;
+      const fromKey = convFrom.value;
+      const toKey = convTo.value;
+      const getPrice = (key) => key === 'TRY' ? 1 : (liveRates[key]?.price || 1);
+
+      const fromPrice = getPrice(fromKey);
+      const toPrice = getPrice(toKey);
+      const converted = (amount * fromPrice) / (toPrice || 1);
+
+      document.getElementById('convAmountTo').value = converted.toLocaleString('tr-TR', { maximumFractionDigits: 4 });
+      document.getElementById('convNote').textContent = `1 ${fromKey} = ${(fromPrice / (toPrice || 1)).toLocaleString('tr-TR', { maximumFractionDigits: 4 })} ${toKey}`;
+    }
+
+    // --- Akıllı AI Portföy Yorumcusu (gerçek veri üzerinden algoritmik analiz + opsiyonel Gemini) ---
+    function generateAlgorithmicAnalysis(portfolio, totalCost, totalValue, netPL, netPLPct) {
+      let healthScore = 70;
+      if (netPLPct > 0) healthScore += Math.min(25, netPLPct * 0.4);
+      else healthScore -= Math.min(30, Math.abs(netPLPct) * 0.7);
+      healthScore = Math.max(15, Math.min(98, Math.round(healthScore)));
+
+      const withPct = portfolio.map(item => {
+        const cost = (item.amount || 0) * (item.buyPrice || 0);
+        const curVal = item.currentVal > 0 ? item.currentVal : ((item.amount || 0) * (item.currentPrice || item.buyPrice));
+        const pct = cost > 0 ? ((curVal - cost) / cost) * 100 : 0;
+        return { item, pct };
+      });
+      withPct.sort((a, b) => b.pct - a.pct);
+      const best = withPct[0];
+      const worst = withPct[withPct.length - 1];
+
+      const catCounts = {};
+      portfolio.forEach(p => { catCounts[p.type] = (catCounts[p.type] || 0) + 1; });
+      const catSummary = Object.entries(catCounts).map(([k, v]) => `${v} ${k === 'fund' ? 'fon' : k === 'fx' ? 'döviz' : k === 'gold' ? 'altın' : k}`).join(', ');
+
+      return `<strong>📌 Portföy Sağlık Skoru: ${healthScore}/100</strong> ${healthScore >= 75 ? '🟢' : healthScore >= 50 ? '🟡' : '🔴'}<br><br>
+        Toplam maliyet <strong>${formatTL(totalCost)}</strong>, güncel değer <strong>${formatTL(totalValue)}</strong>. Net ${netPL >= 0 ? 'kâr' : 'zarar'}ınız <strong class="${netPL >= 0 ? 'text-emerald-300' : 'text-rose-300'}">${netPL >= 0 ? '+' : ''}${formatTL(netPL)} (%${netPLPct.toFixed(2)})</strong>.<br><br>
+        Portföyünüzde ${portfolio.length} varlık var (${catSummary}). En iyi performans: <strong>${best.item.code}</strong> (%${best.pct.toFixed(2)}). En zayıf performans: <strong>${worst.item.code}</strong> (%${worst.pct.toFixed(2)}).<br><br>
+        <em>Öneri:</em> Kazançlı pozisyonlarda kâr realizasyonu için hedef seviye belirleyin; zarardaki pozisyonlarda giriş maliyetine göre ortalama düşürme veya çıkış senaryolarını değerlendirin. Fon, döviz ve altın arasında dengeyi koruyun.`;
+    }
+
+    async function triggerAIAnalysis() {
+      const data = loadUserData();
+      const portfolio = data.portfolio || [];
+      const aiEmptyState = document.getElementById('aiEmptyState');
+      const aiLoadingState = document.getElementById('aiLoadingState');
+      const aiResultText = document.getElementById('aiResultText');
+      const aiBtnIcon = document.getElementById('aiBtnIcon');
+      const aiBtnText = document.getElementById('aiBtnText');
+
+      if (portfolio.length === 0) {
+        showToast('Analiz için önce portföyünüze varlık ekleyin veya Sheet\'ten senkronize edin.', 'error');
+        return;
+      }
+
+      aiEmptyState.style.display = 'none';
+      aiResultText.style.display = 'none';
+      aiLoadingState.style.display = 'flex';
+      if (aiBtnIcon) aiBtnIcon.textContent = '⏳';
+      if (aiBtnText) aiBtnText.textContent = 'Analiz Ediliyor...';
+
+      let totalCost = 0, totalValue = 0;
+      const lines = portfolio.map(item => {
+        const cost = (item.amount || 0) * (item.buyPrice || 0);
+        const curVal = item.currentVal > 0 ? item.currentVal : ((item.amount || 0) * (item.currentPrice || item.buyPrice));
+        totalCost += cost; totalValue += curVal;
+        return `${item.code} (${item.type}): miktar ${item.amount}, alış ${item.buyPrice} TL, güncel değer ${curVal.toFixed(2)} TL`;
+      }).join('\n');
+      const netPL = totalValue - totalCost;
+      const netPLPct = totalCost > 0 ? (netPL / totalCost) * 100 : 0;
+
+      let html = '';
+      const apiKey = (document.getElementById('aiApiKey')?.value || '').trim();
+
+      if (apiKey) {
+        try {
+          const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: `Portföy maliyeti: ${totalCost} TL, güncel değer: ${totalValue} TL, getiri: %${netPLPct.toFixed(2)}\nVarlıklar:\n${lines}\n\nTürkçe, kısa ve profesyonel bir portföy analizi ve 2-3 somut öneri sun.` }] }] })
+          }, 12000);
+          const json = await res.json();
+          const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) html = text.replace(/\n/g, '<br>');
+        } catch(e) { console.warn('Gemini API hatası, algoritmik analize geçiliyor', e); }
+      }
+
+      if (!html) html = generateAlgorithmicAnalysis(portfolio, totalCost, totalValue, netPL, netPLPct);
+
+      aiLoadingState.style.display = 'none';
+      aiResultText.style.display = 'block';
+      aiResultText.innerHTML = html;
+      if (aiBtnIcon) aiBtnIcon.textContent = '⚡';
+      if (aiBtnText) aiBtnText.textContent = 'Portföyü AI ile Analiz Et';
+      showToast('AI analizi tamamlandı.', 'success');
+    }
+
     window.onload = function() {
       loadAutoUpdatePref();
+      loadLiveRatesFromStorage();
 
-      syncGoogleSheetData(true).then(() => renderApp());
+      Promise.all([syncGoogleSheetData(true), fetchLiveRatesFromAPI()]).then(() => renderApp());
 
       // Otomatik güncelleme döngüsü: her 60 saniyede bir, sadece açıksa çalışır
       if (autoUpdateIntervalId) clearInterval(autoUpdateIntervalId);
       autoUpdateIntervalId = setInterval(() => {
         if (!autoUpdateEnabled) return;
-        syncGoogleSheetData(true).then(() => renderApp());
+        Promise.all([syncGoogleSheetData(true), fetchLiveRatesFromAPI()]).then(() => renderApp());
       }, 60000);
 
       document.getElementById('btnToggleAutoUpdate').onclick = () => {
@@ -781,8 +1211,12 @@
         showToast(autoUpdateEnabled ? 'Otomatik güncelleme açıldı (her 60 saniyede bir).' : 'Otomatik güncelleme kapatıldı. "Sheet\'ten Canlı Çek" ile istediğinizde elle güncelleyebilirsiniz.', 'info');
       };
 
-      document.getElementById('btnSyncNowHeader').onclick = () => syncGoogleSheetData(false);
-      document.getElementById('btnSyncNowEmpty').onclick = () => syncGoogleSheetData(false);
+      document.getElementById('btnSyncNowHeader').onclick = () => {
+        Promise.all([syncGoogleSheetData(false), fetchLiveRatesFromAPI()]).then(() => renderApp());
+      };
+      document.getElementById('btnSyncNowEmpty').onclick = () => {
+        Promise.all([syncGoogleSheetData(false), fetchLiveRatesFromAPI()]).then(() => renderApp());
+      };
 
       document.getElementById('btnOpenSheetSettings').onclick = () => {
         document.getElementById('inputSheetUrl').value = getSavedSheetUrl();
@@ -803,6 +1237,28 @@
       document.getElementById('formulaGuideCloseX').onclick = () => document.getElementById('formulaGuideModal').style.display = 'none';
       document.getElementById('formulaGuideCloseBtn').onclick = () => document.getElementById('formulaGuideModal').style.display = 'none';
 
+      document.getElementById('btnWatchAdd').onclick = openWatchlistModal;
+      document.getElementById('watchlistCloseX').onclick = () => document.getElementById('addWatchlistModal').style.display = 'none';
+      document.getElementById('watchlistCancelBtn').onclick = () => document.getElementById('addWatchlistModal').style.display = 'none';
+      document.getElementById('watchlistSaveBtn').onclick = saveNewWatchlistItem;
+      document.getElementById('watchPresetSelect').onchange = (e) => {
+        const val = e.target.value;
+        if (val) {
+          document.getElementById('watchSymbolInput').value = val;
+          document.getElementById('watchNameInput').value = e.target.options[e.target.selectedIndex].text;
+        }
+      };
+
+      document.getElementById('convAmountFrom').addEventListener('input', updateConverter);
+      document.getElementById('convFrom').addEventListener('change', updateConverter);
+      document.getElementById('convTo').addEventListener('change', updateConverter);
+      document.getElementById('convSwap').onclick = () => {
+        const from = document.getElementById('convFrom');
+        const to = document.getElementById('convTo');
+        const tmp = from.value; from.value = to.value; to.value = tmp;
+        updateConverter();
+      };
+
       document.querySelectorAll('.cat-tab').forEach(btn => {
         btn.onclick = (e) => {
           document.querySelectorAll('.cat-tab').forEach(b => b.className = "cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-700");
@@ -814,16 +1270,7 @@
 
       document.getElementById('tableSearch').oninput = () => renderApp();
 
-      document.getElementById('btnTriggerAIAnalysis').onclick = () => {
-        const res = document.getElementById('aiResultText');
-        document.getElementById('aiEmptyState').style.display = 'none';
-        document.getElementById('aiLoadingState').style.display = 'flex';
-        setTimeout(() => {
-          document.getElementById('aiLoadingState').style.display = 'none';
-          res.style.display = 'block';
-          res.innerHTML = `<strong>Gemini 3 Flash Analizi:</strong> Portföyünüzün varlık dağılımı ve kâr/zarar oranları dengeli seyretmektedir. Google Sheets senkronizasyonu aktif olarak çalışmaktadır.`;
-        }, 1000);
-      };
+      document.getElementById('btnTriggerAIAnalysis').onclick = triggerAIAnalysis;
     };
   </script>
 </body>
