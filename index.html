@@ -1,0 +1,2491 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portföy Takip Uygulaması - Grafik Analizli & AI Yorumculu</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --border-color: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --font-body: 'Plus Jakarta Sans', sans-serif;
+      --font-mono: 'Space Grotesk', monospace;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+
+    .font-mono {
+      font-family: var(--font-mono);
+    }
+
+    .chart-container {
+      position: relative;
+      width: 100%;
+      height: 280px;
+      max-height: 360px;
+    }
+
+    @media (min-width: 768px) {
+      .chart-container {
+        height: 320px;
+      }
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .cat-gold-bg { background-color: #fef3c7; color: #92400e; border-color: #fde68a; }
+    .cat-fx-bg { background-color: #dbeafe; color: #1e40af; border-color: #bfdbfe; }
+    .cat-fund-bg { background-color: #f3e8ff; color: #6b21a8; border-color: #e9d5ff; }
+    .cat-eurobond-bg { background-color: #ccfbf1; color: #115e59; border-color: #99f6e4; }
+    .cat-deposit-bg { background-color: #e0e7ff; color: #3730a3; border-color: #c7d2fe; }
+
+    .modal-backdrop {
+      background-color: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(5px);
+    }
+
+    @keyframes pulse-ring {
+      0% { transform: scale(0.98); opacity: 0.8; }
+      50% { transform: scale(1.01); opacity: 1; }
+      100% { transform: scale(0.98); opacity: 0.8; }
+    }
+    .alarm-active-ring {
+      animation: pulse-ring 2s infinite ease-in-out;
+    }
+
+    .period-tab-btn {
+      transition: all 0.15s ease-in-out;
+    }
+    .period-tab-btn.active {
+      background-color: #0f172a;
+      color: #ffffff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body class="p-3 md:p-6 pb-20">
+
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Header Section -->
+    <header class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="text-3xl">💼</span>
+          <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900">Portföy Takip Uygulaması</h1>
+        </div>
+        <div class="flex items-center gap-3 mt-1.5 flex-wrap">
+          <p class="text-xs md:text-sm text-slate-500 font-medium">Haftalık/Aylık Grafik Analizi, Çift Kademeli AI Yorumcusu ve Canlı Piyasa Takibi.</p>
+          <span id="apiBadge" class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Canlı Piyasa Bağlı
+          </span>
+          <span id="lastUpdated" class="text-xs font-mono text-slate-400">Son Güncelleme: --:--</span>
+        </div>
+      </div>
+
+      <!-- Action Toolbar -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button id="btnOpenAIModal" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs md:text-sm px-4 py-2 rounded-xl transition-all shadow-md flex items-center gap-2 transform active:scale-95">
+          <span>🤖</span> AI Analiz Yap
+        </button>
+        <button id="btnOpenImport" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
+          <span>📊</span> Tablodan Aktar
+        </button>
+        <button id="btnOpenAlarms" class="bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-300 font-semibold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
+          <span>🔔</span> Fiyat Alarmları (<span id="alarmCountBadge">0</span>)
+        </button>
+        <button id="btnResetData" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold text-xs md:text-sm px-3 py-2 rounded-xl transition-colors border border-rose-200" title="Tüm verileri temizle">
+          🗑️ Sıfırla
+        </button>
+
+        <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-200 flex items-center gap-2">
+          <input id="authKod" type="text" placeholder="Portföy Kodu" value="goksin-portfoy"
+                 class="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono w-28 md:w-32">
+          <button id="btnEnter" class="bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs md:text-sm px-3 py-1 rounded-lg transition-colors">
+            Yükle
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Triggered Alarm Alert Banner Container -->
+    <div id="triggeredAlertsContainer" class="space-y-2" style="display: none;"></div>
+
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+        <div class="w-1 h-full bg-slate-400 absolute left-0 top-0"></div>
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Toplam Portföy Maliyeti</div>
+        <div class="text-2xl md:text-3xl font-bold font-mono text-slate-800 mt-2" id="sCost">₺0,00</div>
+        <div class="text-xs text-slate-400 mt-1">Yatırılan Anapara Tutarınız</div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+        <div class="w-1 h-full bg-sky-500 absolute left-0 top-0"></div>
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Güncel Portföy Değeri</div>
+        <div class="text-2xl md:text-3xl font-bold font-mono text-slate-900 mt-2" id="sValue">₺0,00</div>
+        <div class="text-xs text-sky-600 mt-1 font-medium" id="sDailyStatus">Canlı Piyasa ve TEFAS Fiyatları</div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+        <div class="w-1 h-full bg-emerald-500 absolute left-0 top-0" id="statPLBar"></div>
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Toplam Net Kâr / Zarar</div>
+        <div class="text-2xl md:text-3xl font-bold font-mono text-emerald-600 mt-2" id="sPL">₺0,00</div>
+        <div class="text-sm font-semibold font-mono text-emerald-600 mt-1" id="sPLPct">%0,00 Toplam Getiri</div>
+      </div>
+
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
+        <div class="w-1 h-full bg-purple-500 absolute left-0 top-0"></div>
+        <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Varlık Sayısı</div>
+        <div class="text-2xl md:text-3xl font-bold font-mono text-slate-800 mt-2" id="sCount">0</div>
+        <div class="text-xs text-slate-400 mt-1" id="sCountSub">0 Aktif Kategori</div>
+      </div>
+    </section>
+
+    <section class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-5 md:p-6 rounded-2xl border border-indigo-900/50 shadow-lg relative overflow-hidden">
+      <div class="absolute -right-10 -top-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+      
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-indigo-800/40 pb-4 mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-600/30 border border-indigo-400/30 flex items-center justify-center text-2xl shadow-inner">
+            🤖
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h2 class="text-lg md:text-xl font-bold tracking-tight text-white">Çift Kademeli Akıllı AI Portföy Yorumcusu</h2>
+              <span class="bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase">Gemini 3 Flash + Otomatik Fallback</span>
+            </div>
+            <p class="text-xs text-indigo-200/70 mt-0.5">Portföyünüzün varlık dağılımı, kâr/zarar seviyesi ve risk dengesine özel canlı finansal analiz raporu.</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap">
+          <input id="aiApiKey" type="password" placeholder="Gemini API Key (Opsiyonel)" title="Özel Gemini API anahtarınız varsa buraya girebilirsiniz"
+                 class="bg-slate-950/80 border border-indigo-800/60 rounded-xl px-3 py-2 text-xs text-indigo-100 placeholder-indigo-300/40 focus:outline-none focus:ring-1 focus:ring-indigo-400 w-36 md:w-44 font-mono">
+          <button id="btnTriggerAIAnalysis" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xs md:text-sm px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-indigo-500/25 flex items-center justify-center gap-2 shrink-0">
+            <span id="aiBtnIcon">⚡</span> <span id="aiBtnText">Portföyümü AI ile Analiz Et</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="aiOutputContainer" class="bg-slate-950/60 rounded-xl p-4 md:p-5 border border-indigo-900/40 min-h-[100px] flex items-center justify-center text-center">
+        <div id="aiEmptyState" class="text-indigo-200/60 text-xs md:text-sm space-y-1">
+          <p class="font-medium">Yukarıdaki "Portföyümü AI ile Analiz Et" butonuna tıklayarak canlı portföyünüz için kapsamlı yapay zeka analizi ve sağlık skorunu alabilirsiniz.</p>
+          <p class="text-[11px] text-slate-400">Çift Kademeli Motor: API Key girilmezse veya kota aşılırsa anında akıllı algoritmik analiz devreye girer (Sıfır Hata Garantisi).</p>
+        </div>
+        <div id="aiLoadingState" class="hidden flex-col items-center justify-center py-6 space-y-3">
+          <div class="w-8 h-8 border-3 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+          <p class="text-xs text-indigo-200 font-mono animate-pulse">Portföy metrikleriniz inceleniyor, Çift Kademeli AI Analiz Raporu hazırlanıyor...</p>
+        </div>
+        <div id="aiResultText" class="hidden text-left text-xs md:text-sm text-slate-200 leading-relaxed font-sans w-full space-y-3">
+          <!-- AI response will be dynamically formatted here -->
+        </div>
+      </div>
+    </section>
+
+    <section class="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+      <div class="border-b border-slate-100 pb-3 flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xl">📊</span>
+            <h2 class="text-lg font-bold text-slate-900">Kategori Bazlı Performans & Analiz</h2>
+          </div>
+          <p class="text-xs text-slate-500">Kategorilerin maliyeti, güncel değeri, net kâr/zararı ve portföy içi ağırlığı (%)</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3" id="categoryCardsGrid">
+        <!-- Dynamically rendered category cards -->
+      </div>
+    </section>
+
+    <!-- Live Prices Section -->
+    <section class="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <div class="border-b border-slate-100 pb-3 mb-4 flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xl">💰</span>
+            <h2 class="text-lg font-bold text-slate-900">Canlı Piyasa Fiyatları</h2>
+          </div>
+          <p class="text-xs text-slate-500">Anlık ONS, Gram Altın, Çeyrek, Döviz Kurları ve TEFAS Fon Fiyatları</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="btnQuickGoldUpdate" class="text-xs text-amber-800 font-bold bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-lg border border-amber-300 transition-colors flex items-center gap-1 shadow-sm">
+            ⚡ Altın / Kur Manuel Düzenle
+          </button>
+          <button id="btnRefreshMarket" class="text-xs text-sky-700 font-semibold hover:underline flex items-center gap-1 bg-sky-50 hover:bg-sky-100 px-3 py-1.5 rounded-lg border border-sky-200">
+            🔄 Kurları Yenile
+          </button>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3" id="livePrices">
+        <!-- Dynamic price cards -->
+      </div>
+    </section>
+
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="p-4 md:p-6 border-b border-slate-200 space-y-4">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-xl font-bold text-slate-900">Varlık Portföyüm</h2>
+            <p class="text-xs text-slate-500">Portföyünüzdeki tüm enstrümanların detayları ve dönemsel grafik butonları</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <input type="text" id="tableSearch" placeholder="Varlık ara (Kod veya İsim)..." 
+                   class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 w-48 md:w-64">
+            <button class="bg-sky-600 hover:bg-sky-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors shadow-sm" id="btnAdd">
+              + Manuel Varlık Ekle
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100" id="categoryTabs">
+          <button data-cat="all" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-900 text-white shadow-xs">
+            Tümü (<span id="tabCountAll">0</span>)
+          </button>
+          <button data-cat="gold" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200">
+            🥇 Altın (<span id="tabCountGold">0</span>)
+          </button>
+          <button data-cat="fx" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-blue-100 text-blue-900 border border-blue-300 hover:bg-blue-200">
+            💵 Döviz (<span id="tabCountFx">0</span>)
+          </button>
+          <button data-cat="fund" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-purple-100 text-purple-900 border border-purple-300 hover:bg-purple-200">
+            📈 TEFAS Fonlar (<span id="tabCountFund">0</span>)
+          </button>
+          <button data-cat="eurobond" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-teal-100 text-teal-900 border border-teal-300 hover:bg-teal-200">
+            🏛️ Eurobond (<span id="tabCountEurobond">0</span>)
+          </button>
+          <button data-cat="deposit" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-indigo-100 text-indigo-900 border border-indigo-300 hover:bg-indigo-200">
+            🏦 Mevduat (<span id="tabCountDeposit">0</span>)
+          </button>
+        </div>
+      </div>
+
+      <!-- Main Portfolio Table -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm" id="portfolioTable">
+          <thead class="bg-slate-50 text-slate-600 font-semibold uppercase text-xs tracking-wider border-b border-slate-200">
+            <tr>
+              <th class="py-3.5 px-4">Varlık / Kod</th>
+              <th class="py-3.5 px-4 text-center">Alım Tarihi</th>
+              <th class="py-3.5 px-4 text-right">Adet / Miktar</th>
+              <th class="py-3.5 px-4 text-right">Birim Alım (TL)</th>
+              <th class="py-3.5 px-4 text-right">Toplam Maliyet (TL)</th>
+              <th class="py-3.5 px-4 text-right">Güncel Fiyat (TL)</th>
+              <th class="py-3.5 px-4 text-right">Güncel Değer (TL)</th>
+              <th class="py-3.5 px-4 text-right">K/Z (TL)</th>
+              <th class="py-3.5 px-4 text-right">K/Z (%)</th>
+              <th class="py-3.5 px-4 text-center">İşlemler</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 font-mono text-slate-700" id="portfolioBody">
+            <!-- Dynamic rows inserted by JS -->
+          </tbody>
+        </table>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="text-center py-12 px-4">
+          <span class="text-4xl block mb-2">📥</span>
+          <h3 class="text-lg font-bold text-slate-800">Portföyünüz Henüz Boş</h3>
+          <p class="text-sm text-slate-500 max-w-md mx-auto mt-1 mb-4">
+            Google Sheets tablonuzdan kopyaladığınız satırları aktarabilir veya manuel varlık ekleyebilirsiniz.
+          </p>
+          <div class="flex items-center justify-center gap-3">
+            <button class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition-colors" id="btnEmptyImport">
+              📊 Tablodan Yapıştır
+            </button>
+            <button class="bg-sky-600 hover:bg-sky-700 text-white font-medium text-sm px-4 py-2 rounded-lg transition-colors" id="btnEmptyAdd">
+              + Manuel Ekle
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Allocation Chart & Watchlist -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <section class="lg:col-span-6 bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="border-b border-slate-100 pb-3 mb-4">
+            <h2 class="text-lg font-bold text-slate-900">Varlık Dağılımı</h2>
+            <p class="text-xs text-slate-500">Kategorilerin portföy içerisindeki oransal dağılımı</p>
+          </div>
+          <div class="chart-container">
+            <canvas id="allocChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <section class="lg:col-span-6 bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div>
+          <div class="border-b border-slate-100 pb-3 mb-4 flex items-center justify-between">
+            <div>
+              <h2 class="text-lg font-bold text-slate-900">İzleme Listesi</h2>
+              <p class="text-xs text-slate-500">Takip ettiğiniz fon, döviz ve altın türleri</p>
+            </div>
+            <button class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs px-3 py-1.5 rounded-lg transition-colors" id="btnWatchAdd">
+              + Takip Ekle
+            </button>
+          </div>
+          <div id="watchlistGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <!-- Dynamic watchlist items -->
+          </div>
+          <div id="watchlistEmpty" class="text-center py-8 text-slate-400 text-sm" style="display:none">
+            Henüz izlemeye aldığınız bir varlık yok.
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Alarms & Converter -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <section id="alarmsPanelSection" class="lg:col-span-7 bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="border-b border-slate-100 pb-3 mb-4 flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🔔</span>
+              <h2 class="text-lg font-bold text-slate-900">Fiyat Alarmları ve Hedef Takip</h2>
+            </div>
+            <p class="text-xs text-slate-500">Altın, Döviz ve Fon hedef veya düşüş seviyelerine ulaştığında uyarı alın.</p>
+          </div>
+          <button id="btnAddAlarm" class="bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs md:text-sm px-4 py-2 rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
+            + Yeni Fiyat Alarmı Kur
+          </button>
+        </div>
+
+        <div id="alarmsListGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Dynamic alarm cards -->
+        </div>
+
+        <div id="alarmsEmptyState" class="text-center py-6 text-slate-400 text-sm" style="display: none;">
+          Henüz kurulmuş bir fiyat alarmınız yok.
+        </div>
+      </section>
+
+      <section class="lg:col-span-5 bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="border-b border-slate-100 pb-3 mb-4">
+          <h2 class="text-lg font-bold text-slate-900">Anlık Çevirici</h2>
+          <p class="text-xs text-slate-500">TL, Döviz ve Altın birimleri arasında canlı hesaplama</p>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Kaynak Birim</label>
+            <div class="flex items-center gap-2 mt-1">
+              <input id="convAmountFrom" type="number" step="any" value="1" 
+                     class="w-1/2 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-sky-500">
+              <select id="convFrom" class="w-1/2 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"></select>
+            </div>
+          </div>
+
+          <div class="text-center">
+            <button id="convSwap" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold w-9 h-9 rounded-full transition-transform transform active:scale-95 shadow-sm">
+              ⇅
+            </button>
+          </div>
+
+          <div>
+            <label class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Hedef Birim</label>
+            <div class="flex items-center gap-2 mt-1">
+              <input id="convAmountTo" type="number" step="any" readonly
+                     class="w-1/2 bg-slate-100 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono font-bold text-slate-800">
+              <select id="convTo" class="w-1/2 bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"></select>
+            </div>
+          </div>
+
+          <div id="convNote" class="text-xs font-mono text-slate-400 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+            Hesaplanıyor...
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </div>
+
+  <!-- ASSET DETAIL & PERIODIC CHART MODAL -->
+  <div id="chartDetailModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
+    <div class="bg-white rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden border border-slate-200">
+      <div class="bg-slate-900 text-white p-4 px-6 flex items-center justify-between">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="chartModalIcon" class="text-xl">📈</span>
+            <h3 id="chartModalTitle" class="font-bold text-lg">Varlık Analizi & Geçmiş Fiyat Grafiği</h3>
+          </div>
+          <p id="chartModalSub" class="text-xs text-slate-400">Fon ve Altın için Haftalık, 1, 3, 6, 9 ve 12 Aylık Performans Analizi</p>
+        </div>
+        <button id="chartModalCloseX" class="text-slate-400 hover:text-white text-xl">✕</button>
+      </div>
+
+      <div class="p-4 md:p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 font-mono text-xs">
+          <div>
+            <div class="text-[10px] uppercase font-semibold text-slate-400">Alış Maliyeti</div>
+            <div id="mBuyPrice" class="font-bold text-slate-800 text-sm mt-0.5">₺0,00</div>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase font-semibold text-slate-400">Güncel Fiyat</div>
+            <div id="mCurPrice" class="font-bold text-slate-900 text-sm mt-0.5">₺0,00</div>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase font-semibold text-slate-400">Toplam K/Z</div>
+            <div id="mNetPL" class="font-bold text-emerald-600 text-sm mt-0.5">₺0,00</div>
+          </div>
+          <div>
+            <div class="text-[10px] uppercase font-semibold text-slate-400">Toplam Getiri %</div>
+            <div id="mNetPLPct" class="font-bold text-emerald-600 text-sm mt-0.5">%0,00</div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div class="text-xs font-bold text-slate-700 uppercase tracking-wider">Analiz Periyodu:</div>
+          <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl" id="chartPeriodTabs">
+            <button data-days="7" class="period-tab-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">Haftalık</button>
+            <button data-days="30" class="period-tab-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">1 Ay</button>
+            <button data-days="90" class="period-tab-btn active px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">3 Ay</button>
+            <button data-days="180" class="period-tab-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">6 Ay</button>
+            <button data-days="270" class="period-tab-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">9 Ay</button>
+            <button data-days="365" class="period-tab-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">1 Yıl</button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between flex-wrap gap-2 text-xs font-mono bg-slate-900 text-white p-3 rounded-xl shadow-xs">
+          <div class="flex items-center gap-2">
+            <span class="text-slate-400">Seçili Periyot Getirisi:</span>
+            <span id="periodReturnPct" class="font-bold text-emerald-400 text-sm">+%0,00</span>
+          </div>
+          <div class="flex items-center gap-4 text-slate-300">
+            <span>Dip: <strong id="periodMinPrice" class="text-rose-300">₺0,00</strong></span>
+            <span>Tepe: <strong id="periodMaxPrice" class="text-emerald-300">₺0,00</strong></span>
+          </div>
+        </div>
+
+        <div class="relative w-full h-72 md:h-80 bg-slate-50 border border-slate-200 rounded-2xl p-3">
+          <canvas id="assetDetailChart"></canvas>
+        </div>
+
+        <div class="text-[11px] text-slate-400 bg-slate-50 p-2.5 rounded-lg border border-slate-200 flex items-center justify-between">
+          <span>📌 Kesikli sarı çizgi birim alış maliyetinizi, renkli çizgi ise piyasa fiyat seyrini temsil eder.</span>
+          <span class="font-mono text-slate-500">TEFAS / Piyasa Verisi</span>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-end">
+        <button id="chartModalCloseBtn" class="px-5 py-2 rounded-xl text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors">
+          Kapat
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BULK IMPORT MODAL -->
+  <div id="importModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200">
+      <div class="bg-emerald-900 text-white p-4 px-6 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-lg">Google Sheets / Excel'den Toplu Yapıştır</h3>
+          <p class="text-xs text-emerald-200">5 Sütunlu veya 9 Sütunlu Tablolar Tam Desteklenir.</p>
+        </div>
+        <button id="importCloseX" class="text-emerald-200 hover:text-white text-xl">✕</button>
+      </div>
+
+      <div class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+        <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-xl text-xs text-emerald-950 space-y-2">
+          <div class="font-bold flex items-center gap-1 text-sm text-emerald-900">
+            <span>📋</span> Desteklenen Sütun Sıralaması (5 veya 9 Sütun):
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-9 gap-1 text-center font-mono text-[10px] font-semibold">
+            <div class="bg-white p-1 rounded border border-emerald-300">1. Varlık Kodu</div>
+            <div class="bg-white p-1 rounded border border-emerald-300">2. Alım Tarihi</div>
+            <div class="bg-white p-1 rounded border border-emerald-300">3. Adet/Maliyet</div>
+            <div class="bg-white p-1 rounded border border-emerald-300">4. Birim Alış</div>
+            <div class="bg-white p-1 rounded border border-emerald-300">5. Toplam Maliyet</div>
+            <div class="bg-white p-1 rounded border border-emerald-300">6. Güncel Fiyat</div>
+            <div class="bg-white p-1 rounded border border-emerald-300">7. Güncel Değer</div>
+            <div class="bg-white p-1 rounded border border-emerald-300">8. Kâr / Zarar</div>
+            <div class="bg-white p-1 rounded border border-emerald-300">9. K/Z (%)</div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Kopyalanan Tablo Verileri</label>
+          <textarea id="importRawText" rows="7" placeholder="Google Sheets'ten kopyaladığınız satırları buraya yapıştırın (CTRL+V)..." 
+                    class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="chkReplaceAll" checked class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+          <label for="chkReplaceAll" class="text-xs font-medium text-slate-700">Mevcut listemi temizle ve bu verilerle değiştir</label>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-3">
+        <button id="importCancel" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200">İptal</button>
+        <button id="importSubmit" class="px-5 py-2 rounded-lg text-sm font-medium bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm">Varlıkları Aktar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADD / EDIT ASSET MODAL -->
+  <div id="assetModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
+    <div class="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border border-slate-200">
+      <div class="bg-slate-900 text-white p-4 px-6 flex items-center justify-between">
+        <h3 class="font-bold text-lg" id="modalTitle">Yeni Varlık Ekle</h3>
+        <button id="modalCloseX" class="text-slate-400 hover:text-white text-xl">✕</button>
+      </div>
+
+      <div class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Varlık Türü / Kategorisi</label>
+          <select id="fType" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+            <option value="gold">🥇 Kıymetli Maden (Altın)</option>
+            <option value="fx">💵 Döviz</option>
+            <option value="fund">📈 TEFAS Yatırım Fonu</option>
+            <option value="eurobond">🏛️ Eurobond</option>
+            <option value="deposit">🏦 Mevduat / Katılım</option>
+          </select>
+        </div>
+
+        <div id="dynamicFields" class="space-y-4">
+          <div id="fieldAsset">
+            <label id="lblAsset" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Altın Türü</label>
+            <select id="assetSelect" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"></select>
+            <input id="assetCode" type="text" placeholder="Örn: TGE, IPB, MAC, NNF, AFT, GTA" maxlength="10" style="display:none"
+                   class="uppercase w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-sky-500">
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Alım Tarihi</label>
+            <input id="fBuyDate" type="date" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono">
+          </div>
+
+          <div class="grid grid-cols-2 gap-3" id="standardRow">
+            <div>
+              <label id="lblAmount" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Adet / Miktar</label>
+              <input id="fAmount" type="number" step="any" min="0" placeholder="0.00" 
+                     class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-sky-500">
+            </div>
+            <div>
+              <label id="lblBuyPrice" class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Birim Alım Maliyeti (TL)</label>
+              <input id="fBuyPrice" type="number" step="any" min="0" placeholder="0.00" 
+                     class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-sky-500">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Güncel Birim Fiyat (TL) (Opsiyonel / Özel Overwrite)</label>
+            <input id="fCurrentPrice" type="number" step="any" min="0" placeholder="Boş bırakılırsa canlı piyasadan alınır" 
+                   class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-sky-500">
+          </div>
+
+          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 flex justify-between items-center text-xs">
+            <span class="text-slate-500 font-semibold">Toplam Hesaplanan Maliyet:</span>
+            <span id="lblCalculatedTotal" class="font-mono font-bold text-slate-900">₺0,00</span>
+          </div>
+
+          <div id="eurobondBlock" style="display:none" class="space-y-3">
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Eurobond Kodu</label>
+                <input id="ebName" type="text" placeholder="örn: US-2030" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Para Birimi</label>
+                <select id="ebCurrency" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                  <option value="USD">USD ($)</option>
+                  <option value="EUR">EUR (€)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div id="depositBlock" style="display:none" class="space-y-3">
+            <div>
+              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Banka / Kurum</label>
+              <input id="depBank" type="text" placeholder="örn: Garanti, Ziraat" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Anapara (TL)</label>
+                <input id="depPrincipal" type="number" step="any" placeholder="100000" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Yıllık Getiri (%)</label>
+                <input id="depRate" type="number" step="any" placeholder="45" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono">
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Not / Açıklama</label>
+            <input id="fNote" type="text" placeholder="Örn: Emeklilik birikimi" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-3">
+        <button id="btnCancel" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200">İptal</button>
+        <button id="btnSave" class="px-5 py-2 rounded-lg text-sm font-medium bg-sky-600 hover:bg-sky-700 text-white shadow-sm">Varlığı Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT MARKET RATES MANUAL MODAL -->
+  <div id="marketRateModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
+    <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden border border-slate-200">
+      <div class="bg-amber-900 text-white p-4 px-6 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-lg">Piyasa ve Altın Fiyatlarını Düzenle & Yönet</h3>
+          <p class="text-xs text-amber-200">Yeni piyasa fiyatı ekleyebilir, mevcut kurları güncelleyebilir veya silebilirsiniz.</p>
+        </div>
+        <button id="rateModalCloseX" class="text-amber-200 hover:text-white text-xl">✕</button>
+      </div>
+
+      <div class="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+        <div class="bg-amber-50/80 p-3.5 rounded-xl border border-amber-200 space-y-3">
+          <div class="font-bold text-xs text-amber-900 uppercase tracking-wider flex items-center gap-1.5">
+            <span>➕</span> Yeni Piyasa / Sembol Fiyatı Ekle
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <input id="newRateCode" type="text" placeholder="Kod (örn: CHF)" class="uppercase bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <input id="newRateName" type="text" placeholder="İsim (örn: Frangı)" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <input id="newRatePrice" type="number" step="any" placeholder="Fiyat (TL)" class="bg-white border border-slate-300 rounded px-2.5 py-1.5 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <select id="newRateCategory" class="bg-white border border-slate-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500">
+              <option value="gold">🥇 Altın</option>
+              <option value="fx">💵 Döviz</option>
+              <option value="fund">📈 Fon</option>
+              <option value="eurobond">🏛️ Eurobond</option>
+              <option value="deposit">🏦 Mevduat</option>
+            </select>
+          </div>
+          <button id="btnAddNewRate" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs py-2 rounded-lg transition-colors shadow-2xs">
+            + Sembolü Piyasa Listesine Ekle
+          </button>
+        </div>
+
+        <div class="border-t border-slate-200 pt-2 space-y-2" id="rateInputsContainer"></div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between flex-wrap gap-2">
+        <button id="btnRestoreDefaults" class="text-xs text-rose-600 hover:underline font-semibold">Varsayılan Değerlere Dön</button>
+        <div class="flex items-center gap-3">
+          <button id="rateModalCancel" class="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-200">İptal</button>
+          <button id="rateModalSave" class="px-5 py-2 rounded-lg text-sm font-medium bg-amber-600 hover:bg-amber-700 text-white shadow-sm">Fiyatları Uygula</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALARM MODAL -->
+  <div id="alarmModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200">
+      <div class="bg-amber-900 text-white p-4 px-6 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span>🔔</span>
+          <h3 class="font-bold text-lg" id="alarmModalTitle">Fiyat Alarmı Ekle</h3>
+        </div>
+        <button id="alarmCloseX" class="text-amber-200 hover:text-white text-xl">✕</button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Takip Edilecek Enstrüman</label>
+          <select id="alarmSymbolSelect" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono"></select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Tetiklenme Koşulu</label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-amber-50">
+              <input type="radio" name="alarmCondition" value="above" checked class="text-amber-600 focus:ring-amber-500">
+              <span class="text-xs font-bold text-emerald-700">▲ Yükseldiğinde (≥)</span>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 cursor-pointer hover:bg-amber-50">
+              <input type="radio" name="alarmCondition" value="below" class="text-amber-600 focus:ring-amber-500">
+              <span class="text-xs font-bold text-rose-700">▼ Düştüğünde (≤)</span>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Hedef Fiyat (TL)</label>
+          <input id="alarmTargetPrice" type="number" step="any" placeholder="Örn: 3800.00" 
+                 class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-500">
+          <div id="alarmCurrentPriceNote" class="text-[11px] text-slate-400 mt-1 font-mono">
+            Anlık Fiyat: -- TL
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Not / Açıklama</label>
+          <input id="alarmNote" type="text" placeholder="Örn: Alım fırsatı seviyesi" 
+                 class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm">
+        </div>
+      </div>
+
+      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-2">
+        <button id="alarmCancel" class="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-200">İptal</button>
+        <button id="alarmSave" class="px-5 py-2 rounded-lg text-sm font-medium bg-amber-600 hover:bg-amber-700 text-white shadow-sm">Alarmı Kur</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- CONFIRMATION MODAL -->
+  <div id="confirmModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
+    <div class="bg-white rounded-2xl max-w-sm w-full shadow-2xl overflow-hidden border border-slate-200 p-5 space-y-4">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">⚠️</span>
+        <h4 class="font-bold text-slate-900 text-base" id="confirmTitle">Onay Gerekiyor</h4>
+      </div>
+      <p class="text-xs text-slate-600" id="confirmMessage">Bu işlemi gerçekleştirmek istediğinize emin misiniz?</p>
+      <div class="flex items-center justify-end gap-2 pt-2">
+        <button id="confirmCancelBtn" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:bg-slate-100">İptal</button>
+        <button id="confirmOkBtn" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white">Evet, Sil</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let confirmCallback = null;
+    let activeCategoryTab = 'all';
+    let allocChartInstance = null;
+    let detailChartInstance = null;
+    let activeDetailAsset = null;
+    let activeChartDays = 90;
+    let currentEditingId = null;
+
+    const default2026Rates = {
+      'GRAM': { name: 'Gram Altın (TL)', price: 3780.00, change: 0.85, category: 'gold' },
+      'CEYREK': { name: 'Çeyrek Altın (TL)', price: 6180.00, change: 0.72, category: 'gold' },
+      'ONS': { name: 'ONS Altın ($)', price: 3040.00, change: 0.45, category: 'gold' },
+      'USD': { name: 'Dolar ($)', price: 38.85, change: 0.18, category: 'fx' },
+      'EUR': { name: 'Euro (€)', price: 41.20, change: -0.12, category: 'fx' },
+      'GBP': { name: 'Sterlin (£)', price: 48.60, change: 0.22, category: 'fx' },
+      'TGE': { name: 'TGE - İş Portföy Emtia Fonu', price: 3.45, change: 1.25, category: 'fund' },
+      'IPB': { name: 'IPB - İstanbul Portföy Değişken', price: 28.50, change: 1.80, category: 'fund' },
+      'MAC': { name: 'MAC - Marmara Capital Hisse', price: 6.20, change: -0.40, category: 'fund' },
+      'NNF': { name: 'NNF - Hedef Portföy Birinci', price: 6.85, change: 0.90, category: 'fund' },
+      'AFT': { name: 'AFT - Ak Portföy Yeni Teknolojiler', price: 0.52, change: 1.40, category: 'fund' }
+    };
+
+    let liveRates = JSON.parse(JSON.stringify(default2026Rates));
+
+    function showToast(message, type = 'info') {
+      try {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+        const toast = document.createElement('div');
+        const bgClass = type === 'success' ? 'bg-emerald-600 text-white' : (type === 'error' ? 'bg-rose-600 text-white' : 'bg-slate-800 text-white');
+        toast.className = `px-4 py-2.5 rounded-xl shadow-lg text-xs font-semibold font-sans transition-all transform translate-y-2 opacity-0 flex items-center gap-2 pointer-events-auto ${bgClass}`;
+        toast.innerHTML = `<span>${type === 'success' ? '✓' : (type === 'error' ? '✕' : 'ℹ')}</span> <span>${message}</span>`;
+        container.appendChild(toast);
+        requestAnimationFrame(() => {
+          toast.classList.remove('translate-y-2', 'opacity-0');
+        });
+        setTimeout(() => {
+          toast.classList.add('opacity-0', 'translate-y-2');
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      } catch(e) { console.error('Toast error', e); }
+    }
+
+    function getRatesStorageKey() {
+      const code = document.getElementById('authKod')?.value.trim() || 'default-user';
+      return 'portfoy_rates_' + code;
+    }
+
+    function saveLiveRatesToStorage() {
+      try {
+        localStorage.setItem(getRatesStorageKey(), JSON.stringify(liveRates));
+      } catch(e) {}
+    }
+
+    function loadLiveRatesFromStorage() {
+      try {
+        const raw = localStorage.getItem(getRatesStorageKey());
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            liveRates = { ...default2026Rates, ...parsed };
+          }
+        }
+      } catch(e) {}
+    }
+
+    function showConfirmModal(message, onConfirm) {
+      document.getElementById('confirmMessage').textContent = message;
+      document.getElementById('confirmModal').style.display = 'flex';
+      confirmCallback = onConfirm;
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirmModal').style.display = 'none';
+      confirmCallback = null;
+    }
+
+    function formatTL(val) {
+      return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY' }).format(val || 0);
+    }
+
+    function getStorageKey() {
+      const code = document.getElementById('authKod')?.value.trim() || 'default-user';
+      return 'portfoy_app_' + code;
+    }
+
+    function loadUserData() {
+      try {
+        const key = getStorageKey();
+        const raw = localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            if (!parsed.alarms) parsed.alarms = [];
+            if (!parsed.portfolio) parsed.portfolio = [];
+            if (!parsed.watchlist) parsed.watchlist = [];
+            return parsed;
+          }
+        }
+      } catch(e) {
+        console.error("Local storage read error:", e);
+      }
+      return { portfolio: [], watchlist: [], alarms: [] };
+    }
+
+    function saveUserData(data) {
+      try {
+        const key = getStorageKey();
+        localStorage.setItem(key, JSON.stringify(data));
+      } catch(e) {
+        console.error("Local storage save error:", e);
+      }
+    }
+
+    function getCurrentUnitPrice(item) {
+      if (!item) return 0;
+      if (item.type === 'deposit') return item.currentPrice || item.buyPrice || 0;
+      if (item.code && liveRates[item.code] && liveRates[item.code].price > 0) {
+        return liveRates[item.code].price;
+      }
+      if (item.currentPrice && item.currentPrice > 0) {
+        return item.currentPrice;
+      }
+      return item.buyPrice || 0;
+    }
+
+    const categorySpecs = {
+      gold: { label: 'Altın & Kıymetli Maden', shortLabel: 'Altın', icon: '🥇', badgeClass: 'cat-gold-bg border', borderClass: 'border-l-4 border-amber-500', bgCardClass: 'bg-gradient-to-br from-amber-50/60 to-white border-amber-200', textAccent: 'text-amber-700', chartColor: '#f59e0b' },
+      fx: { label: 'Döviz Varlıkları', shortLabel: 'Döviz', icon: '💵', badgeClass: 'cat-fx-bg border', borderClass: 'border-l-4 border-blue-500', bgCardClass: 'bg-gradient-to-br from-blue-50/60 to-white border-blue-200', textAccent: 'text-blue-700', chartColor: '#3b82f6' },
+      fund: { label: 'TEFAS Yatırım Fonları', shortLabel: 'Fonlar', icon: '📈', badgeClass: 'cat-fund-bg border', borderClass: 'border-l-4 border-purple-500', bgCardClass: 'bg-gradient-to-br from-purple-50/60 to-white border-purple-200', textAccent: 'text-purple-700', chartColor: '#a855f7' },
+      eurobond: { label: 'Eurobond Varlıkları', shortLabel: 'Eurobond', icon: '🏛️', badgeClass: 'cat-eurobond-bg border', borderClass: 'border-l-4 border-teal-500', bgCardClass: 'bg-gradient-to-br from-teal-50/60 to-white border-teal-200', textAccent: 'text-teal-700', chartColor: '#14b8a6' },
+      deposit: { label: 'Mevduat & Katılım', shortLabel: 'Mevduat', icon: '🏦', badgeClass: 'cat-deposit-bg border', borderClass: 'border-l-4 border-indigo-500', bgCardClass: 'bg-gradient-to-br from-indigo-50/60 to-white border-indigo-200', textAccent: 'text-indigo-700', chartColor: '#6366f1' }
+    };
+
+    async function fetchLiveRatesFromAPI() {
+      const apiBadge = document.getElementById('apiBadge');
+      const lastUpdated = document.getElementById('lastUpdated');
+      let fxSuccess = false;
+
+      try {
+        const res = await fetch('https://open.er-api.com/v6/latest/USD');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.rates && data.rates.TRY) {
+            const usdTry = data.rates.TRY;
+            if (liveRates['USD']) liveRates['USD'].price = parseFloat(usdTry.toFixed(2));
+            if (liveRates['EUR'] && data.rates.EUR) liveRates['EUR'].price = parseFloat((usdTry / data.rates.EUR).toFixed(2));
+            if (liveRates['GBP'] && data.rates.GBP) liveRates['GBP'].price = parseFloat((usdTry / data.rates.GBP).toFixed(2));
+            fxSuccess = true;
+          }
+        }
+      } catch (e) {
+        console.warn('Primary FX API fallback');
+      }
+
+      try {
+        const resGold = await fetch('https://api.gold-api.com/price/XAU');
+        if (resGold.ok) {
+          const goldData = await resGold.json();
+          if (goldData && goldData.price && liveRates['ONS']) {
+            liveRates['ONS'].price = parseFloat(goldData.price.toFixed(2));
+          }
+        }
+      } catch (e) {
+        console.warn('Gold ONS API fallback');
+      }
+
+      try {
+        updateGoldFromOns();
+      } catch(e) {}
+
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+      if (lastUpdated) lastUpdated.textContent = `Son Güncelleme: ${timeStr}`;
+
+      if (apiBadge) {
+        if (fxSuccess) {
+          apiBadge.className = "bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1";
+          apiBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Canlı Piyasa Bağlı`;
+        } else {
+          apiBadge.className = "bg-sky-50 text-sky-700 border border-sky-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1";
+          apiBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-sky-500"></span> Piyasa Verisi (${timeStr})`;
+        }
+      }
+
+      try { evaluatePriceAlarms(); } catch(e) {}
+    }
+
+    function updateGoldFromOns() {
+      if (liveRates['ONS'] && liveRates['USD']) {
+        const onsUsd = liveRates['ONS'].price || 0;
+        const usdTry = liveRates['USD'].price || 0;
+        if (onsUsd > 0 && usdTry > 0) {
+          const calcGram = (onsUsd * usdTry) / 31.1034768;
+          if (liveRates['GRAM']) liveRates['GRAM'].price = parseFloat(calcGram.toFixed(2));
+          if (liveRates['CEYREK']) liveRates['CEYREK'].price = parseFloat((calcGram * 1.635).toFixed(2));
+        }
+      }
+    }
+
+    async function fetchWithRetry(url, options, maxRetries = 3) {
+      let delay = 1000;
+      for (let i = 0; i < maxRetries; i++) {
+        try {
+          const res = await fetch(url, options);
+          if (res.ok) return res;
+          
+          if (res.status === 429 || res.status >= 500) {
+            await new Promise(r => setTimeout(r, delay));
+            delay *= 2;
+            continue;
+          }
+          
+          const errData = await res.json().catch(() => ({}));
+          const msg = errData.error?.message || `HTTP ${res.status}`;
+          throw new Error(msg);
+        } catch (err) {
+          if (i === maxRetries - 1) throw err;
+          await new Promise(r => setTimeout(r, delay));
+          delay *= 2;
+        }
+      }
+      throw new Error('İstek zaman aşımına uğradı.');
+    }
+
+    function formatAIResponseToHTML(text) {
+      if (!text) return '';
+      
+      let html = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+
+      html = html
+        .replace(/### (.*?)\n/g, '<h4 class="text-sm font-bold text-indigo-200 mt-4 mb-1.5 border-b border-indigo-900/60 pb-1 flex items-center gap-1.5"><span class="text-indigo-400">📌</span> $1</h4>')
+        .replace(/## (.*?)\n/g, '<h3 class="text-base font-bold text-indigo-300 mt-5 mb-2 border-b border-indigo-800 pb-1 flex items-center gap-2"><span class="text-indigo-400">💡</span> $1</h3>')
+        .replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-200 font-semibold">$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em class="text-indigo-300">$1</em>')
+        .replace(/`([^`]+)`/g, '<code class="bg-indigo-950 px-1.5 py-0.5 rounded text-indigo-300 font-mono text-xs">$1</code>')
+        .replace(/^[\s]*[-•*][\s]+(.*)$/gm, '<li class="ml-4 list-disc text-slate-200 my-1">$1</li>')
+        .replace(/^[\s]*(\d+)\.[\s]+(.*)$/gm, '<li class="ml-4 list-decimal text-slate-200 my-1"><strong class="text-indigo-300">$1.</strong> $2</li>')
+        .replace(/\n\n/g, '<br><br>');
+
+      return html;
+    }
+
+    function generateSmartAlgorithmicAnalysis(portfolio, totalCost, totalValue, netPL, netPLPct) {
+      let healthScore = 70;
+      if (netPLPct > 0) healthScore += Math.min(25, netPLPct * 0.4);
+      else healthScore -= Math.min(30, Math.abs(netPLPct) * 0.7);
+      healthScore = Math.max(15, Math.min(98, Math.round(healthScore)));
+
+      let bestAsset = portfolio[0];
+      let worstAsset = portfolio[0];
+
+      portfolio.forEach(item => {
+        const cur = getCurrentUnitPrice(item);
+        const itemCost = item.amount * item.buyPrice;
+        const itemVal = item.amount * cur;
+        const itemPct = itemCost > 0 ? ((itemVal - itemCost) / itemCost) * 100 : 0;
+        
+        const bestCur = getCurrentUnitPrice(bestAsset);
+        const bestCost = bestAsset.amount * bestAsset.buyPrice;
+        const bestPct = bestCost > 0 ? (((bestAsset.amount * bestCur) - bestCost) / bestCost) * 100 : 0;
+
+        const worstCur = getCurrentUnitPrice(worstAsset);
+        const worstCost = worstAsset.amount * worstAsset.buyPrice;
+        const worstPct = worstCost > 0 ? (((worstAsset.amount * worstCur) - worstCost) / worstCost) * 100 : 0;
+
+        if (itemPct > bestPct) bestAsset = item;
+        if (itemPct < worstPct) worstAsset = item;
+      });
+
+      const bestCur = getCurrentUnitPrice(bestAsset);
+      const bestCost = bestAsset.amount * bestAsset.buyPrice;
+      const bestPct = bestCost > 0 ? (((bestAsset.amount * bestCur) - bestCost) / bestCost) * 100 : 0;
+
+      return `
+### 1. Portföy Genel Özeti & Sağlık Skoru
+- **Toplam Yatırım Maliyeti:** ${formatTL(totalCost)}
+- **Güncel Portföy Değeri:** ${formatTL(totalValue)}
+- **Net Kâr / Zarar:** **${netPL >= 0 ? '+' : ''}${formatTL(netPL)}** (%${netPLPct.toFixed(2)})
+- **Portföy Sağlık Skoru:** **${healthScore}/100** ${healthScore >= 75 ? '🟢 (Güçlü Denge & İstikrarlı Getiri)' : (healthScore >= 50 ? '🟡 (Orta Seviye Getiri & Dengelenme İhtiyacı)' : '🔴 (Yüksek Risk / Zarar Alanı)')}
+
+### 2. Kapsamlı Metrik & Varlık Dağılımı Analizi
+Portföyünüzde toplam **${portfolio.length} adet aktif varlık** bulunmaktadır. 
+- **En Yüksek Getirili Varlık:** **${bestAsset.name || bestAsset.code}** (+%${bestPct.toFixed(2)})
+- **Genel Değerlendirme:** Varlık dağılımınız piyasa koşullarına göre şekillenmiştir. Getirileriniz ${netPL >= 0 ? 'pozitif seyretmektedir' : 'kısa vadeli piyasa dalgalanmalarından etkilenmiştir'}.
+
+### 3. Çift Kademeli AI Stratejik Öneriler
+1. **Çeşitlendirme Disiplini:** Tüm sermayeyi tek bir enstrümanda tutmak yerine altın, döviz ve TEFAS fonları arasında dengeli ağırlıklar koruyun.
+2. **Kademeli İşlem Stratejisi (DCA):** Volatilitenin yüksek olduğu dönemlerde tek seferlik toplu alım yerine kademeli alım stratejisini uygulayabilirsiniz.
+3. **Fiyat Alarmları:** Kritik destek ve direnç seviyeleri için uygulamadaki fiyat alarmlarını aktif tutun.
+      `;
+    }
+
+    async function triggerAIPortfolioAnalysis() {
+      const data = loadUserData();
+      const portfolio = data.portfolio || [];
+
+      const aiEmptyState = document.getElementById('aiEmptyState');
+      const aiLoadingState = document.getElementById('aiLoadingState');
+      const aiResultText = document.getElementById('aiResultText');
+      const aiBtnIcon = document.getElementById('aiBtnIcon');
+      const aiBtnText = document.getElementById('aiBtnText');
+      const aiApiKeyInput = document.getElementById('aiApiKey');
+
+      if (!portfolio || portfolio.length === 0) {
+        showToast('Analiz yapılabilecek varlık bulunamadı. Lütfen önce portföyünüze varlık ekleyin.', 'error');
+        return;
+      }
+
+      let customApiKey = aiApiKeyInput ? aiApiKeyInput.value.trim() : '';
+      if (customApiKey) {
+        localStorage.setItem('portfoy_gemini_api_key', customApiKey);
+      } else {
+        customApiKey = localStorage.getItem('portfoy_gemini_api_key') || '';
+        if (customApiKey && aiApiKeyInput) aiApiKeyInput.value = customApiKey;
+      }
+
+      aiEmptyState.classList.add('hidden');
+      aiResultText.classList.add('hidden');
+      aiLoadingState.classList.remove('hidden');
+      aiBtnIcon.textContent = '⏳';
+      aiBtnText.textContent = 'Analiz Ediliyor...';
+
+      let totalCost = 0;
+      let totalValue = 0;
+      const assetSummaryList = portfolio.map(item => {
+        const curPrice = getCurrentUnitPrice(item);
+        const cost = item.amount * item.buyPrice;
+        const val = item.amount * curPrice;
+        const pl = val - cost;
+        const plPct = cost > 0 ? (pl / cost) * 100 : 0;
+        totalCost += cost;
+        totalValue += val;
+        return `- ${item.name || item.code} (${(item.type || '').toUpperCase()}): Adet/Miktar: ${item.amount}, Birim Alış: ${item.buyPrice} TL, Anlık Birim Fiyat: ${curPrice} TL, Toplam Değer: ${val.toFixed(2)} TL, K/Z: ${pl.toFixed(2)} TL (%${plPct.toFixed(2)})`;
+      }).join('\n');
+
+      const netPL = totalValue - totalCost;
+      const netPLPct = totalCost > 0 ? (netPL / totalCost) * 100 : 0;
+
+      let rawText = "";
+      let engineName = "Çift Kademeli Akıllı Algoritmik Motor";
+
+      // Stage 1: Try Gemini API if key is present or try default endpoint
+      if (customApiKey) {
+        try {
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${customApiKey}`;
+          const userPrompt = `Portföy Maliyeti: ${totalCost}, Güncel Değer: ${totalValue}, Getiri: %${netPLPct.toFixed(2)}\nVarlıklar:\n${assetSummaryList}\n\nTürkçe profesyonel finansal analiz ve stratejik öneriler sun.`;
+          
+          const response = await fetchWithRetry(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: userPrompt }] }] })
+          }, 2);
+
+          const result = await response.json();
+          rawText = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          if (rawText) engineName = "Gemini 3 Flash AI";
+        } catch (apiErr) {
+          console.warn("Gemini API call failed, falling back to algorithmic engine:", apiErr);
+        }
+      }
+
+      // Stage 2: Automatic Fallback to robust algorithmic portfolio metric engine if API returned nothing
+      if (!rawText) {
+        rawText = generateSmartAlgorithmicAnalysis(portfolio, totalCost, totalValue, netPL, netPLPct);
+        engineName = "Çift Kademeli Akıllı Analiz Motoru (Otomatik Fallback)";
+      }
+
+      const formattedHtml = formatAIResponseToHTML(rawText);
+
+      aiResultText.innerHTML = `
+        <div class="bg-indigo-950/40 p-3 rounded-xl border border-indigo-800/50 mb-3 flex items-center justify-between text-xs font-mono text-indigo-300">
+          <span>✅ AI Analizi Başarıyla Tamamlandı</span>
+          <span>Motor: ${engineName}</span>
+        </div>
+        ${formattedHtml}
+      `;
+      aiLoadingState.classList.add('hidden');
+      aiResultText.classList.remove('hidden');
+      aiBtnIcon.textContent = '⚡';
+      aiBtnText.textContent = 'Portföyümü AI ile Analiz Et';
+      showToast('AI Portföy analizi başarıyla tamamlandı!', 'success');
+    }
+
+    function generatePriceHistoryForAsset(item, days) {
+      const curPrice = getCurrentUnitPrice(item);
+      const buyPrice = item.buyPrice || curPrice;
+      const pointsCount = days <= 7 ? 7 : (days <= 30 ? 15 : (days <= 90 ? 30 : 50));
+      const labels = [];
+      const dataPoints = [];
+
+      const now = new Date();
+      let trendStartRatio = 1.0;
+      if (days <= 7) trendStartRatio = 0.985 + (Math.random() * 0.03);
+      else if (days <= 30) trendStartRatio = 0.95 + (Math.random() * 0.08);
+      else if (days <= 90) trendStartRatio = 0.90 + (Math.random() * 0.15);
+      else if (days <= 180) trendStartRatio = 0.85 + (Math.random() * 0.22);
+      else trendStartRatio = 0.80 + (Math.random() * 0.30);
+
+      const startPrice = curPrice * trendStartRatio;
+
+      for (let i = 0; i < pointsCount; i++) {
+        const d = new Date(now);
+        const dayOffset = Math.round((days / (pointsCount - 1)) * (pointsCount - 1 - i));
+        d.setDate(d.getDate() - dayOffset);
+        
+        const dateStr = d.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' });
+        labels.push(dateStr);
+
+        if (i === pointsCount - 1) {
+          dataPoints.push(curPrice);
+        } else {
+          const progress = i / (pointsCount - 1);
+          const baseStep = startPrice + (curPrice - startPrice) * progress;
+          const noise = (Math.random() - 0.48) * (curPrice * 0.015);
+          dataPoints.push(parseFloat(Math.max(0.01, baseStep + noise).toFixed(2)));
+        }
+      }
+
+      return { labels, dataPoints, startPrice, curPrice, buyPrice };
+    }
+
+    window.openAssetDetailChartModal = function(assetId) {
+      const data = loadUserData();
+      const item = (data.portfolio || []).find(i => i.id === assetId);
+      if (!item) return;
+
+      activeDetailAsset = item;
+      document.getElementById('chartModalTitle').textContent = `${item.name || item.code} - Dönemsel Analiz & Grafik`;
+      document.getElementById('chartModalSub').textContent = `${categorySpecs[item.type]?.label || 'Varlık'} • Haftalık / Aylık Kâr Zarar Analizi`;
+
+      renderAssetChartModalContent();
+      document.getElementById('chartDetailModal').style.display = 'flex';
+    };
+
+    function renderAssetChartModalContent() {
+      if (!activeDetailAsset) return;
+      const item = activeDetailAsset;
+      const curPrice = getCurrentUnitPrice(item);
+      const buyPrice = item.buyPrice || 0;
+      const totalCost = item.amount * buyPrice;
+      const totalVal = item.amount * curPrice;
+      const netPL = totalVal - totalCost;
+      const netPLPct = totalCost > 0 ? (netPL / totalCost) * 100 : 0;
+
+      document.getElementById('mBuyPrice').textContent = formatTL(buyPrice);
+      document.getElementById('mCurPrice').textContent = formatTL(curPrice);
+      
+      const mNetPL = document.getElementById('mNetPL');
+      mNetPL.textContent = (netPL >= 0 ? '+' : '') + formatTL(netPL);
+      mNetPL.className = `font-bold text-sm mt-0.5 ${netPL >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+
+      const mNetPLPct = document.getElementById('mNetPLPct');
+      mNetPLPct.textContent = `${netPLPct >= 0 ? '+' : ''}${netPLPct.toFixed(2)}%`;
+      mNetPLPct.className = `font-bold text-sm mt-0.5 ${netPLPct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+
+      const history = generatePriceHistoryForAsset(item, activeChartDays);
+      const periodStartPrice = history.dataPoints[0];
+      const periodEndPrice = history.dataPoints[history.dataPoints.length - 1];
+      const periodReturn = periodStartPrice > 0 ? ((periodEndPrice - periodStartPrice) / periodStartPrice) * 100 : 0;
+      const minP = Math.min(...history.dataPoints);
+      const maxP = Math.max(...history.dataPoints);
+
+      const periodReturnPct = document.getElementById('periodReturnPct');
+      periodReturnPct.textContent = `${periodReturn >= 0 ? '+' : ''}${periodReturn.toFixed(2)}%`;
+      periodReturnPct.className = `font-bold text-sm ${periodReturn >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+
+      document.getElementById('periodMinPrice').textContent = formatTL(minP);
+      document.getElementById('periodMaxPrice').textContent = formatTL(maxP);
+
+      if (typeof Chart === 'undefined') return;
+
+      const canvas = document.getElementById('assetDetailChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (detailChartInstance) detailChartInstance.destroy();
+
+      const isGain = periodReturn >= 0;
+      const lineColor = isGain ? '#10b981' : '#f43f5e';
+      const bgGradient = ctx.createLinearGradient(0, 0, 0, 300);
+      bgGradient.addColorStop(0, isGain ? 'rgba(16, 185, 129, 0.25)' : 'rgba(244, 63, 94, 0.25)');
+      bgGradient.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+
+      const buyPriceLine = new Array(history.labels.length).fill(buyPrice);
+
+      detailChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: history.labels,
+          datasets: [
+            {
+              label: 'Piyasa Birim Fiyatı (TL)',
+              data: history.dataPoints,
+              borderColor: lineColor,
+              backgroundColor: bgGradient,
+              fill: true,
+              borderWidth: 2.5,
+              tension: 0.25,
+              pointRadius: history.labels.length > 20 ? 1 : 3,
+              pointHoverRadius: 6
+            },
+            {
+              label: 'Birim Alış Maliyetiniz',
+              data: buyPriceLine,
+              borderColor: '#f59e0b',
+              borderWidth: 1.5,
+              borderDash: [5, 5],
+              pointRadius: 0,
+              fill: false
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: { boxWidth: 12, font: { family: 'Plus Jakarta Sans', size: 11 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return ` ${context.dataset.label}: ${formatTL(context.raw)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { font: { family: 'Plus Jakarta Sans', size: 10 } }
+            },
+            y: {
+              grid: { color: '#f1f5f9' },
+              ticks: {
+                font: { family: 'Space Grotesk', size: 11 },
+                callback: function(value) { return formatTL(value); }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function evaluatePriceAlarms() {
+      const data = loadUserData();
+      const alarms = data.alarms || [];
+      const activeCount = alarms.filter(a => a.isActive).length;
+      const countBadge = document.getElementById('alarmCountBadge');
+      if (countBadge) countBadge.textContent = activeCount.toString();
+
+      const triggeredContainer = document.getElementById('triggeredAlertsContainer');
+      if (!triggeredContainer) return;
+
+      triggeredContainer.innerHTML = '';
+      let hasTriggered = false;
+
+      alarms.forEach(alarm => {
+        if (!alarm.isActive) return;
+        const rate = liveRates[alarm.symbol];
+        if (!rate || !rate.price) return;
+
+        const currentPrice = rate.price;
+        let isTriggered = false;
+        if (alarm.condition === 'above' && currentPrice >= alarm.targetPrice) {
+          isTriggered = true;
+        } else if (alarm.condition === 'below' && currentPrice <= alarm.targetPrice) {
+          isTriggered = true;
+        }
+
+        if (isTriggered) {
+          hasTriggered = true;
+          const alertDiv = document.createElement('div');
+          alertDiv.className = "bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-xl shadow-sm flex items-center justify-between alarm-active-ring";
+          alertDiv.innerHTML = `
+            <div class="flex items-center gap-3">
+              <span class="text-2xl animate-bounce">🔔</span>
+              <div>
+                <div class="font-bold text-amber-900 text-sm">FİYAT ALARMI TETİKLENDİ: ${alarm.name || alarm.symbol}</div>
+                <div class="text-xs text-amber-800">
+                  Hedef: <span class="font-mono font-bold">${formatTL(alarm.targetPrice)}</span> | 
+                  Anlık Fiyat: <span class="font-mono font-bold text-emerald-700">${formatTL(currentPrice)}</span> 
+                  (${alarm.condition === 'above' ? '≥ Yükseldi' : '≤ Düştüğünde'})
+                  ${alarm.note ? ` - <i>${alarm.note}</i>` : ''}
+                </div>
+              </div>
+            </div>
+            <button data-action="dismiss-alarm" data-id="${alarm.id}" class="text-amber-800 hover:text-amber-950 font-bold text-sm bg-amber-100 hover:bg-amber-200 px-3 py-1 rounded-lg transition-colors">
+              Kapat
+            </button>
+          `;
+          triggeredContainer.appendChild(alertDiv);
+        }
+      });
+
+      triggeredContainer.style.display = hasTriggered ? 'block' : 'none';
+    }
+
+    window.dismissAlarmAlert = function(id) {
+      const data = loadUserData();
+      let alarms = data.alarms || [];
+      const idx = alarms.findIndex(a => a.id === id);
+      if (idx !== -1) {
+        alarms[idx].isActive = false;
+        saveUserData({ ...data, alarms });
+        renderApp();
+      }
+    };
+
+    function renderApp() {
+      const data = loadUserData();
+      const portfolio = data.portfolio || [];
+
+      const catStats = {
+        gold: { cost: 0, value: 0, count: 0 },
+        fx: { cost: 0, value: 0, count: 0 },
+        fund: { cost: 0, value: 0, count: 0 },
+        eurobond: { cost: 0, value: 0, count: 0 },
+        deposit: { cost: 0, value: 0, count: 0 }
+      };
+
+      let grandTotalCost = 0;
+      let grandTotalValue = 0;
+
+      portfolio.forEach((item) => {
+        const currentUnitPrice = getCurrentUnitPrice(item);
+        const cost = item.amount * item.buyPrice;
+        const value = item.amount * currentUnitPrice;
+
+        grandTotalCost += cost;
+        grandTotalValue += value;
+
+        if (catStats[item.type]) {
+          catStats[item.type].cost += cost;
+          catStats[item.type].value += value;
+          catStats[item.type].count += 1;
+        }
+      });
+
+      const grandPL = grandTotalValue - grandTotalCost;
+      const grandPLPct = grandTotalCost > 0 ? (grandPL / grandTotalCost) * 100 : 0;
+
+      document.getElementById('sCost').textContent = formatTL(grandTotalCost);
+      document.getElementById('sValue').textContent = formatTL(grandTotalValue);
+      
+      const sPL = document.getElementById('sPL');
+      sPL.textContent = (grandPL >= 0 ? '+' : '') + formatTL(grandPL);
+      sPL.className = `text-2xl md:text-3xl font-bold font-mono ${grandPL >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+      
+      const sPLPct = document.getElementById('sPLPct');
+      sPLPct.textContent = `${grandPL >= 0 ? '+' : ''}${grandPLPct.toFixed(2)}% Toplam Getiri`;
+      sPLPct.className = `text-sm font-semibold font-mono ${grandPL >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+      
+      document.getElementById('sCount').textContent = portfolio.length.toString();
+      
+      const activeCatCount = Object.keys(catStats).filter(k => catStats[k].count > 0).length;
+      document.getElementById('sCountSub').textContent = `${activeCatCount} Aktif Kategori`;
+
+      document.getElementById('tabCountAll').textContent = portfolio.length.toString();
+      document.getElementById('tabCountGold').textContent = catStats.gold.count.toString();
+      document.getElementById('tabCountFx').textContent = catStats.fx.count.toString();
+      document.getElementById('tabCountFund').textContent = catStats.fund.count.toString();
+      document.getElementById('tabCountEurobond').textContent = catStats.eurobond.count.toString();
+      document.getElementById('tabCountDeposit').textContent = catStats.deposit.count.toString();
+
+      renderCategoryCards(catStats, grandTotalValue);
+      renderPortfolioTable(portfolio);
+      renderAllocationChart(catStats);
+      renderWatchlist(data.watchlist || []);
+      renderAlarmsGrid(data.alarms || []);
+      updateConverter();
+      renderLivePrices();
+      evaluatePriceAlarms();
+    }
+
+    function renderCategoryCards(catStats, grandTotalValue) {
+      const container = document.getElementById('categoryCardsGrid');
+      if (!container) return;
+      container.innerHTML = '';
+
+      Object.keys(categorySpecs).forEach(catKey => {
+        const spec = categorySpecs[catKey];
+        const stat = catStats[catKey] || { cost: 0, value: 0, count: 0 };
+
+        const catCost = stat.cost;
+        const catVal = stat.value;
+        const catPL = catVal - catCost;
+        const catPLPct = catCost > 0 ? (catPL / catCost) * 100 : 0;
+        const catShare = grandTotalValue > 0 ? (catVal / grandTotalValue) * 100 : 0;
+
+        const isGain = catPL >= 0;
+        const plTextColor = isGain ? 'text-emerald-600' : 'text-rose-600';
+
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-2xl border shadow-2xs ${spec.bgCardClass} ${spec.borderClass} flex flex-col justify-between transition-all hover:shadow-md cursor-pointer`;
+
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between gap-1 mb-2">
+              <div class="flex items-center gap-1.5">
+                <span class="text-lg">${spec.icon}</span>
+                <span class="font-bold text-xs uppercase tracking-wide text-slate-800 truncate">${spec.shortLabel}</span>
+              </div>
+              <span class="text-[10px] font-mono font-bold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded-md">
+                %${catShare.toFixed(1)} Pay
+              </span>
+            </div>
+
+            <div class="bg-white/85 backdrop-blur-xs p-2.5 rounded-xl border border-slate-200/80 my-2">
+              <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Kategori Kâr / Zarar (%)</div>
+              <div class="flex items-baseline justify-between mt-0.5">
+                <span class="text-lg font-bold font-mono ${plTextColor}">
+                  ${isGain ? '+' : ''}${catPLPct.toFixed(2)}%
+                </span>
+                <span class="text-xs font-mono font-semibold ${plTextColor}">
+                  ${isGain ? '+' : ''}${formatTL(catPL)}
+                </span>
+              </div>
+            </div>
+
+            <div class="space-y-1 text-xs pt-1">
+              <div class="flex justify-between items-center text-slate-500">
+                <span>Maliyet:</span>
+                <span class="font-mono font-semibold text-slate-700">${formatTL(catCost)}</span>
+              </div>
+              <div class="flex justify-between items-center text-slate-500">
+                <span>Güncel Değer:</span>
+                <span class="font-mono font-bold text-slate-900">${formatTL(catVal)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-3 pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+            <span>${stat.count} Adet Varlık</span>
+            <span class="${spec.textAccent} hover:underline font-bold">Filtrele →</span>
+          </div>
+        `;
+
+        card.addEventListener('click', () => filterByTab(catKey));
+        container.appendChild(card);
+      });
+    }
+
+    function renderPortfolioTable(portfolio) {
+      const portfolioBody = document.getElementById('portfolioBody');
+      const emptyState = document.getElementById('emptyState');
+      const searchEl = document.getElementById('tableSearch');
+      const query = searchEl ? (searchEl.value || '').toLowerCase() : '';
+
+      if (!portfolioBody) return;
+      portfolioBody.innerHTML = '';
+
+      const filtered = portfolio.filter(item => {
+        const matchesCategory = activeCategoryTab === 'all' || item.type === activeCategoryTab;
+        const matchesSearch = (item.name || '').toLowerCase().includes(query) || (item.code || '').toLowerCase().includes(query);
+        return matchesCategory && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        if (emptyState) emptyState.style.display = 'block';
+        return;
+      }
+      if (emptyState) emptyState.style.display = 'none';
+
+      filtered.forEach((item) => {
+        const currentUnitPrice = getCurrentUnitPrice(item);
+        const cost = item.amount * item.buyPrice;
+        const value = item.amount * currentUnitPrice;
+        const pl = value - cost;
+        const plPct = cost > 0 ? (pl / cost) * 100 : 0;
+
+        const spec = categorySpecs[item.type] || categorySpecs.fund;
+        const isGain = pl >= 0;
+        const plClass = isGain ? 'text-emerald-600' : 'text-rose-600';
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100";
+
+        tr.innerHTML = `
+          <td class="py-3.5 px-4">
+            <div class="font-bold text-slate-800 flex items-center gap-1.5">
+              <span>${spec.icon}</span> ${item.name || item.code}
+            </div>
+            <div class="flex items-center gap-1.5 mt-1">
+              <span class="badge ${spec.badgeClass}">${spec.shortLabel}</span>
+              <span class="text-xs text-slate-400 font-sans">${item.note || ''}</span>
+            </div>
+          </td>
+          <td class="py-3.5 px-4 text-center text-xs text-slate-500 font-sans">${item.buyDate || '-'}</td>
+          <td class="py-3.5 px-4 text-right font-medium">${(item.amount || 0).toLocaleString('tr-TR')}</td>
+          <td class="py-3.5 px-4 text-right text-slate-500">${formatTL(item.buyPrice)}</td>
+          <td class="py-3.5 px-4 text-right font-bold text-slate-700">${formatTL(cost)}</td>
+          <td class="py-3.5 px-4 text-right font-bold text-slate-800">${formatTL(currentUnitPrice)}</td>
+          <td class="py-3.5 px-4 text-right font-bold text-slate-900">${formatTL(value)}</td>
+          <td class="py-3.5 px-4 text-right font-bold ${plClass}">${isGain ? '+' : ''}${formatTL(pl)}</td>
+          <td class="py-3.5 px-4 text-right font-bold ${plClass}">${isGain ? '+' : ''}${plPct.toFixed(2)}%</td>
+          <td class="py-3.5 px-4 text-center">
+            <div class="flex items-center justify-center gap-1.5">
+              <button data-action="chart" data-id="${item.id}" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2.5 py-1 rounded-lg transition-colors font-semibold flex items-center gap-1" title="Grafik & Analiz">
+                📊 Grafik
+              </button>
+              <button data-action="edit" data-id="${item.id}" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-lg transition-colors" title="Düzenle">✏️</button>
+              <button data-action="delete" data-id="${item.id}" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-600 px-2 py-1 rounded-lg transition-colors" title="Sil">🗑️</button>
+            </div>
+          </td>
+        `;
+        portfolioBody.appendChild(tr);
+      });
+    }
+
+    function filterByTab(catKey) {
+      activeCategoryTab = catKey;
+      const buttons = document.querySelectorAll('.cat-tab');
+      buttons.forEach(btn => {
+        const cat = btn.getAttribute('data-cat');
+        if (cat === activeCategoryTab) {
+          btn.className = "cat-tab px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-900 text-white shadow-sm ring-2 ring-slate-900";
+        } else {
+          btn.className = "cat-tab px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-700 hover:bg-slate-200";
+        }
+      });
+      renderApp();
+    }
+
+    function renderAllocationChart(catStats) {
+      if (typeof Chart === 'undefined') return;
+      const canvas = document.getElementById('allocChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const labels = [];
+      const dataValues = [];
+      const bgColors = [];
+
+      Object.keys(categorySpecs).forEach(key => {
+        if (catStats[key] && catStats[key].value > 0) {
+          labels.push(categorySpecs[key].shortLabel);
+          dataValues.push(catStats[key].value);
+          bgColors.push(categorySpecs[key].chartColor);
+        }
+      });
+
+      if (allocChartInstance) allocChartInstance.destroy();
+
+      if (dataValues.length === 0) {
+        allocChartInstance = new Chart(ctx, {
+          type: 'doughnut',
+          data: { labels: ['Veri Yok'], datasets: [{ data: [1], backgroundColor: ['#e2e8f0'] }] },
+          options: { maintainAspectRatio: false, plugins: { legend: { display: false } } }
+        });
+        return;
+      }
+
+      allocChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{ data: dataValues, backgroundColor: bgColors, borderWidth: 2, borderColor: '#ffffff' }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Plus Jakarta Sans', size: 12 } } },
+            tooltip: {
+              callbacks: {
+                label: function(context) { return ` ${context.label}: ${formatTL(context.raw)}`; }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function renderWatchlist(watchlist) {
+      const grid = document.getElementById('watchlistGrid');
+      const empty = document.getElementById('watchlistEmpty');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      if (watchlist.length === 0) {
+        if (empty) empty.style.display = 'block';
+        return;
+      }
+      if (empty) empty.style.display = 'none';
+
+      watchlist.forEach((item, index) => {
+        const itemSymbol = (item.symbol || '').toUpperCase();
+        const rate = liveRates[itemSymbol] || { price: 0, change: 0 };
+        const itemId = item.id || 'w_' + index;
+
+        const card = document.createElement('div');
+        card.className = "bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between group hover:border-sky-300 transition-colors";
+        card.innerHTML = `
+          <div>
+            <div class="font-bold text-sm text-slate-800 font-mono">${itemSymbol}</div>
+            <div class="text-xs text-slate-500 truncate max-w-[130px]">${item.name || itemSymbol}</div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div class="text-right">
+              <div class="font-mono font-bold text-sm text-slate-900">${rate.price ? formatTL(rate.price) : '—'}</div>
+              <div class="text-xs font-mono font-semibold ${rate.change >= 0 ? 'text-emerald-600' : 'text-rose-600'}">
+                ${rate.change >= 0 ? '+' : ''}${rate.change}%
+              </div>
+            </div>
+            <button data-action="delete-watchlist" data-id="${itemId}" class="text-[11px] hover:bg-rose-100 p-1 rounded text-rose-600" title="Sil">🗑️</button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    window.deleteWatchlistItem = function(id) {
+      const data = loadUserData();
+      let watchlist = data.watchlist || [];
+      watchlist = watchlist.filter(w => w.id !== id);
+      saveUserData({ ...data, watchlist });
+      renderApp();
+      showToast('İzleme listesinden çıkarıldı.', 'info');
+    };
+
+    function renderLivePrices() {
+      const container = document.getElementById('livePrices');
+      if (!container) return;
+      container.innerHTML = '';
+
+      Object.keys(liveRates).forEach(key => {
+        const item = liveRates[key];
+        if (!item) return;
+        const card = document.createElement('div');
+        card.className = "bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col justify-between hover:border-slate-300 transition-colors shadow-2xs group relative";
+        
+        let spec = categorySpecs[item.category] || categorySpecs.fund;
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-1">
+            <span class="text-xs text-slate-600 font-bold truncate font-mono">${key}</span>
+            <div class="flex items-center gap-1">
+              <span class="text-[10px] ${spec.badgeClass} px-1.5 py-0.5 rounded font-mono">${spec.shortLabel}</span>
+              <button data-action="delete-rate" data-key="${key}" class="text-slate-400 hover:text-rose-600 text-xs px-1 opacity-0 group-hover:opacity-100 transition-opacity" title="Bu piyasa fiyatını sil">✕</button>
+            </div>
+          </div>
+          <div class="text-xs text-slate-400 truncate mt-0.5">${item.name || key}</div>
+          <div class="text-base font-bold font-mono text-slate-900 mt-2">${formatTL(item.price)}</div>
+          <div class="text-xs font-mono font-semibold mt-0.5 ${item.change >= 0 ? 'text-emerald-600' : 'text-rose-600'}">
+            ${item.change >= 0 ? '▲ +' : '▼ '}${item.change}%
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    window.deleteLiveRate = function(key) {
+      if (liveRates[key]) {
+        delete liveRates[key];
+        saveLiveRatesToStorage();
+        if (document.getElementById('marketRateModal').style.display === 'flex') {
+          openRateModal();
+        }
+        renderApp();
+        showToast(`${key} sembolü piyasa listesinden silindi.`, 'info');
+      }
+    };
+
+    function addNewRateFromModal() {
+      const code = (document.getElementById('newRateCode').value || '').trim().toUpperCase();
+      const name = (document.getElementById('newRateName').value || '').trim() || code;
+      const price = parseFloat(document.getElementById('newRatePrice').value) || 0;
+      const category = document.getElementById('newRateCategory').value || 'fx';
+
+      if (!code) {
+        showToast('Lütfen geçerli bir sembol/kod girin.', 'error');
+        return;
+      }
+      if (price <= 0) {
+        showToast('Lütfen geçerli bir birim fiyat girin.', 'error');
+        return;
+      }
+
+      liveRates[code] = {
+        name: name,
+        price: price,
+        change: 0,
+        category: category
+      };
+
+      saveLiveRatesToStorage();
+      document.getElementById('newRateCode').value = '';
+      document.getElementById('newRateName').value = '';
+      document.getElementById('newRatePrice').value = '';
+
+      openRateModal();
+      renderApp();
+      showToast(`${code} sembolü piyasa fiyatlarına eklendi.`, 'success');
+    }
+
+    function renderAlarmsGrid(alarms) {
+      const grid = document.getElementById('alarmsListGrid');
+      const empty = document.getElementById('alarmsEmptyState');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      if (alarms.length === 0) {
+        if (empty) empty.style.display = 'block';
+        return;
+      }
+      if (empty) empty.style.display = 'none';
+
+      alarms.forEach(alarm => {
+        const rate = liveRates[alarm.symbol] || { price: 0 };
+        const curPrice = rate.price;
+        const isTriggered = alarm.isActive && curPrice > 0 && (
+          (alarm.condition === 'above' && curPrice >= alarm.targetPrice) ||
+          (alarm.condition === 'below' && curPrice <= alarm.targetPrice)
+        );
+
+        const card = document.createElement('div');
+        card.className = `p-3.5 rounded-xl border flex flex-col justify-between transition-all ${
+          isTriggered ? 'bg-amber-50 border-amber-300 shadow-sm' : 'bg-slate-50 border-slate-200'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="font-bold text-sm text-slate-900 font-mono flex items-center gap-1.5">
+                <span>🔔</span> ${alarm.name || alarm.symbol}
+              </div>
+              <div class="text-xs text-slate-500 mt-0.5">${alarm.note || 'Hedef Fiyat Takibi'}</div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button data-action="delete-alarm" data-id="${alarm.id}" class="text-xs text-rose-500 hover:text-rose-700 p-1">✕</button>
+            </div>
+          </div>
+
+          <div class="my-3 py-2 px-3 bg-white/80 rounded-lg border border-slate-200/80 space-y-1">
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-500">Hedef:</span>
+              <span class="font-mono font-bold text-slate-900">${formatTL(alarm.targetPrice)}</span>
+            </div>
+            <div class="flex justify-between items-center text-xs">
+              <span class="text-slate-500">Koşul:</span>
+              <span class="font-bold ${alarm.condition === 'above' ? 'text-emerald-600' : 'text-rose-600'}">
+                ${alarm.condition === 'above' ? '▲ Yükseldiğinde' : '▼ Düştüğünde'}
+              </span>
+            </div>
+            <div class="flex justify-between items-center text-xs pt-1 border-t border-slate-100">
+              <span class="text-slate-500">Anlık Fiyat:</span>
+              <span class="font-mono font-bold ${curPrice > 0 ? 'text-sky-700' : 'text-slate-400'}">
+                ${curPrice > 0 ? formatTL(curPrice) : '-- TL'}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between text-xs">
+            <button data-action="toggle-alarm" data-id="${alarm.id}" class="text-xs font-semibold ${
+              alarm.isActive ? 'text-amber-700 hover:underline' : 'text-emerald-700 hover:underline'
+            }">
+              ${alarm.isActive ? 'Duraklat' : 'Etkinleştir'}
+            </button>
+            ${isTriggered ? '<span class="font-bold text-amber-700 animate-pulse">⚠️ TETİKLENDİ</span>' : ''}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    window.toggleAlarm = function(id) {
+      const data = loadUserData();
+      let alarms = data.alarms || [];
+      const idx = alarms.findIndex(a => a.id === id);
+      if (idx !== -1) {
+        alarms[idx].isActive = !alarms[idx].isActive;
+        saveUserData({ ...data, alarms });
+        renderApp();
+      }
+    };
+
+    window.deleteAlarm = function(id) {
+      const data = loadUserData();
+      let alarms = data.alarms || [];
+      alarms = alarms.filter(a => a.id !== id);
+      saveUserData({ ...data, alarms });
+      renderApp();
+      showToast('Fiyat alarmı silindi.', 'info');
+    };
+
+    function cleanTurkishNumber(valStr) {
+      if (!valStr) return 0;
+      let clean = valStr.toString().replace(/[^0-9.,-]/g, '').trim();
+      if (!clean) return 0;
+      
+      if (clean.includes(',') && clean.includes('.')) {
+        clean = clean.replace(/\./g, '').replace(',', '.');
+      } else if (clean.includes(',')) {
+        clean = clean.replace(',', '.');
+      }
+      return parseFloat(clean) || 0;
+    }
+
+    function parseTurkishDate(dateStr) {
+      if (!dateStr) return new Date().toISOString().split('T')[0];
+      const str = dateStr.trim();
+      const parts = str.split(/[./-]/);
+      if (parts.length === 3) {
+        if (parts[0].length === 2 && parts[2].length === 4) {
+          return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        } else if (parts[0].length === 4) {
+          return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+        }
+      }
+      return new Date().toISOString().split('T')[0];
+    }
+
+    function processBulkImport() {
+      const rawText = document.getElementById('importRawText').value.trim();
+      const replaceAll = document.getElementById('chkReplaceAll').checked;
+
+      if (!rawText) {
+        showToast('Lütfen yapıştırılacak tablo verisini girin.', 'error');
+        return;
+      }
+
+      const lines = rawText.split('\n');
+      const importedAssets = [];
+
+      lines.forEach((line, index) => {
+        if (!line.trim()) return;
+
+        const lowerLine = line.toLowerCase();
+        if (lowerLine.includes('kod') || lowerLine.includes('tarih') || lowerLine.includes('varlık') || lowerLine.includes('maliyet')) {
+          return;
+        }
+
+        let cols = line.split('\t');
+        if (cols.length <= 1) cols = line.split(';');
+        if (cols.length <= 1 && line.includes(',')) cols = line.split(',');
+
+        cols = cols.map(c => c.trim());
+
+        const rawCode = cols[0] || `VARLIK_${index + 1}`;
+        const rawDate = cols[1] || '';
+        const rawAmount = cols[2] || '1';
+        const rawUnitPrice = cols[3] || '0';
+        const rawTotalCost = cols[4] || '0';
+        const rawCurrentPrice = cols[5] || '';
+        const rawCurrentTotalValue = cols[6] || '';
+
+        let amount = cleanTurkishNumber(rawAmount) || 1;
+        let unitPrice = cleanTurkishNumber(rawUnitPrice);
+        const totalCost = cleanTurkishNumber(rawTotalCost);
+
+        if (unitPrice === 0 && totalCost > 0 && amount > 0) {
+          unitPrice = totalCost / amount;
+        }
+
+        let currentPrice = cleanTurkishNumber(rawCurrentPrice);
+        const currentTotalVal = cleanTurkishNumber(rawCurrentTotalValue);
+
+        if (currentPrice === 0 && currentTotalVal > 0 && amount > 0) {
+          currentPrice = currentTotalVal / amount;
+        }
+
+        const buyDate = parseTurkishDate(rawDate);
+        let upperCode = rawCode.toUpperCase().trim();
+        let type = 'fund';
+        
+        if (['GRAM', 'CEYREK', 'ONS', 'ALTIN', 'GOLD', 'XAU'].some(k => upperCode.includes(k))) {
+          type = 'gold';
+        } else if (['USD', 'EUR', 'GBP', 'DOLAR', 'EURO', 'STERLIN', 'CHF'].some(k => upperCode.includes(k))) {
+          type = 'fx';
+        } else if (upperCode.includes('MEVDUAT') || upperCode.includes('VADELI')) {
+          type = 'deposit';
+        } else if (upperCode.includes('EUROBOND') || upperCode.startsWith('TR0') || upperCode.startsWith('US')) {
+          type = 'eurobond';
+        } else {
+          type = 'fund';
+        }
+
+        let fullName = rawCode;
+        if (liveRates[upperCode]) fullName = liveRates[upperCode].name;
+        else if (type === 'fund') fullName = `${upperCode} TEFAS Fonu`;
+
+        if (currentPrice > 0) {
+          liveRates[upperCode] = {
+            name: fullName,
+            price: currentPrice,
+            change: 0,
+            category: type
+          };
+        }
+
+        importedAssets.push({
+          id: Date.now().toString() + '_' + index,
+          type,
+          code: upperCode,
+          name: fullName,
+          amount,
+          buyPrice: unitPrice,
+          currentPrice: currentPrice > 0 ? currentPrice : null,
+          buyDate,
+          note: 'Google Sheets Aktarımı'
+        });
+      });
+
+      if (importedAssets.length === 0) {
+        showToast('Geçerli bir veri satırı bulunamadı.', 'error');
+        return;
+      }
+
+      saveLiveRatesToStorage();
+      const data = loadUserData();
+      let updatedPortfolio = replaceAll ? importedAssets : [...(data.portfolio || []), ...importedAssets];
+
+      saveUserData({ ...data, portfolio: updatedPortfolio });
+      document.getElementById('importModal').style.display = 'none';
+      document.getElementById('importRawText').value = '';
+      renderApp();
+
+      showToast(`${importedAssets.length} adet varlık içe aktarıldı!`, 'success');
+    }
+
+    function updateFormFields() {
+      const type = document.getElementById('fType').value;
+      const fieldAsset = document.getElementById('fieldAsset');
+      const assetSelect = document.getElementById('assetSelect');
+      const assetCode = document.getElementById('assetCode');
+      const eurobondBlock = document.getElementById('eurobondBlock');
+      const depositBlock = document.getElementById('depositBlock');
+      const standardRow = document.getElementById('standardRow');
+
+      fieldAsset.style.display = 'block';
+      eurobondBlock.style.display = 'none';
+      depositBlock.style.display = 'none';
+      standardRow.style.display = 'grid';
+
+      if (type === 'gold') {
+        document.getElementById('lblAsset').textContent = 'Altın Türü';
+        assetSelect.style.display = 'block';
+        assetCode.style.display = 'none';
+        assetSelect.innerHTML = `
+          <option value="GRAM">Gram Altın</option>
+          <option value="CEYREK">Çeyrek Altın</option>
+          <option value="ONS">ONS Altın ($)</option>
+        `;
+      } else if (type === 'fx') {
+        document.getElementById('lblAsset').textContent = 'Döviz Birimi';
+        assetSelect.style.display = 'block';
+        assetCode.style.display = 'none';
+        assetSelect.innerHTML = `
+          <option value="USD">Dolar ($)</option>
+          <option value="EUR">Euro (€)</option>
+          <option value="GBP">Sterlin (£)</option>
+        `;
+      } else if (type === 'fund') {
+        document.getElementById('lblAsset').textContent = 'TEFAS Fon Kodu';
+        assetSelect.style.display = 'none';
+        assetCode.style.display = 'block';
+      } else if (type === 'eurobond') {
+        fieldAsset.style.display = 'none';
+        eurobondBlock.style.display = 'block';
+      } else if (type === 'deposit') {
+        fieldAsset.style.display = 'none';
+        standardRow.style.display = 'none';
+        depositBlock.style.display = 'block';
+      }
+      calculateModalTotal();
+    }
+
+    function calculateModalTotal() {
+      const amount = parseFloat(document.getElementById('fAmount').value) || 0;
+      const unitPrice = parseFloat(document.getElementById('fBuyPrice').value) || 0;
+      document.getElementById('lblCalculatedTotal').textContent = formatTL(amount * unitPrice);
+    }
+
+    function saveAsset() {
+      const data = loadUserData();
+      const portfolio = data.portfolio || [];
+
+      const type = document.getElementById('fType').value;
+      let code = '';
+      let name = '';
+
+      if (type === 'gold' || type === 'fx') {
+        code = document.getElementById('assetSelect').value;
+        name = liveRates[code] ? liveRates[code].name : code;
+      } else if (type === 'fund') {
+        code = document.getElementById('assetCode').value.trim().toUpperCase() || 'FON';
+        name = `${code} TEFAS Fonu`;
+      } else if (type === 'eurobond') {
+        code = document.getElementById('ebName').value.trim().toUpperCase() || 'EUROBOND';
+        name = `Eurobond ${code}`;
+      } else if (type === 'deposit') {
+        code = 'MEVDUAT';
+        name = `${document.getElementById('depBank').value || 'Vadeli'} Mevduat`;
+      }
+
+      let amount = parseFloat(document.getElementById('fAmount').value) || 0;
+      let buyPrice = parseFloat(document.getElementById('fBuyPrice').value) || 0;
+      let currentPrice = parseFloat(document.getElementById('fCurrentPrice').value) || null;
+
+      if (type === 'deposit') {
+        amount = 1;
+        buyPrice = parseFloat(document.getElementById('depPrincipal').value) || 0;
+        const rate = parseFloat(document.getElementById('depRate').value) || 0;
+        currentPrice = buyPrice * (1 + rate / 100);
+      }
+
+      if (currentPrice > 0) {
+        if (!liveRates[code]) {
+          liveRates[code] = { name: name, price: currentPrice, change: 0, category: type };
+        } else {
+          liveRates[code].price = currentPrice;
+        }
+        saveLiveRatesToStorage();
+      }
+
+      if (currentEditingId) {
+        const index = portfolio.findIndex(i => i.id === currentEditingId);
+        if (index !== -1) {
+          portfolio[index] = {
+            id: currentEditingId,
+            type, code, name, amount, buyPrice, currentPrice,
+            buyDate: document.getElementById('fBuyDate').value,
+            note: document.getElementById('fNote').value
+          };
+        }
+      } else {
+        portfolio.push({
+          id: Date.now().toString(),
+          type, code, name, amount, buyPrice, currentPrice,
+          buyDate: document.getElementById('fBuyDate').value || new Date().toISOString().split('T')[0],
+          note: document.getElementById('fNote').value
+        });
+      }
+
+      saveUserData({ ...data, portfolio });
+      closeModal();
+      renderApp();
+      showToast('Varlık kaydedildi.', 'success');
+    }
+
+    window.editAsset = function(id) {
+      const data = loadUserData();
+      const item = (data.portfolio || []).find(i => i.id === id);
+      if (!item) return;
+
+      currentEditingId = id;
+      document.getElementById('modalTitle').textContent = 'Varlığı Düzenle';
+
+      document.getElementById('fType').value = item.type;
+      updateFormFields();
+
+      if (item.type === 'gold' || item.type === 'fx') {
+        document.getElementById('assetSelect').value = item.code;
+      } else if (item.type === 'fund') {
+        document.getElementById('assetCode').value = item.code;
+      } else if (item.type === 'eurobond') {
+        document.getElementById('ebName').value = item.code;
+      } else if (item.type === 'deposit') {
+        document.getElementById('depPrincipal').value = item.buyPrice;
+      }
+
+      document.getElementById('fAmount').value = item.amount;
+      document.getElementById('fBuyPrice').value = item.buyPrice;
+      document.getElementById('fCurrentPrice').value = item.currentPrice || '';
+      document.getElementById('fBuyDate').value = item.buyDate || '';
+      document.getElementById('fNote').value = item.note || '';
+
+      calculateModalTotal();
+      document.getElementById('assetModal').style.display = 'flex';
+    };
+
+    window.deleteAsset = function(id) {
+      showConfirmModal('Bu varlığı silmek istediğinize emin misiniz?', () => {
+        const data = loadUserData();
+        const portfolio = (data.portfolio || []).filter(i => i.id !== id);
+        saveUserData({ ...data, portfolio });
+        renderApp();
+        showToast('Varlık silindi.', 'info');
+      });
+    };
+
+    function resetPortfolio() {
+      showConfirmModal('Portföyünüzdeki tüm varlıkları ve alarmları silip sıfırlamak istediğinize emin misiniz?', () => {
+        const data = loadUserData();
+        saveUserData({ ...data, portfolio: [], alarms: [] });
+        renderApp();
+        showToast('Portföy sıfırlandı.', 'info');
+      });
+    }
+
+    function openModal() {
+      currentEditingId = null;
+      document.getElementById('modalTitle').textContent = 'Yeni Varlık Ekle';
+      document.getElementById('fType').value = 'gold';
+      document.getElementById('fAmount').value = '';
+      document.getElementById('fBuyPrice').value = '';
+      document.getElementById('fCurrentPrice').value = '';
+      document.getElementById('fNote').value = '';
+      document.getElementById('fBuyDate').value = new Date().toISOString().split('T')[0];
+      updateFormFields();
+      document.getElementById('assetModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('assetModal').style.display = 'none';
+    }
+
+    function updateConverter() {
+      const convFrom = document.getElementById('convFrom');
+      const convTo = document.getElementById('convTo');
+      if (!convFrom || !convTo) return;
+      
+      if (convFrom.options.length === 0) {
+        let opts = `<option value="TRY">Türk Lirası (₺)</option>`;
+        Object.keys(liveRates).forEach(k => {
+          opts += `<option value="${k}">${liveRates[k].name || k}</option>`;
+        });
+        convFrom.innerHTML = opts;
+        convTo.innerHTML = opts;
+        convFrom.value = 'USD';
+        convTo.value = 'TRY';
+      }
+
+      const amountFrom = parseFloat(document.getElementById('convAmountFrom').value) || 0;
+      const fromKey = convFrom.value;
+      const toKey = convTo.value;
+
+      let fromPrice = fromKey === 'TRY' ? 1 : (liveRates[fromKey] ? liveRates[fromKey].price : 1);
+      let toPrice = toKey === 'TRY' ? 1 : (liveRates[toKey] ? liveRates[toKey].price : 1);
+
+      let converted = (amountFrom * fromPrice) / (toPrice || 1);
+      document.getElementById('convAmountTo').value = converted.toFixed(4);
+      document.getElementById('convNote').textContent = `1 ${fromKey} = ${(fromPrice / (toPrice || 1)).toFixed(4)} ${toKey}`;
+    }
+
+    function openAlarmModal() {
+      const select = document.getElementById('alarmSymbolSelect');
+      select.innerHTML = '';
+      Object.keys(liveRates).forEach(k => {
+        const opt = document.createElement('option');
+        opt.value = k;
+        opt.textContent = `${k} - ${liveRates[k].name || k} (${formatTL(liveRates[k].price)})`;
+        select.appendChild(opt);
+      });
+
+      document.getElementById('alarmTargetPrice').value = '';
+      document.getElementById('alarmNote').value = '';
+      document.getElementById('alarmModal').style.display = 'flex';
+      updateAlarmModalNote();
+    }
+
+    function updateAlarmModalNote() {
+      const sym = document.getElementById('alarmSymbolSelect').value;
+      const rate = liveRates[sym];
+      const noteEl = document.getElementById('alarmCurrentPriceNote');
+      if (rate && rate.price) {
+        noteEl.textContent = `Anlık Fiyat: ${formatTL(rate.price)}`;
+      } else {
+        noteEl.textContent = 'Anlık Fiyat: -- TL';
+      }
+    }
+
+    function saveAlarm() {
+      const symbol = document.getElementById('alarmSymbolSelect').value;
+      const targetPrice = parseFloat(document.getElementById('alarmTargetPrice').value) || 0;
+      const note = document.getElementById('alarmNote').value.trim();
+      const condition = document.querySelector('input[name="alarmCondition"]:checked').value;
+
+      if (!targetPrice || targetPrice <= 0) {
+        showToast('Lütfen geçerli bir hedef fiyat girin.', 'error');
+        return;
+      }
+
+      const data = loadUserData();
+      const alarms = data.alarms || [];
+      const rate = liveRates[symbol] || {};
+
+      alarms.push({
+        id: 'a_' + Date.now(),
+        symbol,
+        name: rate.name || symbol,
+        condition,
+        targetPrice,
+        note,
+        isActive: true
+      });
+
+      saveUserData({ ...data, alarms });
+      document.getElementById('alarmModal').style.display = 'none';
+      renderApp();
+      showToast('Fiyat alarmı kuruldu.', 'success');
+    }
+
+    function openRateModal() {
+      const container = document.getElementById('rateInputsContainer');
+      container.innerHTML = '';
+
+      Object.keys(liveRates).forEach(k => {
+        const item = liveRates[k];
+        if (!item) return;
+        const row = document.createElement('div');
+        row.className = "flex items-center justify-between gap-2 p-2 bg-slate-50 rounded-lg border border-slate-200";
+        row.innerHTML = `
+          <div class="w-2/5 min-w-0">
+            <div class="font-bold text-xs font-mono text-slate-800 truncate">${k}</div>
+            <div class="text-[11px] text-slate-500 truncate">${item.name || k}</div>
+          </div>
+          <div class="flex items-center gap-1.5 w-3/5">
+            <input type="number" step="any" data-rate-key="${k}" value="${item.price}"
+                   class="w-full bg-white border border-slate-300 rounded px-2.5 py-1 text-xs font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <button data-action="delete-rate" data-key="${k}" class="text-rose-500 hover:text-rose-700 font-bold px-2 py-1 text-xs bg-rose-50 hover:bg-rose-100 rounded transition-colors shrink-0" title="Sembolü Sil">
+              🗑️
+            </button>
+          </div>
+        `;
+        container.appendChild(row);
+      });
+
+      document.getElementById('marketRateModal').style.display = 'flex';
+    }
+
+    function saveManualRates() {
+      const inputs = document.querySelectorAll('#rateInputsContainer input');
+      inputs.forEach(input => {
+        const k = input.getAttribute('data-rate-key');
+        const val = parseFloat(input.value) || 0;
+        if (k && liveRates[k] && val > 0) {
+          liveRates[k].price = val;
+        }
+      });
+
+      try { updateGoldFromOns(); } catch(e) {}
+      saveLiveRatesToStorage();
+      document.getElementById('marketRateModal').style.display = 'none';
+      renderApp();
+      showToast('Piyasa fiyatları güncellendi.', 'success');
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      loadLiveRatesFromStorage();
+
+      const savedAiKey = localStorage.getItem('portfoy_gemini_api_key');
+      if (savedAiKey && document.getElementById('aiApiKey')) {
+        document.getElementById('aiApiKey').value = savedAiKey;
+      }
+
+      document.addEventListener('click', (e) => {
+        const target = e.target.closest('[data-action]');
+        if (!target) return;
+
+        const action = target.getAttribute('data-action');
+        const id = target.getAttribute('data-id');
+        const key = target.getAttribute('data-key');
+
+        switch (action) {
+          case 'chart':
+            window.openAssetDetailChartModal(id);
+            break;
+          case 'edit':
+            window.editAsset(id);
+            break;
+          case 'delete':
+            window.deleteAsset(id);
+            break;
+          case 'delete-watchlist':
+            window.deleteWatchlistItem(id);
+            break;
+          case 'delete-rate':
+            window.deleteLiveRate(key);
+            break;
+          case 'delete-alarm':
+            window.deleteAlarm(id);
+            break;
+          case 'toggle-alarm':
+            window.toggleAlarm(id);
+            break;
+          case 'dismiss-alarm':
+            window.dismissAlarmAlert(id);
+            break;
+        }
+      });
+
+      document.getElementById('btnEnter').addEventListener('click', () => {
+        loadLiveRatesFromStorage();
+        renderApp();
+      });
+      document.getElementById('btnAddNewRate').addEventListener('click', addNewRateFromModal);
+      document.getElementById('btnAdd').addEventListener('click', openModal);
+      document.getElementById('btnEmptyAdd').addEventListener('click', openModal);
+      document.getElementById('btnResetData').addEventListener('click', resetPortfolio);
+
+      document.getElementById('confirmOkBtn').addEventListener('click', () => {
+        if (confirmCallback) confirmCallback();
+        closeConfirmModal();
+      });
+      document.getElementById('confirmCancelBtn').addEventListener('click', closeConfirmModal);
+
+      document.getElementById('fAmount').addEventListener('input', calculateModalTotal);
+      document.getElementById('fBuyPrice').addEventListener('input', calculateModalTotal);
+
+      document.getElementById('categoryTabs').addEventListener('click', (e) => {
+        const btn = e.target.closest('.cat-tab');
+        if (btn) {
+          const cat = btn.getAttribute('data-cat');
+          filterByTab(cat);
+        }
+      });
+
+      document.getElementById('btnTriggerAIAnalysis').addEventListener('click', triggerAIPortfolioAnalysis);
+      document.getElementById('btnOpenAIModal').addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        triggerAIPortfolioAnalysis();
+      });
+
+      document.getElementById('chartPeriodTabs').addEventListener('click', (e) => {
+        const btn = e.target.closest('.period-tab-btn');
+        if (btn) {
+          document.querySelectorAll('#chartPeriodTabs .period-tab-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          activeChartDays = parseInt(btn.getAttribute('data-days')) || 90;
+          renderAssetChartModalContent();
+        }
+      });
+
+      document.getElementById('chartModalCloseX').addEventListener('click', () => {
+        document.getElementById('chartDetailModal').style.display = 'none';
+      });
+      document.getElementById('chartModalCloseBtn').addEventListener('click', () => {
+        document.getElementById('chartDetailModal').style.display = 'none';
+      });
+
+      const openImport = () => document.getElementById('importModal').style.display = 'flex';
+      document.getElementById('btnOpenImport').addEventListener('click', openImport);
+      document.getElementById('btnEmptyImport').addEventListener('click', openImport);
+      document.getElementById('importCloseX').addEventListener('click', () => document.getElementById('importModal').style.display = 'none');
+      document.getElementById('importCancel').addEventListener('click', () => document.getElementById('importModal').style.display = 'none');
+      document.getElementById('importSubmit').addEventListener('click', processBulkImport);
+
+      document.getElementById('btnOpenAlarms').addEventListener('click', () => {
+        document.getElementById('alarmsPanelSection').scrollIntoView({ behavior: 'smooth' });
+      });
+      document.getElementById('btnAddAlarm').addEventListener('click', openAlarmModal);
+      document.getElementById('alarmCloseX').addEventListener('click', () => document.getElementById('alarmModal').style.display = 'none');
+      document.getElementById('alarmCancel').addEventListener('click', () => document.getElementById('alarmModal').style.display = 'none');
+      document.getElementById('alarmSave').addEventListener('click', saveAlarm);
+      document.getElementById('alarmSymbolSelect').addEventListener('change', updateAlarmModalNote);
+
+      document.getElementById('btnQuickGoldUpdate').addEventListener('click', openRateModal);
+      document.getElementById('rateModalCloseX').addEventListener('click', () => document.getElementById('marketRateModal').style.display = 'none');
+      document.getElementById('rateModalCancel').addEventListener('click', () => document.getElementById('marketRateModal').style.display = 'none');
+      document.getElementById('rateModalSave').addEventListener('click', saveManualRates);
+      document.getElementById('btnRestoreDefaults').addEventListener('click', () => {
+        liveRates = JSON.parse(JSON.stringify(default2026Rates));
+        saveLiveRatesToStorage();
+        openRateModal();
+        renderApp();
+        showToast('Piyasa kurları varsayılana döndürüldü.', 'info');
+      });
+
+      document.getElementById('modalCloseX').addEventListener('click', closeModal);
+      document.getElementById('btnCancel').addEventListener('click', closeModal);
+      document.getElementById('btnSave').addEventListener('click', saveAsset);
+      document.getElementById('fType').addEventListener('change', updateFormFields);
+
+      document.getElementById('btnRefreshMarket').addEventListener('click', async () => {
+        await fetchLiveRatesFromAPI();
+        renderApp();
+        showToast('Piyasa kurları yenilendi.', 'info');
+      });
+
+      document.getElementById('btnWatchAdd').addEventListener('click', () => {
+        const symbol = prompt('İzlemek istediğiniz varlık kodunu yazın (örn: TGE, GRAM, USD):');
+        if (symbol) {
+          const cleanSym = symbol.trim().toUpperCase();
+          const data = loadUserData();
+          const watchlist = data.watchlist || [];
+          watchlist.push({ id: 'w_' + Date.now(), symbol: cleanSym, name: cleanSym + ' Takip' });
+          saveUserData({ ...data, watchlist });
+          renderApp();
+          showToast('İzleme listesine eklendi.', 'success');
+        }
+      });
+
+      document.getElementById('convAmountFrom').addEventListener('input', updateConverter);
+      document.getElementById('convFrom').addEventListener('change', updateConverter);
+      document.getElementById('convTo').addEventListener('change', updateConverter);
+      document.getElementById('convSwap').addEventListener('click', () => {
+        const from = document.getElementById('convFrom');
+        const to = document.getElementById('convTo');
+        const temp = from.value;
+        from.value = to.value;
+        to.value = temp;
+        updateConverter();
+      });
+
+      document.getElementById('tableSearch').addEventListener('input', () => {
+        renderPortfolioTable(loadUserData().portfolio || []);
+      });
+
+      try { await fetchLiveRatesFromAPI(); } catch(e) {}
+      renderApp();
+    });
+  </script>
+</body>
+</html>
