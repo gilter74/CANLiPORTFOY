@@ -283,9 +283,34 @@
           </h2>
           <p class="text-xs text-slate-500">Portföyünüzde bulunmayan ancak performansını takip etmek istediğiniz fon ve varlıklar (Sembolik 1 adet ile maliyet, tarih, birim fiyat ve dönemlik getiri analizi)</p>
         </div>
-        <button id="btnOpenWatchModal" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
-          <span>➕</span> Takip Etmek İçin Fon Ekle
-        </button>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="btnRefreshWatchPrices" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5" title="Takip listesindeki fonların fiyatlarını TEFAS'tan yeniden çeker ve kaydeder">
+            <span>💾</span> Fiyatları Güncelle & Kaydet
+          </button>
+          <button id="btnOpenWatchModal" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
+            <span>➕</span> Takip Etmek İçin Fon Ekle
+          </button>
+        </div>
+      </div>
+
+      <!-- Takip Listesi Toplam Kâr/Zarar Özeti -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3" id="watchSummaryGrid">
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Takip Maliyeti</div>
+          <div id="wsCost" class="text-base font-bold font-mono text-slate-800 mt-1">₺0,00</div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Güncel Değer</div>
+          <div id="wsValue" class="text-base font-bold font-mono text-slate-900 mt-1">₺0,00</div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Net Kâr/Zarar</div>
+          <div id="wsPL" class="text-base font-bold font-mono text-emerald-600 mt-1">₺0,00</div>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Getiri %</div>
+          <div id="wsPLPct" class="text-base font-bold font-mono text-emerald-600 mt-1">%0,00</div>
+        </div>
       </div>
 
       <div class="overflow-x-auto">
@@ -767,14 +792,25 @@
         liveRates['CEYREK'].price = parseFloat((gram * 1.635).toFixed(2));
       }
 
+      // Takip listesindeki (varlık dışı) fon kodlarının fiyatlarını HER döngüde yeniden çeker.
+      // Önceki sürümde sadece liveRates'te hiç yoksa çekiliyordu, bu yüzden ilk çekimden sonra fiyat hep aynı kalıyordu.
       const watchlist = loadWatchlist();
+      let watchOk = 0, watchFail = 0;
       for (const w of watchlist) {
         const code = w.code.toUpperCase();
-        if (!liveRates[code]) {
-          const p = await fetchTefasFundPriceProxy(code);
-          if (p && p > 0) {
-            liveRates[code] = { name: code + ' Fonu', price: p, change: 0, category: 'fund' };
-          }
+        if (['USD', 'EUR', 'GBP', 'GRAM', 'CEYREK', 'ONS'].includes(code)) continue; // bunlar zaten yukarıda güncellendi
+        const p = await fetchTefasFundPriceProxy(code);
+        if (p && p > 0) {
+          const prevPrice = liveRates[code]?.price || 0;
+          const change = prevPrice > 0 ? parseFloat((((p - prevPrice) / prevPrice) * 100).toFixed(2)) : 0;
+          liveRates[code] = { name: code + ' Fonu', price: p, change, category: 'fund' };
+          watchOk++;
+        } else if (!liveRates[code]) {
+          // Hiç fiyatımız yoksa geçici bir kayıt oluştur ki tabloda "—" yerine en azından bir satır görünsün
+          liveRates[code] = { name: code + ' Fonu', price: 0, change: 0, category: 'fund' };
+          watchFail++;
+        } else {
+          watchFail++; // önceki fiyat korunuyor, sadece bu döngüde tazelenemedi
         }
       }
 
@@ -782,6 +818,7 @@
       renderLiveTicker();
       checkPriceAlarms();
       if (!quiet) showToast("Türkiye piyasaları canlı verileri güncellendi.", "success");
+      return { watchOk, watchFail, watchTotal: watchlist.filter(w => !['USD','EUR','GBP','GRAM','CEYREK','ONS'].includes(w.code.toUpperCase())).length };
     }
 
     function renderLiveTicker() {
@@ -1227,12 +1264,74 @@
       });
     }
 
+    function renderWatchlistSummary(list) {
+      let totalCost = 0, totalVal = 0;
+      list.forEach(w => {
+        const code = w.code.toUpperCase();
+        const curPrice = liveRates[code]?.price > 0 ? liveRates[code].price : (w.buyPrice || 0);
+        const amount = w.amount || 1;
+        totalCost += amount * (w.buyPrice || 0);
+        totalVal += amount * curPrice;
+      });
+      const pl = totalVal - totalCost;
+      const plPct = totalCost > 0 ? (pl / totalCost) * 100 : 0;
+
+      const wsCost = document.getElementById('wsCost');
+      const wsValue = document.getElementById('wsValue');
+      const wsPL = document.getElementById('wsPL');
+      const wsPLPct = document.getElementById('wsPLPct');
+      if (wsCost) wsCost.textContent = formatTL(totalCost);
+      if (wsValue) wsValue.textContent = formatTL(totalVal);
+      if (wsPL) {
+        wsPL.textContent = (pl >= 0 ? '+' : '') + formatTL(pl);
+        wsPL.className = `text-base font-bold font-mono mt-1 ${pl >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+      }
+      if (wsPLPct) {
+        wsPLPct.textContent = (plPct >= 0 ? '+' : '') + plPct.toFixed(2) + '%';
+        wsPLPct.className = `text-base font-bold font-mono mt-1 ${plPct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+      }
+    }
+
+    async function refreshWatchlistPricesNow() {
+      const btn = document.getElementById('btnRefreshWatchPrices');
+      const original = btn ? btn.innerHTML : '';
+      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="animate-spin">⏳</span> Güncelleniyor...'; }
+
+      const list = loadWatchlist();
+      let ok = 0, fail = 0;
+      for (const w of list) {
+        const code = w.code.toUpperCase();
+        if (['USD', 'EUR', 'GBP', 'GRAM', 'CEYREK', 'ONS'].includes(code)) continue;
+        const p = await fetchTefasFundPriceProxy(code);
+        if (p && p > 0) {
+          const prevPrice = liveRates[code]?.price || 0;
+          const change = prevPrice > 0 ? parseFloat((((p - prevPrice) / prevPrice) * 100).toFixed(2)) : 0;
+          liveRates[code] = { name: code + ' Fonu', price: p, change, category: 'fund' };
+          ok++;
+        } else {
+          fail++;
+        }
+      }
+      saveLiveRatesToStorage(); // ayrıca Firebase'e de kaydeder
+      renderApp();
+
+      if (btn) { btn.disabled = false; btn.innerHTML = original; }
+
+      const total = ok + fail;
+      if (total === 0) showToast('Takip listesi boş, güncellenecek fon yok.', 'info');
+      else if (fail === 0) showToast(`${ok} fonun fiyatı güncellendi ve kaydedildi.`, 'success');
+      else if (ok > 0) showToast(`${ok}/${total} fon güncellendi, ${fail} tanesine TEFAS'tan şu an ulaşılamadı (önceki fiyat korundu). Yine de kaydedildi.`, 'info');
+      else showToast('TEFAS\'a şu an ulaşılamadı, hiçbir fiyat güncellenemedi.', 'error');
+    }
+
     function renderWatchlistTable() {
       const tbody = document.getElementById('watchlistBody');
       const emptyState = document.getElementById('watchlistEmptyState');
       if (!tbody) return;
       tbody.innerHTML = '';
       const list = loadWatchlist();
+
+      renderWatchlistSummary(list);
 
       if (list.length === 0) {
         if (emptyState) emptyState.style.display = 'block';
@@ -1886,6 +1985,9 @@
 
       const btnOpenWatchModal = document.getElementById('btnOpenWatchModal');
       if (btnOpenWatchModal) btnOpenWatchModal.onclick = () => openWatchModal(null);
+
+      const btnRefreshWatchPrices = document.getElementById('btnRefreshWatchPrices');
+      if (btnRefreshWatchPrices) btnRefreshWatchPrices.onclick = refreshWatchlistPricesNow;
 
       const watchModalCloseX = document.getElementById('watchModalCloseX');
       if (watchModalCloseX) watchModalCloseX.onclick = () => { const m = document.getElementById('watchAssetModal'); if (m) m.style.display = 'none'; };
