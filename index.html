@@ -1400,7 +1400,6 @@
           const cloudData = snapshot.val();
           if (cloudData && typeof cloudData === 'object') {
             const localData = loadUserData();
-            // Merge cloud state if newer or different
             localStorage.setItem('portfoy_app_data', JSON.stringify(cloudData));
             renderApp();
           }
