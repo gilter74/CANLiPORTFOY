@@ -69,7 +69,7 @@
 
   <div class="max-w-7xl mx-auto space-y-6">
 
-    <!-- PİYASA HABERLERİ & ANALİZLER BÖLÜMÜ (TÜRKİYE ODAKLI) -->
+    <!-- PİYASA HABERLERİ BÖLÜMÜ -->
     <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
       <div class="bg-slate-900 text-white p-3 md:p-4 px-5 flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -138,7 +138,7 @@
           <span>📊</span> Sheet Bağlantısı
         </button>
         <button id="btnOpenAIModal" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
-          <span>🤖</span> AI Asistan & Soru Sor
+          <span>🤖</span> AI Asistan
         </button>
         <button id="btnOpenAlarmModal" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
           <span>🔔</span> Fiyat Alarmları (<span id="alarmCountBadge">0</span>)
@@ -148,12 +148,8 @@
           <input id="authKod" type="text" placeholder="Portföy Kodu" value="goksin-portfoy"
                  autocapitalize="off" autocorrect="off" spellcheck="false"
                  class="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono w-28 md:w-32">
-          <button id="btnEnter" class="bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs md:text-sm px-2.5 py-1 rounded-lg transition-colors">
-            Yükle
-          </button>
-          <button id="btnPushCloud" class="bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs md:text-sm px-2.5 py-1 rounded-lg transition-colors" title="Buluta Kaydet">
-            ☁ Bulut
-          </button>
+          <button id="btnEnter" class="bg-sky-600 hover:bg-sky-700 text-white font-medium text-xs md:text-sm px-2.5 py-1 rounded-lg transition-colors">Yükle</button>
+          <button id="btnPushCloud" class="bg-slate-700 hover:bg-slate-800 text-white font-medium text-xs md:text-sm px-2.5 py-1 rounded-lg transition-colors" title="Buluta Kaydet">☁ Bulut</button>
         </div>
       </div>
     </header>
@@ -163,29 +159,23 @@
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
           <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <span>📈</span> Canlı Piyasa Verileri & Değerler (Türkiye Piyasaları)
+            <span>📈</span> Canlı Piyasa Verileri (Türkiye Piyasaları)
           </h2>
           <p class="text-xs text-slate-500">Gram Altın, Çeyrek Altın, ONS, Dolar, Euro ve Sterlin anlık piyasa fiyatları</p>
         </div>
-        <div class="flex items-center gap-2">
-          <button id="btnRefreshLiveRates" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-3 py-2 rounded-xl transition-colors flex items-center gap-1.5">
-            <span>🔄</span> Fiyatları Güncelle
-          </button>
-        </div>
+        <button id="btnRefreshLiveRates" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-3 py-2 rounded-xl transition-colors flex items-center gap-1.5">
+          <span>🔄</span> Fiyatları Güncelle
+        </button>
       </div>
-
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" id="liveTickerGrid"></div>
     </section>
 
-    <!-- KATEGORİ BAZLI PERFORMANS & ANALİZ BÖLÜMÜ -->
+    <!-- KATEGORİ BAZLI PERFORMANS BÖLÜMÜ -->
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
       <div class="border-b border-slate-100 pb-3">
-        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-          <span>📊</span> Kategori Bazlı Performans & Analiz
-        </h2>
+        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2"><span>📊</span> Kategori Bazlı Performans & Analiz</h2>
         <p class="text-xs text-slate-500">Altın, Döviz, Fonlar, Eurobond ve Mevduat kategorilerinizin portföydeki ağırlığı ve kâr/zarar durumu</p>
       </div>
-
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="categoryCardsGrid"></div>
     </section>
 
@@ -220,17 +210,13 @@
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 class="text-xl font-bold text-slate-900">Varlık Portföyüm</h2>
-            <p class="text-xs text-slate-500">Google Sheet tablonuzdan ve canlı piyasalardan senkronize edilen varlıklarınız (Fon koduna tıklayarak doğrudan TEFAS'ta inceleyebilirsiniz)</p>
+            <p class="text-xs text-slate-500">Google Sheet tablonuzdan ve canlı piyasalardan senkronize edilen varlıklarınız</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <input type="text" id="tableSearch" placeholder="Varlık ara..." 
                    class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 w-48 md:w-64">
-            <button class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-3.5 py-2 rounded-lg transition-colors shadow-sm" id="btnSyncNowHeader">
-              🔄 Sheet'ten Çek
-            </button>
-            <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-3.5 py-2 rounded-lg transition-colors shadow-sm" onclick="openEditModal(null)">
-              ➕ Manuel Varlık Ekle
-            </button>
+            <button class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-3.5 py-2 rounded-lg transition-colors shadow-sm" id="btnSyncNowHeader">🔄 Sheet'ten Çek</button>
+            <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-3.5 py-2 rounded-lg transition-colors shadow-sm" onclick="openEditModal(null)">➕ Manuel Ekle</button>
           </div>
         </div>
 
@@ -271,13 +257,11 @@
       </div>
     </section>
 
-    <!-- VARLIK DIŞI FON TAKİP (İZLEME LİSTESİ) - GOOGLE SHEETS ENTEGRELİ -->
+    <!-- VARLIK DIŞI FON TAKİP (İZLEME LİSTESİ) -->
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
-          <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <span>👁️</span> Varlık Dışı Fon Takip (İzleme Listesi)
-          </h2>
+          <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2"><span>👁️</span> Varlık Dışı Fon Takip (İzleme Listesi)</h2>
           <p class="text-xs text-slate-500">Belirttiğiniz Google Sheet bağlantısından ve TEFAS'tan anlık senkronize edilen fon takip listesi</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
@@ -337,7 +321,7 @@
           <tbody class="divide-y divide-slate-100 font-mono text-slate-700" id="watchlistBody"></tbody>
         </table>
         <div id="watchlistEmptyState" class="text-center py-8 text-slate-400 text-xs" style="display:none">
-          Henüz takip listesinde fon bulunmuyor. "Sheet'ten Veri Çek & Güncelle" butonuna basabilirsiniz.
+          Henüz takip listesinde fon bulunmuyor. "Sheet'ten Veri Çek & Güncelle" butonuna basabilirsiniz veya manuel ekleyebilirsiniz.
         </div>
       </div>
     </section>
@@ -434,21 +418,18 @@
         </div>
         <button id="aiModalCloseX" class="text-purple-200 hover:text-white text-xl">✕</button>
       </div>
-
       <div class="px-5 pt-3 shrink-0">
         <input id="aiApiKey" type="password" placeholder="Gemini API Key (Opsiyonel)" title="Kendi Gemini API anahtarınızı girerseniz gerçek AI kullanılır"
                class="w-full bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-purple-400">
         <p class="text-[10px] text-slate-400 mt-1">Boş bırakılırsa gerçek portföy verinizle otomatik algoritmik analiz kullanılır (uydurma cevap verilmez).</p>
       </div>
-      
       <div class="p-5 overflow-y-auto space-y-4 flex-1 bg-slate-50" id="aiChatHistory">
         <div class="bg-purple-100 text-purple-900 p-3.5 rounded-2xl rounded-tl-sm text-xs md:text-sm max-w-[85%]">
           Merhaba! Portföyünüz ve takip ettiğiniz fonlar hakkında bana dilediğiniz soruyu sorabilirsiniz — gerçek verilerinize bakarak cevap veririm.
         </div>
       </div>
-
       <div class="p-3 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0">
-        <input id="aiUserQuestion" type="text" placeholder="Örn: Portföyümdeki risk dağılımı nasıl? Takip ettiğim fonlardan hangisi daha avantajlı?" 
+        <input id="aiUserQuestion" type="text" placeholder="Örn: Portföyümdeki risk dağılımı nasıl?" 
                class="flex-1 border border-slate-300 rounded-xl px-3.5 py-2 text-xs md:text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 font-sans">
         <button id="aiSendBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2 rounded-xl text-xs md:text-sm transition-colors shadow-sm">Gönder</button>
       </div>
@@ -579,7 +560,7 @@
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <script>
-    // --- Firebase Realtime Database: cihazlar arası senkronizasyon (Portföy Kodu ile) ---
+    // --- Firebase Realtime Database ---
     const firebaseConfig = {
       apiKey: "AIzaSyArF8yUBBgaMN5w7wVvqA0351aR3CVIQYw",
       authDomain: "canliportfoy.firebaseapp.com",
@@ -598,8 +579,6 @@
     } catch(e) { console.warn('Firebase başlatma uyarısı:', e); }
 
     function sanitizeCode(code) {
-      // Küçük harfe çeviriyoruz: mobil klavyeler ilk harfi otomatik büyük yazabilir,
-      // büyük/küçük harf farkı olursa mobil ve web FARKLI bulut kayıtlarına yazar/okur.
       return (code || 'default-user').trim().toLowerCase().replace(/[.#$\[\]\/]/g, '_') || 'default-user';
     }
     function getPortfolioCode() {
@@ -737,10 +716,8 @@
         const raw = localStorage.getItem('portfoy_external_watchlist_' + getPortfolioCode());
         if (raw) return JSON.parse(raw);
       } catch(e) {}
-      return [
-        { id: 'w_1', code: 'TGE', date: '01.01.2026', amount: 1, buyPrice: 45.20 },
-        { id: 'w_2', code: 'AFT', date: '15.01.2026', amount: 1, buyPrice: 180.50 }
-      ];
+      // Varsayılan olarak boş liste döndürüyoruz, kafasına göre fon eklemesin
+      return [];
     }
     function saveWatchlistLocal(list) {
       try { localStorage.setItem('portfoy_external_watchlist_' + getPortfolioCode(), JSON.stringify(list)); } catch(e) {}
@@ -748,13 +725,17 @@
     function loadWatchlist() { return loadWatchlistLocal(); }
     function saveWatchlist(list) { saveWatchlistLocal(list); pushToFirebaseCloud(); }
 
-    // --- Kâr/Zarar EĞİLİM takibi (artıyor mu azalıyor mu) ---
-    // Her fiyat güncellemesinde hesaplanan toplam getiri %'sini bir öncekiyle karşılaştırıp saklıyoruz.
+    // Kâr/Zarar EĞİLİM takibi (artıyor mu azalıyor mu)
     function getWatchTrendStorageKey() { return 'portfoy_watch_trend_' + getPortfolioCode(); }
     function loadWatchTrendLocal() {
       try {
         const raw = localStorage.getItem(getWatchTrendStorageKey());
-        if (raw) return JSON.parse(raw);
+        if (raw) {
+           const parsed = JSON.parse(raw);
+           // Eski veri yapılarından korunmak için perItem kontrolü ekliyoruz
+           if (!parsed.perItem) parsed.perItem = {};
+           return parsed;
+        }
       } catch(e) {}
       return { lastTotalPLPct: null, lastCheckedAt: null, perItem: {} };
     }
@@ -821,7 +802,6 @@
       return { sheetId: idMatch[1], gid: gidMatch ? gidMatch[1] : '0' };
     }
 
-    // Kendi Apps Script web app'imiz (kırılgan üçüncü taraf CORS proxy'lerine muhtaç değil, doğrudan Google altyapısı üzerinden okur)
     const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzf4LoqHSWU1hrPkYQxH6tYiwXH-YUFZCdvEFVA0IEKx9wZxXb9RrUrNewbApaNQsbsvw/exec';
 
     async function fetchSheetRowsViaAppsScript(sheetId, gid) {
@@ -836,7 +816,6 @@
       } catch(e) { return null; }
     }
 
-    // ISO tarih string'ini (Apps Script'in Date hücrelerini JSON'a çevirirken ürettiği format) GG.AA.YYYY'ye çevirir
     function formatCellValue(raw) {
       if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(raw)) {
         const d = new Date(raw);
@@ -847,8 +826,6 @@
       return raw;
     }
 
-    // Sheet verisini satır dizisi (array-of-arrays) olarak döndürür.
-    // Önce kendi Apps Script uç noktamızı dener (güvenilir), olmazsa eski CSV+proxy zincirine düşer.
     async function getSheetRows(rawUrl) {
       const ids = extractSheetIdGid(rawUrl);
       if (ids) {
@@ -888,8 +865,6 @@
       throw new Error("Google Sheets tablosuna erişilemedi.");
     }
 
-    // Başlık satırındaki metinlere bakarak sütunları otomatik eşler (sabit sütun sırasına güvenmez).
-    // Böylece kullanıcı sütun sırasını değiştirse veya farklı bir sheet kullansa bile çalışır.
     function detectColumnMap(headerCols) {
       const map = { code: -1, date: -1, amount: -1, buyPrice: -1, currentPrice: -1 };
       headerCols.forEach((raw, idx) => {
@@ -906,7 +881,11 @@
     async function syncWatchlistFromSheet(quiet = false) {
       const sheetUrl = getSavedWatchSheetUrl();
       const errorBanner = document.getElementById('watchSheetErrorBanner');
+      const btn = document.getElementById('btnSyncWatchlistSheet');
       if (errorBanner) errorBanner.classList.add('hidden');
+      
+      const originalBtnHtml = btn ? btn.innerHTML : '';
+      if (btn) btn.innerHTML = `<span>⏳</span> Güncelleniyor...`;
 
       try {
         const rows = await getSheetRows(sheetUrl);
@@ -914,12 +893,12 @@
 
         const headerCols = rows[0];
         const colMap = detectColumnMap(headerCols);
-        // Başlıktan tespit edilemeyen sütunlar için makul varsayılanlara düş (Kod, Tarih, Adet, Alış, Güncel)
+        
         if (colMap.code === -1) colMap.code = 0;
         if (colMap.date === -1) colMap.date = 1;
         if (colMap.amount === -1) colMap.amount = 2;
         if (colMap.buyPrice === -1) colMap.buyPrice = 3;
-        if (colMap.currentPrice === -1) colMap.currentPrice = 4; // Sheet'te "Güncel Fiyat" sütunu genelde 5. sütun (index 4)
+        if (colMap.currentPrice === -1) colMap.currentPrice = 4; 
 
         const importedWatch = [];
         rows.forEach((cols, index) => {
@@ -931,8 +910,6 @@
           const date = dateRaw && dateRaw.includes('.') ? dateRaw : '01.01.2026';
           const amount = (colMap.amount >= 0 ? cleanNumber(cols[colMap.amount]) : 0) || 1;
           const buyPrice = (colMap.buyPrice >= 0 ? cleanNumber(cols[colMap.buyPrice]) : 0) || 0;
-          // Sheet'in kendi "Güncel Fiyat" sütunu (FONLAB/GOOGLEFINANCE formülüyle besleniyor olabilir) — varsa DOĞRUDAN bunu kullan,
-          // TEFAS proxy'sine güvenmeye çalışmaktan çok daha güvenilir çünkü Sheet zaten canlı fiyatı hesaplamış oluyor.
           const sheetCurrentPrice = colMap.currentPrice >= 0 ? cleanNumber(cols[colMap.currentPrice]) : 0;
 
           importedWatch.push({
@@ -943,7 +920,6 @@
         });
 
         if (importedWatch.length > 0) {
-          // Sheet'ten gelen güncel fiyatları hemen liveRates'e de yansıt ki tablo TEFAS proxy'sini beklemeden anında güncel görünsün
           importedWatch.forEach(w => {
             if (w.currentPrice > 0) {
               const prev = liveRates[w.code]?.price || 0;
@@ -955,10 +931,8 @@
           saveWatchlist(importedWatch);
           updateWatchTrendSnapshot(importedWatch);
           renderWatchlistTable();
-          // Sheet'te fiyatı olmayan (currentPrice=null) kodlar için ek olarak TEFAS'tan dene, arka planda
           updateLiveMarketData(true);
           if (!quiet) showToast(`Varlık dışı takip listesi Sheet'ten (${importedWatch.length} fon) güncellendi.`, 'success');
-          return true;
         } else {
           if (!quiet) showToast("Sheet'te uygun formatta takip verisi bulunamadı.", 'error');
         }
@@ -969,6 +943,8 @@
           errorBanner.innerHTML = `⚠️ <strong>Sheet'e bağlanılamadı:</strong> ${e.message}`;
         }
         if (!quiet) showToast("Takip Sheet'ine erişilemedi: " + e.message, 'error');
+      } finally {
+        if (btn) btn.innerHTML = originalBtnHtml;
       }
       return false;
     }
@@ -1029,11 +1005,12 @@
       return { watchOk, watchFail, watchTotal: watchlist.length };
     }
 
-    // Her güncellemede toplam ve fon-bazlı getiri %'sini bir öncekiyle karşılaştırıp eğilimi kaydeder
     function updateWatchTrendSnapshot(watchlist) {
       const trend = loadWatchTrendLocal();
       const newPerItem = {};
       let totalCost = 0, totalVal = 0;
+      
+      const safePerItemCache = trend.perItem || {};
 
       watchlist.forEach(w => {
         const code = w.code.toUpperCase();
@@ -1044,7 +1021,7 @@
         totalCost += cost; totalVal += val;
         const pct = cost > 0 ? ((val - cost) / cost) * 100 : 0;
 
-        const prevPct = trend.perItem[code]?.pct;
+        const prevPct = safePerItemCache[code]?.pct;
         newPerItem[code] = {
           pct,
           direction: prevPct === undefined ? 'same' : (pct > prevPct ? 'up' : pct < prevPct ? 'down' : 'same')
@@ -1212,6 +1189,10 @@
       const lastSyncTime = document.getElementById('sheetLastSyncTime');
       const rowCountEl = document.getElementById('sheetRowCount');
       const sheetBadge = document.getElementById('sheetSyncBadge');
+      const btn = document.getElementById('btnSyncNowHeader');
+      
+      const originalBtnHtml = btn ? btn.innerHTML : '';
+      if (btn) btn.innerHTML = `⏳ Senkronize ediliyor...`;
 
       if (statusText) statusText.textContent = "Güncelleniyor...";
 
@@ -1274,6 +1255,8 @@
         }
       } catch(e) {
         if (statusText) { statusText.textContent = "⚠️ Hata: " + e.message; statusText.className = "text-rose-600"; }
+      } finally {
+        if (btn) btn.innerHTML = originalBtnHtml;
       }
       return false;
     }
@@ -1471,10 +1454,10 @@
     }
 
     function getWatchItemCurrentPrice(w) {
-      if (w.currentPrice > 0) return w.currentPrice; // Sheet'in kendi Güncel Fiyat sütunu — en güvenilir kaynak
+      if (w.currentPrice > 0) return w.currentPrice; 
       const code = w.code.toUpperCase();
-      if (liveRates[code]?.price > 0) return liveRates[code].price; // TEFAS proxy'den gelmiş olabilir
-      return w.buyPrice || 0; // hiçbiri yoksa alış fiyatını göster (fark yok gibi görünür ama en azından 0 olmaz)
+      if (liveRates[code]?.price > 0) return liveRates[code].price;
+      return w.buyPrice || 0; 
     }
 
     function renderWatchlistSummary(list) {
@@ -1526,6 +1509,7 @@
       tbody.innerHTML = '';
       const list = loadWatchlist();
       const trend = loadWatchTrendLocal();
+      const safePerItemCache = trend.perItem || {};
 
       renderWatchlistSummary(list);
 
@@ -1544,7 +1528,7 @@
         const curVal = amount * curPrice;
         const pl = curVal - cost;
         const plPct = cost > 0 ? (pl / cost) * 100 : 0;
-        const itemDirection = trend.perItem?.[code]?.direction || 'same';
+        const itemDirection = safePerItemCache[code]?.direction || 'same';
 
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100";
@@ -1753,30 +1737,44 @@
       historyEl.scrollTop = historyEl.scrollHeight;
     }
 
-    // Gerçek, doğrulanmış Türkçe finans RSS kaynakları (rss2json'a bağımlı değil, XML doğrudan ayrıştırılıyor)
+    // Yeni ve daha güvenilir RSS kaynakları (Cloudflare engeli daha düşük ulusal haber kaynakları)
     const REAL_NEWS_FEEDS = [
-      'https://www.doviz.com/news/rss',
-      'https://www.bloomberght.com/rss'
+      'https://www.trthaber.com/ekonomi_articles.rss',
+      'https://www.haberturk.com/rss/ekonomi.xml',
+      'https://www.ntv.com.tr/ekonomi.rss'
     ];
 
-    async function fetchRssXml(feedUrl) {
+    async function fetchRss(feedUrl) {
+      // 1. rss2json API (En güvenilir ve hızlı yöntem, CORS/XML dertlerini çözer)
+      try {
+        const res = await fetchWithTimeout(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`, { cache: 'no-store' }, 8000);
+        if (res && res.ok) {
+          const data = await res.json();
+          if (data && data.items && data.items.length > 0) {
+            return data.items.map(item => ({
+              title: item.title,
+              link: item.link,
+              pubDate: item.pubDate
+            }));
+          }
+        }
+      } catch(e) {}
+
+      // 2. CORS Proxy Fallback (Eğer rss2json yanıt vermezse)
       const attempts = [
-        feedUrl,
         `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(feedUrl)}`,
-        `https://corsproxy.io/?url=${encodeURIComponent(feedUrl)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`,
-        `https://thingproxy.freeboard.io/fetch/${feedUrl}`
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`
       ];
       for (const url of attempts) {
         try {
-          const res = await fetchWithTimeout(url, { cache: 'no-store' }, 8000);
+          const res = await fetchWithTimeout(url, { cache: 'no-store' }, 6000);
           if (res && res.ok) {
             const text = await res.text();
-            if (text && text.includes('<item')) return text;
+            if (text && text.includes('<item')) return parseRssItems(text);
           }
         } catch(e) {}
       }
-      return null;
+      return [];
     }
 
     function parseRssItems(xmlText) {
@@ -1793,17 +1791,18 @@
 
     function classifyNewsItem(title) {
       const t = normalizeTr(title);
-      if (t.includes('ALTIN') || t.includes('ONS ') || t.includes('KIYMETLI MADEN')) return 'gold';
-      if (t.includes('DOLAR') || t.includes('EURO') || t.includes('KUR') || t.includes('DOVIZ') || t.includes('TCMB') || t.includes('FAIZ')) return 'fx';
-      if (t.includes('BORSA') || t.includes('BIST') || t.includes('HISSE') || t.includes(' FON') || t.includes('TEFAS') || t.includes('YATIRIMCI')) return 'fund';
+      // Kategorizasyon için gelişmiş anahtar kelimeler
+      if (t.includes('ALTIN') || t.includes('ONS') || t.includes('GRAM') || t.includes('KUYUMCU') || t.includes('FED') || t.includes('EMTIA')) return 'gold';
+      if (t.includes('DOLAR') || t.includes('EURO') || t.includes('KUR') || t.includes('DOVIZ') || t.includes('TCMB') || t.includes('FAIZ') || t.includes('ENFLASYON') || t.includes('MERKEZ BANKASI')) return 'fx';
+      if (t.includes('BORSA') || t.includes('BIST') || t.includes('HISSE') || t.includes('FON') || t.includes('TEFAS') || t.includes('YATIRIMCI') || t.includes('ENDEKS') || t.includes('PIYASA')) return 'fund';
       return null;
     }
 
     async function fetchMarketNews() {
       let allItems = [];
       for (const feedUrl of REAL_NEWS_FEEDS) {
-        const xml = await fetchRssXml(feedUrl);
-        if (xml) allItems = allItems.concat(parseRssItems(xml));
+        const items = await fetchRss(feedUrl);
+        if (items && items.length > 0) allItems = allItems.concat(items);
       }
 
       if (allItems.length === 0) {
@@ -1814,18 +1813,24 @@
         return;
       }
 
-      allItems.sort((a, b) => new Date(b.pubDate) - new Date(a.pubDate));
+      allItems.sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
       const buckets = { gold: [], fx: [], fund: [] };
       const overflow = [];
+      
       allItems.forEach(item => {
         const cat = classifyNewsItem(item.title);
         if (cat) buckets[cat].push(item);
         else overflow.push(item);
       });
+      
       let oi = 0;
       ['gold', 'fx', 'fund'].forEach(cat => {
-        while (buckets[cat].length < 5 && oi < overflow.length) { buckets[cat].push(overflow[oi]); oi++; }
+        while (buckets[cat].length < 5 && oi < overflow.length) { 
+          buckets[cat].push(overflow[oi]); 
+          oi++; 
+        }
       });
+      
       ['gold', 'fx', 'fund'].forEach(cat => {
         const container = document.getElementById(`newsList-${cat}`);
         if (!container) return;
@@ -1840,7 +1845,12 @@
         let dateStr = 'Az önce';
         try {
           if (item.pubDate) {
-            const d = new Date(item.pubDate);
+            let cleanDate = item.pubDate;
+            // rss2json'dan gelen bazı formatlar (YYYY-MM-DD HH:MM:SS) Safari'de patlamasın diye T'ye çeviriyoruz
+            if (cleanDate.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+              cleanDate = cleanDate.replace(' ', 'T');
+            }
+            const d = new Date(cleanDate);
             if (!isNaN(d.getTime())) dateStr = d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
           }
         } catch (e) {}
@@ -1865,9 +1875,9 @@
 
     function renderNewsUnavailable(category, container) {
       const sourceLinks = {
-        gold: 'https://www.doviz.com/haber/emtia-haberleri',
-        fx: 'https://www.doviz.com/',
-        fund: 'https://www.tefas.gov.tr/'
+        gold: 'https://www.trthaber.com/haber/ekonomi/',
+        fx: 'https://www.haberturk.com/ekonomi',
+        fund: 'https://www.ntv.com.tr/ekonomi'
       };
       container.innerHTML = `
         <div class="text-center py-4">
@@ -2099,8 +2109,6 @@
         renderApp();
       });
 
-      // ÖNEMLİ: pull önce ve tek başına bitmeli, ancak ondan sonra sync/update başlamalı
-      // (aksi halde bu cihazın bayat local verisi buluttan az önce çekilenin üzerine yazılabilir)
       if (autoUpdateIntervalId) clearInterval(autoUpdateIntervalId);
       autoUpdateIntervalId = setInterval(async () => {
         if (!autoUpdateEnabled) return;
@@ -2256,8 +2264,10 @@
 
       const chartModalCloseX = document.getElementById('chartModalCloseX');
       if (chartModalCloseX) chartModalCloseX.onclick = () => { const m = document.getElementById('chartDetailModal'); if (m) m.style.display = 'none'; };
+      
       const chartModalCloseBtn = document.getElementById('chartModalCloseBtn');
       if (chartModalCloseBtn) chartModalCloseBtn.onclick = () => { const m = document.getElementById('chartDetailModal'); if (m) m.style.display = 'none'; };
+      
       document.querySelectorAll('#chartPeriodTabs .period-tab-btn').forEach(btn => {
         btn.onclick = () => {
           document.querySelectorAll('#chartPeriodTabs .period-tab-btn').forEach(b => b.className = 'period-tab-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900');
