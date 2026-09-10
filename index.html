@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Portföy Takip & Analiz Merkezi - Canlı Piyasa, AI ve İzleme Listesi</title>
-  <!-- GÜNCELLENMİŞ YENİ FAVICON: Altın, Mavi ve Yeşil tonlarda belirgin Pasta Grafik -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23fbbf24' d='M21 11a10 10 0 0 0-10-10v10h10z'/><path fill='%236366f1' d='M11 21A10 10 0 0 0 21 13H11v8z'/><path fill='%2310b981' d='M9 21A10 10 0 0 1 9 3v18z'/></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -24,47 +23,14 @@
       --font-body: 'Plus Jakarta Sans', sans-serif;
       --font-mono: 'Space Grotesk', monospace;
     }
-
-    body {
-      font-family: var(--font-body);
-      background-color: var(--bg-main);
-      color: var(--text-main);
-      min-height: 100vh;
-    }
-
-    .font-mono {
-      font-family: var(--font-mono);
-    }
-
-    .chart-container {
-      position: relative;
-      width: 100%;
-      height: 280px;
-      max-height: 360px;
-    }
-
-    @media (min-width: 768px) {
-      .chart-container {
-        height: 320px;
-      }
-    }
-
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #f1f5f9;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 3px;
-    }
-
-    .modal-backdrop {
-      background-color: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(5px);
-    }
+    body { font-family: var(--font-body); background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; }
+    .font-mono { font-family: var(--font-mono); }
+    .chart-container { position: relative; width: 100%; height: 280px; max-height: 360px; }
+    @media (min-width: 768px) { .chart-container { height: 320px; } }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    .modal-backdrop { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); }
   </style>
 </head>
 <body class="p-3 md:p-6 pb-24">
@@ -86,7 +52,6 @@
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100 bg-slate-50/50" id="newsContainer">
         
-        <!-- Altın Haberleri -->
         <div class="p-4 md:p-5 flex flex-col h-full">
           <h3 class="text-xs font-extrabold text-amber-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><span class="text-base">🥇</span> Kapalıçarşı & Altın</h3>
           <div class="space-y-3 flex-1" id="newsList-gold">
@@ -94,7 +59,6 @@
           </div>
         </div>
 
-        <!-- Döviz Haberleri -->
         <div class="p-4 md:p-5 flex flex-col h-full">
           <h3 class="text-xs font-extrabold text-blue-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><span class="text-base">💵</span> Döviz (USD/TRY - EUR/TRY)</h3>
           <div class="space-y-3 flex-1" id="newsList-fx">
@@ -102,7 +66,6 @@
           </div>
         </div>
 
-        <!-- Fon / Borsa Haberleri -->
         <div class="p-4 md:p-5 flex flex-col h-full">
           <h3 class="text-xs font-extrabold text-purple-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><span class="text-base">📈</span> BIST & TEFAS Fonları</h3>
           <div class="space-y-3 flex-1" id="newsList-fund">
@@ -126,7 +89,7 @@
           </span>
           <span id="lastUpdated" class="text-xs font-mono text-slate-400">Son Güncelleme: --:--</span>
           <span id="fbSyncStatus" class="text-xs font-mono text-slate-400">☁ Bekleniyor...</span>
-          <button id="btnToggleAutoUpdate" class="text-xs px-2.5 py-0.5 rounded-full font-semibold border transition-colors flex items-center gap-1.5" title="Otomatik güncellemeyi aç/kapat">
+          <button id="btnToggleAutoUpdate" class="text-xs px-2.5 py-0.5 rounded-full font-semibold border transition-colors flex items-center gap-1.5">
             <span id="autoUpdateDot" class="w-2 h-2 rounded-full"></span>
             <span id="autoUpdateLabel">Otomatik Güncelleme</span>
           </button>
@@ -169,10 +132,8 @@
         </div>
       </div>
 
-      <!-- Ticker Grid -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="liveTickerGrid"></div>
 
-      <!-- DÖVİZ & ALTIN ÇEVİRİCİ WIDGET -->
       <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-5 space-y-3">
         <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
           <span>💱</span> Döviz & Altın Dönüştürücü / Çevirici (22 ve 24 Ayar Dahil)
@@ -225,7 +186,6 @@
         </div>
       </div>
 
-      <!-- Alarm Ekleme Formu -->
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 items-end">
         <div>
           <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Varlık / Kod</label>
@@ -249,10 +209,7 @@
         </div>
       </div>
 
-      <!-- Alarmlar Listesi Container'ı -->
-      <div id="alarmListContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-         <!-- Alarmlar buraya grid kartları olarak yüklenecek -->
-      </div>
+      <div id="alarmListContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
     </section>
 
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
@@ -360,7 +317,6 @@
 
       <div id="watchSheetErrorBanner" class="hidden bg-rose-50 border border-rose-200 text-rose-800 text-xs p-3 rounded-xl"></div>
 
-      <!-- Takip Listesi Toplam Kâr/Zarar Özeti -->
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-3" id="watchSummaryGrid">
         <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
           <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Takip Maliyeti</div>
@@ -416,7 +372,6 @@
 
   </div>
 
-  <!-- Sheet Settings Modal -->
   <div id="sheetSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-emerald-900 text-white p-4 px-6 flex items-center justify-between">
@@ -449,7 +404,6 @@
     </div>
   </div>
 
-  <!-- AI Asistan Modalı -->
   <div id="aiModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
       <div class="bg-gradient-to-r from-purple-900 to-indigo-900 text-white p-4 px-6 flex items-center justify-between shrink-0">
@@ -479,7 +433,6 @@
     </div>
   </div>
 
-  <!-- Watchlist Add/Edit Modal -->
   <div id="watchAssetModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-purple-900 text-white p-4 px-6 flex items-center justify-between">
@@ -513,7 +466,6 @@
     </div>
   </div>
 
-  <!-- Portfolio Edit/Add Modal -->
   <div id="editAssetModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-slate-900 text-white p-4 px-6 flex items-center justify-between">
@@ -557,7 +509,6 @@
     </div>
   </div>
 
-  <!-- Asset Chart Detail Modal -->
   <div id="chartDetailModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-slate-900 text-white p-4 px-6 flex items-center justify-between">
@@ -1832,7 +1783,6 @@
     ];
 
     async function fetchRss(feedUrl) {
-      // Önbelleği (cache) kırmak için rastgele zaman damgası ekliyoruz
       const bustUrl = feedUrl + (feedUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
       
       const proxies = [
@@ -1845,7 +1795,6 @@
           const res = await fetchWithTimeout(proxy, { cache: 'no-store' }, 7000);
           if (res && res.ok) {
             const text = await res.text();
-            // Gelen veri XML ise kendimiz parse ediyoruz
             if (text.includes('<?xml') || text.includes('<rss')) {
               const parser = new DOMParser();
               const xml = parser.parseFromString(text, "text/xml");
@@ -1859,10 +1808,9 @@
               }
             }
           }
-        } catch(e) { console.warn("Proxy parse hatası:", proxy); }
+        } catch(e) {}
       }
 
-      // XML Parse başarısız olursa rss2json yedek servisi kullan (bunda da cache kırma eklendi)
       try {
         const rs2j = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(bustUrl)}&api_key=free&count=10&_=${Date.now()}`;
         const res2 = await fetchWithTimeout(rs2j, { cache: 'no-store' }, 8000);
@@ -1937,7 +1885,6 @@
             const d = new Date(item.pubDate);
             if (!isNaN(d.getTime())) {
               const now = new Date();
-              // Eğer haber bugüne aitse sadece saat, eskiyse tarih ve saat göster
               if (d.toDateString() === now.toDateString()) {
                 dateStr = 'Bugün ' + d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
               } else {
@@ -2243,12 +2190,10 @@
       document.getElementById('aiSendBtn').onclick = handleAiChatSend;
       document.getElementById('aiUserQuestion').onkeypress = (e) => { if (e.key === 'Enter') handleAiChatSend(); };
 
-      // Scroll to Alarms Section
       document.getElementById('btnScrollToAlarms').onclick = () => {
         document.getElementById('alarmsSection').scrollIntoView({ behavior: 'smooth' });
       };
 
-      // Add Alarm Logic for Main Section
       document.getElementById('btnAddAlarm').onclick = () => {
         const symbol = document.getElementById('alarmSymbol').value.trim().toUpperCase();
         const type = document.getElementById('alarmType').value;
