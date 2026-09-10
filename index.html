@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Portföy Takip & Analiz Merkezi - Canlı Piyasa, AI ve İzleme Listesi</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2310b981'><path d='M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z'/></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -69,7 +70,6 @@
 
   <div class="max-w-7xl mx-auto space-y-6">
 
-    <!-- PİYASA HABERLERİ BÖLÜMÜ -->
     <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
       <div class="bg-slate-900 text-white p-3 md:p-4 px-5 flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -377,7 +377,6 @@
 
   </div>
 
-  <!-- MODAL: SHEET AYARLARI -->
   <div id="sheetSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-emerald-900 text-white p-4 px-6 flex items-center justify-between">
@@ -410,7 +409,6 @@
     </div>
   </div>
 
-  <!-- MODAL: FİYAT ALARMLARI -->
   <div id="alarmModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-amber-800 text-white p-4 px-6 flex items-center justify-between">
@@ -423,7 +421,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
           <div>
             <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Varlık / Kod</label>
-            <input id="alarmSymbol" type="text" placeholder="Örn: USD, GRAM24" class="w-full uppercase bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono font-bold text-xs">
+            <input id="alarmSymbol" type="text" placeholder="Örn: USD, GRAM" class="w-full uppercase bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono font-bold text-xs">
           </div>
           <div>
             <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Hedef Fiyat (TL/$)</label>
@@ -445,7 +443,6 @@
     </div>
   </div>
 
-  <!-- MODAL: AI ASİSTAN -->
   <div id="aiModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
       <div class="bg-gradient-to-r from-purple-900 to-indigo-900 text-white p-4 px-6 flex items-center justify-between shrink-0">
@@ -475,7 +472,6 @@
     </div>
   </div>
 
-  <!-- MODAL: FON EKLE / DÜZENLE -->
   <div id="watchAssetModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-purple-900 text-white p-4 px-6 flex items-center justify-between">
@@ -509,7 +505,6 @@
     </div>
   </div>
 
-  <!-- MODAL: VARLIK DÜZENLEME -->
   <div id="editAssetModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-slate-900 text-white p-4 px-6 flex items-center justify-between">
@@ -553,7 +548,6 @@
     </div>
   </div>
 
-  <!-- MODAL: GRAFİK & ANALİZ -->
   <div id="chartDetailModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-slate-900 text-white p-4 px-6 flex items-center justify-between">
@@ -674,7 +668,7 @@
     let autoUpdateEnabled = true;
     let autoUpdateIntervalId = null;
 
-    // SADECE USD, EUR, GRAM ve CEYREK tanımlandı (24 ayar temel baz, 22 ayar otomatik hesaplanır)
+    /* SADECE USD, EUR, GRAM ve CEYREK (24 ayar temel baz, 22 ayar otomatik hesaplanır) */
     let liveRates = {
       'USD': { name: 'Dolar ($)', price: 34.85, change: 0.15, category: 'fx' },
       'EUR': { name: 'Euro (€)', price: 36.40, change: 0.20, category: 'fx' },
@@ -708,7 +702,6 @@
       if (code === 'TRY') return 1;
       if (code === 'GRAM24') return liveRates['GRAM'] ? liveRates['GRAM'].price : 3250;
       if (code === 'GRAM22') {
-        // 22 ayar altın, 24 ayar fiyatının yaklaşık %91.6'sıdır
         const base24 = liveRates['GRAM'] ? liveRates['GRAM'].price : 3250;
         return base24 * 0.9163;
       }
@@ -2095,7 +2088,6 @@
       document.getElementById('btnSyncWatchlistSheet').onclick = () => syncWatchlistFromSheet(false);
       document.getElementById('btnRefreshWatchPrices').onclick = () => updateLiveMarketData(false);
 
-      // Çevirici Dinamik Event Listener'ları
       document.getElementById('convAmount').oninput = calculateCurrencyConversion;
       document.getElementById('convFrom').onchange = calculateCurrencyConversion;
       document.getElementById('convTo').onchange = calculateCurrencyConversion;
