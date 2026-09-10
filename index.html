@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Portföy Takip & Analiz Merkezi - Canlı Piyasa, AI ve İzleme Listesi</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2310b981'><path d='M21 18v1c0 1.1-.9 2-2 2H5c-1.11 0-2-.9-2-2V5c0-1.1.89-2 2-2h14c1.1 0 2 .9 2 2v1h-9c-1.11 0-2 .9-2 2v8c0 1.1.89 2 2 2h9zm-9-2h10V8H12v8zm4-2.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z'/></svg>">
+  <!-- GÜNCELLENMİŞ YENİ FAVICON: Altın, Mavi ve Yeşil tonlarda belirgin Pasta Grafik -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23fbbf24' d='M21 11a10 10 0 0 0-10-10v10h10z'/><path fill='%236366f1' d='M11 21A10 10 0 0 0 21 13H11v8z'/><path fill='%2310b981' d='M9 21A10 10 0 0 1 9 3v18z'/></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
@@ -70,7 +71,6 @@
 
   <div class="max-w-7xl mx-auto space-y-6">
 
-    <!-- Türkiye Piyasaları Haberleri Bölümü -->
     <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
       <div class="bg-slate-900 text-white p-3 md:p-4 px-5 flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -113,7 +113,6 @@
       </div>
     </section>
 
-    <!-- Header Section -->
     <header class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
         <div class="flex items-center gap-2">
@@ -141,8 +140,8 @@
         <button id="btnOpenAIModal" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
           <span>🤖</span> AI Asistan
         </button>
-        <button id="btnOpenAlarmModal" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
-          <span>🔔</span> Fiyat Alarmları (<span id="alarmCountBadge">0</span>)
+        <button id="btnScrollToAlarms" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
+          <span>🔔</span> Alarmlara Git (<span id="alarmCountBadge">0</span>)
         </button>
 
         <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-200 flex items-center gap-1.5">
@@ -155,7 +154,6 @@
       </div>
     </header>
 
-    <!-- Canlı Piyasa Verileri ve Çevirici -->
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-5">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
@@ -210,7 +208,7 @@
                 <option value="GRAM22">22 Ayar Gram Altın</option>
                 <option value="CEYREK">Çeyrek Altın</option>
               </select>
-              <div id="convResult" class="flex-1 bg-white border border-emerald-300 bg-emerald-50 text-emerald-900 rounded-xl px-3 py-2 text-sm font-mono font-extrabold flex items-center shadow-inner">
+              <div id="convResult" class="flex-1 bg-white border border-emerald-300 bg-emerald-50 text-emerald-900 rounded-xl px-3 py-2 text-sm font-mono font-extrabold flex items-center shadow-inner overflow-hidden whitespace-nowrap text-ellipsis">
                 0,00
               </div>
             </div>
@@ -219,7 +217,44 @@
       </div>
     </section>
 
-    <!-- Category Performance Section -->
+    <section id="alarmsSection" class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
+      <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2"><span>🔔</span> Aktif Fiyat Alarmları</h2>
+          <p class="text-xs text-slate-500">Hedef (kâr al) veya Temkinli (stop) fiyat eşiklerini belirleyin, piyasa o noktaya geldiğinde uyarı alın.</p>
+        </div>
+      </div>
+
+      <!-- Alarm Ekleme Formu -->
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 items-end">
+        <div>
+          <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Varlık / Kod</label>
+          <input id="alarmSymbol" type="text" placeholder="Örn: USD, GRAM" class="w-full uppercase bg-white border border-slate-300 rounded-lg px-3 py-2 font-mono font-bold text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Alarm Türü</label>
+          <select id="alarmType" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 font-sans font-bold text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+            <option value="up">🚀 Hedef (Yükseliş)</option>
+            <option value="down">🛡️ Temkinli (Düşüş/Stop)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Eşik Fiyat (TL/$)</label>
+          <input id="alarmTarget" type="number" step="any" placeholder="Örn: 50.00" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+        </div>
+        <div>
+          <button id="btnAddAlarm" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
+            <span>➕</span> Alarm Ekle
+          </button>
+        </div>
+      </div>
+
+      <!-- Alarmlar Listesi Container'ı -->
+      <div id="alarmListContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+         <!-- Alarmlar buraya grid kartları olarak yüklenecek -->
+      </div>
+    </section>
+
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
       <div class="border-b border-slate-100 pb-3">
         <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2"><span>📊</span> Kategori Bazlı Performans & Analiz</h2>
@@ -228,7 +263,6 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="categoryCardsGrid"></div>
     </section>
 
-    <!-- Summary Statistics Grid -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
         <div class="w-1 h-full bg-slate-400 absolute left-0 top-0"></div>
@@ -253,7 +287,6 @@
       </div>
     </section>
 
-    <!-- Main Portfolio Table Section -->
     <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div class="p-4 md:p-6 border-b border-slate-200 space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -306,7 +339,6 @@
       </div>
     </section>
 
-    <!-- Watchlist Section -->
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
@@ -375,7 +407,6 @@
       </div>
     </section>
 
-    <!-- Allocation Chart Section -->
     <section class="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
       <h2 class="text-lg font-bold text-slate-900 mb-4">Varlık Dağılımı</h2>
       <div class="chart-container">
@@ -418,48 +449,6 @@
     </div>
   </div>
 
-  <!-- Çift Yönlü Fiyat Alarmları Modalı -->
-  <div id="alarmModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
-    <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden border border-slate-200">
-      <div class="bg-amber-800 text-white p-4 px-6 flex items-center justify-between">
-        <h3 class="font-bold text-lg flex items-center gap-2"><span>🔔</span> Çift Yönlü Fiyat Alarmları</h3>
-        <button id="alarmModalCloseX" class="text-amber-200 hover:text-white text-xl">✕</button>
-      </div>
-      <div class="p-5 md:p-6 space-y-4 text-xs md:text-sm">
-        <p class="text-slate-600">Varlıklarınız için 2 tür alarm kurabilirsiniz: <strong>Yükseliş / Hedef Alarmı</strong> (kâr satışı için) veya <strong>Düşüş / Temkinli Olma (Stop-Loss) Alarmı</strong>.</p>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-          <div>
-            <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Varlık / Kod</label>
-            <input id="alarmSymbol" type="text" placeholder="Örn: USD, GRAM" class="w-full uppercase bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono font-bold text-xs">
-          </div>
-          <div>
-            <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Alarm Türü</label>
-            <select id="alarmType" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 font-sans font-bold text-xs">
-              <option value="up">🚀 Hedef (Yükseliş)</option>
-              <option value="down">🛡️ Temkinli (Düşüş/Stop)</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Eşik Fiyat (TL/$)</label>
-            <input id="alarmTarget" type="number" step="any" placeholder="Örn: 50.00" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono text-xs">
-          </div>
-          <div class="flex items-end">
-            <button id="btnAddAlarm" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-1.5 px-3 rounded-lg text-xs transition-colors shadow-sm">Alarm Ekle</button>
-          </div>
-        </div>
-
-        <div class="border-t border-slate-200 pt-3">
-          <h4 class="font-bold text-slate-800 mb-2">Aktif Alarmlarınız</h4>
-          <div id="alarmListContainer" class="space-y-2 max-h-48 overflow-y-auto"></div>
-        </div>
-      </div>
-      <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex justify-end">
-        <button id="alarmModalCloseBtn" class="px-5 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white">Kapat</button>
-      </div>
-    </div>
-  </div>
-
   <!-- AI Asistan Modalı -->
   <div id="aiModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
@@ -478,7 +467,7 @@
                class="flex-1 bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-purple-400">
       </div>
       <div class="p-5 overflow-y-auto space-y-4 flex-1 bg-slate-50" id="aiChatHistory">
-        <div class="bg-purple-100 text-purple-900 p-3.5 rounded-2xl rounded-tl-sm text-xs md:text-sm max-w-[85%]">
+        <div class="bg-purple-100 text-purple-900 p-3.5 rounded-2xl rounded-tl-sm text-xs md:text-sm max-w-[85%] shadow-sm">
           Merhaba! Ben akıllı portföy asistanınım. Portföyündeki varlıkları, getiri oranlarını ve piyasa durumunu inceleyebilirim. İstersen yukarıya kendi **Gemini API Key**'ini girerek benimle dünyanın en akıcı ve doğal sohbetini yapabilirsin, istersen anahtar girmeden de akıllı analizlerimle sana yardımcı olabilirim! 😊
         </div>
       </div>
@@ -1131,20 +1120,30 @@
       container.innerHTML = '';
 
       if (alarms.length === 0) {
-        container.innerHTML = '<div class="text-xs text-slate-400 py-3 text-center">Henüz fiyat alarmı eklenmemiş.</div>';
+        container.innerHTML = '<div class="col-span-full text-sm text-slate-400 py-6 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">Henüz fiyat alarmı eklenmemiş. Yukarıdan yeni hedefler belirleyebilirsiniz.</div>';
         return;
       }
 
       alarms.forEach(a => {
         const isUp = a.type === 'up';
         const row = document.createElement('div');
-        row.className = "flex items-center justify-between bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-mono";
+        row.className = `flex flex-col justify-between bg-white border ${isUp ? 'border-emerald-200' : 'border-rose-200'} p-4 rounded-xl text-sm font-mono relative shadow-sm overflow-hidden group`;
         row.innerHTML = `
-          <div>
-            <span class="font-bold px-1.5 py-0.5 rounded mr-1.5 ${isUp ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${isUp ? '🚀 Hedef' : '🛡️ Temkinli'}</span>
-            <strong class="text-slate-900">${a.symbol}</strong> — Eşik: <span class="font-bold text-slate-700">${formatTL(a.target)}</span>
+          <div class="absolute top-0 left-0 w-1 h-full ${isUp ? 'bg-emerald-500' : 'bg-rose-500'}"></div>
+          <div class="flex items-center justify-between mb-2 pl-2">
+            <span class="font-bold px-2 py-1 rounded text-[10px] uppercase tracking-wide ${isUp ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${isUp ? '🚀 Yükseliş Hedefi' : '🛡️ Düşüş / Stop'}</span>
+            <button onclick="deleteAlarm('${a.id}')" class="text-slate-400 hover:text-rose-600 transition-colors bg-slate-50 hover:bg-rose-50 rounded p-1" title="Alarmı Sil">✕</button>
           </div>
-          <button onclick="deleteAlarm('${a.id}')" class="text-rose-600 hover:text-rose-800 font-bold px-2 py-1 rounded bg-rose-50">Sil</button>
+          <div class="pl-2 flex items-end justify-between mt-1">
+            <div>
+              <div class="text-[10px] text-slate-500 mb-0.5 uppercase tracking-wide">Varlık Kodu</div>
+              <strong class="text-lg text-slate-900">${a.symbol}</strong>
+            </div>
+            <div class="text-right">
+              <div class="text-[10px] text-slate-500 mb-0.5 uppercase tracking-wide">Eşik Fiyat</div>
+              <span class="font-bold text-slate-800 text-lg">${formatTL(a.target)}</span>
+            </div>
+          </div>
         `;
         container.appendChild(row);
       });
@@ -1773,15 +1772,15 @@
 
       const historyEl = document.getElementById('aiChatHistory');
       const userDiv = document.createElement('div');
-      userDiv.className = "bg-slate-200 text-slate-800 p-3.5 rounded-2xl rounded-tr-sm text-xs md:text-sm self-end max-w-[85%] ml-auto mt-2";
+      userDiv.className = "bg-slate-200 text-slate-800 p-3.5 rounded-2xl rounded-tr-sm text-xs md:text-sm self-end max-w-[85%] ml-auto mt-2 shadow-sm";
       userDiv.textContent = question;
       historyEl.appendChild(userDiv);
       inputEl.value = '';
       historyEl.scrollTop = historyEl.scrollHeight;
 
       const loadingDiv = document.createElement('div');
-      loadingDiv.className = "bg-purple-50 text-purple-600 p-3.5 rounded-2xl rounded-tl-sm text-xs md:text-sm max-w-[85%] animate-pulse mt-2";
-      loadingDiv.textContent = "Asistan düşünüyor...";
+      loadingDiv.className = "bg-purple-50 text-purple-600 p-3.5 rounded-2xl rounded-tl-sm text-xs md:text-sm max-w-[85%] animate-pulse mt-2 shadow-sm border border-purple-100";
+      loadingDiv.textContent = "Asistan analiz ediyor...";
       historyEl.appendChild(loadingDiv);
       historyEl.scrollTop = historyEl.scrollHeight;
 
@@ -1820,28 +1819,61 @@
 
       if (historyEl.contains(loadingDiv)) historyEl.removeChild(loadingDiv);
       const aiDiv = document.createElement('div');
-      aiDiv.className = "bg-purple-100 text-purple-900 p-3.5 rounded-2xl rounded-tl-sm text-xs md:text-sm max-w-[85%] mt-2 whitespace-pre-line";
+      aiDiv.className = "bg-purple-100 text-purple-900 p-3.5 rounded-2xl rounded-tl-sm text-xs md:text-sm max-w-[85%] mt-2 whitespace-pre-line shadow-sm";
       aiDiv.textContent = reply;
       historyEl.appendChild(aiDiv);
       historyEl.scrollTop = historyEl.scrollHeight;
     }
 
     const REAL_NEWS_FEEDS = [
-      'https://www.trthaber.com/ekonomi_articles.rss',
-      'https://www.haberturk.com/rss/ekonomi.xml',
+      'https://www.trthaber.com/rss/ekonomi.xml',
+      'https://www.hurriyet.com.tr/rss/ekonomi',
       'https://www.ntv.com.tr/ekonomi.rss'
     ];
 
     async function fetchRss(feedUrl) {
+      // Önbelleği (cache) kırmak için rastgele zaman damgası ekliyoruz
+      const bustUrl = feedUrl + (feedUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
+      
+      const proxies = [
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(bustUrl)}`,
+        `https://corsproxy.io/?url=${encodeURIComponent(bustUrl)}`
+      ];
+
+      for (const proxy of proxies) {
+        try {
+          const res = await fetchWithTimeout(proxy, { cache: 'no-store' }, 7000);
+          if (res && res.ok) {
+            const text = await res.text();
+            // Gelen veri XML ise kendimiz parse ediyoruz
+            if (text.includes('<?xml') || text.includes('<rss')) {
+              const parser = new DOMParser();
+              const xml = parser.parseFromString(text, "text/xml");
+              const items = Array.from(xml.querySelectorAll("item")).slice(0, 15);
+              if (items.length > 0) {
+                return items.map(item => ({
+                  title: item.querySelector("title")?.textContent || '',
+                  link: item.querySelector("link")?.textContent || '',
+                  pubDate: item.querySelector("pubDate")?.textContent || ''
+                }));
+              }
+            }
+          }
+        } catch(e) { console.warn("Proxy parse hatası:", proxy); }
+      }
+
+      // XML Parse başarısız olursa rss2json yedek servisi kullan (bunda da cache kırma eklendi)
       try {
-        const res = await fetchWithTimeout(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&api_key=free&count=10&_=${Date.now()}`, { cache: 'no-store' }, 8000);
-        if (res && res.ok) {
-          const data = await res.json();
+        const rs2j = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(bustUrl)}&api_key=free&count=10&_=${Date.now()}`;
+        const res2 = await fetchWithTimeout(rs2j, { cache: 'no-store' }, 8000);
+        if (res2 && res2.ok) {
+          const data = await res2.json();
           if (data && data.items && data.items.length > 0) {
             return data.items.map(item => ({ title: item.title, link: item.link, pubDate: item.pubDate }));
           }
         }
       } catch(e) {}
+      
       return [];
     }
 
@@ -1902,9 +1934,16 @@
         let dateStr = 'Az önce';
         try {
           if (item.pubDate) {
-            let cleanDate = item.pubDate.replace(' ', 'T');
-            const d = new Date(cleanDate);
-            if (!isNaN(d.getTime())) dateStr = d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
+            const d = new Date(item.pubDate);
+            if (!isNaN(d.getTime())) {
+              const now = new Date();
+              // Eğer haber bugüne aitse sadece saat, eskiyse tarih ve saat göster
+              if (d.toDateString() === now.toDateString()) {
+                dateStr = 'Bugün ' + d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
+              } else {
+                dateStr = d.toLocaleDateString('tr-TR', {day:'2-digit', month:'short'}) + ' ' + d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
+              }
+            }
           }
         } catch (e) {}
         
@@ -2204,9 +2243,12 @@
       document.getElementById('aiSendBtn').onclick = handleAiChatSend;
       document.getElementById('aiUserQuestion').onkeypress = (e) => { if (e.key === 'Enter') handleAiChatSend(); };
 
-      document.getElementById('btnOpenAlarmModal').onclick = () => document.getElementById('alarmModal').style.display = 'flex';
-      document.getElementById('alarmModalCloseX').onclick = () => document.getElementById('alarmModal').style.display = 'none';
-      document.getElementById('alarmModalCloseBtn').onclick = () => document.getElementById('alarmModal').style.display = 'none';
+      // Scroll to Alarms Section
+      document.getElementById('btnScrollToAlarms').onclick = () => {
+        document.getElementById('alarmsSection').scrollIntoView({ behavior: 'smooth' });
+      };
+
+      // Add Alarm Logic for Main Section
       document.getElementById('btnAddAlarm').onclick = () => {
         const symbol = document.getElementById('alarmSymbol').value.trim().toUpperCase();
         const type = document.getElementById('alarmType').value;
@@ -2219,7 +2261,7 @@
         document.getElementById('alarmCountBadge').textContent = alarms.length;
         document.getElementById('alarmSymbol').value = '';
         document.getElementById('alarmTarget').value = '';
-        showToast('Alarm eklendi.', 'success');
+        showToast('Alarm başarıyla panoya eklendi.', 'success');
       };
 
       document.getElementById('btnOpenWatchModal').onclick = () => openWatchModal(null);
