@@ -77,7 +77,7 @@
           <h2 class="text-sm md:text-base font-bold tracking-wide">Türkiye Piyasaları: Canlı Haberler & Analizler</h2>
         </div>
         <div class="flex items-center gap-3">
-          <span class="text-[10px] text-slate-400 font-mono hidden md:inline">Oto-Güncelleme: Aktif</span>
+          <span class="text-[10px] text-slate-400 font-mono hidden md:inline">Oto-Güncelleme: 30dk</span>
           <button id="btnRefreshNews" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-slate-700">
             <span>🔄</span> Yenile
           </button>
@@ -298,13 +298,13 @@
           <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
             <span>👁️</span> Varlık Dışı Fon Takip (İzleme Listesi)
           </h2>
-          <p class="text-xs text-slate-500">Özel Google Sheet bağlantısından senkronize edilen veya manuel eklenen takip fonlarınız (TEFAS fiyatları ile anlık takip)</p>
+          <p class="text-xs text-slate-500">Google Sheet bağlantısından (<span class="font-mono text-purple-700">1wPq6...</span>) senkronize edilen veya manuel eklenen takip fonlarınız</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <button id="btnSyncWatchlistSheet" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5" title="Belirtilen Google Sheet'ten listeyi günceller">
-            <span>📊</span> Sheet'ten Veri Çek
+            <span>📊</span> Sheet'ten Veri Çek & Güncelle
           </button>
-          <button id="btnRefreshWatchPrices" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5" title="Takip listesindeki fonların fiyatlarını TEFAS'tan yeniden çeker ve günceller">
+          <button id="btnRefreshWatchPrices" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5" title="TEFAS'tan fiyatları tazeler">
             <span>🔄</span> Fiyatları Güncelle
           </button>
           <button id="btnOpenWatchModal" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
@@ -351,7 +351,7 @@
           <tbody class="divide-y divide-slate-100 font-mono text-slate-700" id="watchlistBody"></tbody>
         </table>
         <div id="watchlistEmptyState" class="text-center py-8 text-slate-400 text-xs" style="display:none">
-          Henüz takip listesinde fon bulunmuyor. "Sheet'ten Veri Çek" veya "Fon Ekle" butonunu kullanabilirsiniz.
+          Henüz takip listesinde fon bulunmuyor. "Sheet'ten Veri Çek & Güncelle" butonuna basabilirsiniz.
         </div>
       </div>
     </section>
@@ -798,9 +798,6 @@
 
     async function syncWatchlistFromSheet(quiet = false) {
       const sheetUrl = getSavedWatchSheetUrl();
-      const statusText = document.getElementById('sheetStatusText');
-      if (statusText) statusText.textContent = "Takip Listesi Sheet'ten Çekiliyor...";
-
       try {
         const csvText = await fetchGoogleSheetCsvText(sheetUrl);
         const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
