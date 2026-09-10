@@ -70,6 +70,7 @@
 
   <div class="max-w-7xl mx-auto space-y-6">
 
+    <!-- Türkiye Piyasaları Haberleri Bölümü -->
     <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
       <div class="bg-slate-900 text-white p-3 md:p-4 px-5 flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -112,6 +113,7 @@
       </div>
     </section>
 
+    <!-- Header Section -->
     <header class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
         <div class="flex items-center gap-2">
@@ -119,7 +121,7 @@
           <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900">Portföy Takip & Analiz Merkezi</h1>
         </div>
         <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-          <p class="text-xs md:text-sm text-slate-500 font-medium">Google Sheets Canlı Senkronizasyon, Kategori Analizi, Fiyat Alarmları & AI Asistanı.</p>
+          <p class="text-xs md:text-sm text-slate-500 font-medium">Google Sheets Canlı Senkronizasyon, Kategori Analizi, Çift Yönlü Fiyat Alarmları & AI Asistanı.</p>
           <span id="sheetSyncBadge" class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1 cursor-pointer hover:bg-emerald-100 transition-colors">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Google Sheet Bağlı
           </span>
@@ -153,6 +155,7 @@
       </div>
     </header>
 
+    <!-- Canlı Piyasa Verileri ve Çevirici -->
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-5">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
@@ -171,7 +174,7 @@
       <!-- Ticker Grid -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="liveTickerGrid"></div>
 
-      <!-- DÖVİZ & ALTIN ÇEVİRİCİ WIDGET (22 ve 24 Ayar Ayrımıyla) -->
+      <!-- DÖVİZ & ALTIN ÇEVİRİCİ WIDGET -->
       <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-5 space-y-3">
         <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
           <span>💱</span> Döviz & Altın Dönüştürücü / Çevirici (22 ve 24 Ayar Dahil)
@@ -216,6 +219,7 @@
       </div>
     </section>
 
+    <!-- Category Performance Section -->
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
       <div class="border-b border-slate-100 pb-3">
         <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2"><span>📊</span> Kategori Bazlı Performans & Analiz</h2>
@@ -224,6 +228,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4" id="categoryCardsGrid"></div>
     </section>
 
+    <!-- Summary Statistics Grid -->
     <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
         <div class="w-1 h-full bg-slate-400 absolute left-0 top-0"></div>
@@ -248,6 +253,7 @@
       </div>
     </section>
 
+    <!-- Main Portfolio Table Section -->
     <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div class="p-4 md:p-6 border-b border-slate-200 space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -300,6 +306,7 @@
       </div>
     </section>
 
+    <!-- Watchlist Section -->
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
@@ -368,6 +375,7 @@
       </div>
     </section>
 
+    <!-- Allocation Chart Section -->
     <section class="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
       <h2 class="text-lg font-bold text-slate-900 mb-4">Varlık Dağılımı</h2>
       <div class="chart-container">
@@ -377,6 +385,7 @@
 
   </div>
 
+  <!-- Sheet Settings Modal -->
   <div id="sheetSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-emerald-900 text-white p-4 px-6 flex items-center justify-between">
@@ -409,22 +418,30 @@
     </div>
   </div>
 
+  <!-- Çift Yönlü Fiyat Alarmları Modalı -->
   <div id="alarmModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-xl w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-amber-800 text-white p-4 px-6 flex items-center justify-between">
-        <h3 class="font-bold text-lg flex items-center gap-2"><span>🔔</span> Fiyat Alarmları ve Takip Kuru</h3>
+        <h3 class="font-bold text-lg flex items-center gap-2"><span>🔔</span> Çift Yönlü Fiyat Alarmları</h3>
         <button id="alarmModalCloseX" class="text-amber-200 hover:text-white text-xl">✕</button>
       </div>
       <div class="p-5 md:p-6 space-y-4 text-xs md:text-sm">
-        <p class="text-slate-600">Takip ettiğiniz fon, döviz veya altın için hedef fiyat alarmı kurun.</p>
+        <p class="text-slate-600">Varlıklarınız için 2 tür alarm kurabilirsiniz: <strong>Yükseliş / Hedef Alarmı</strong> (kâr satışı için) veya <strong>Düşüş / Temkinli Olma (Stop-Loss) Alarmı</strong>.</p>
         
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
           <div>
             <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Varlık / Kod</label>
             <input id="alarmSymbol" type="text" placeholder="Örn: USD, GRAM" class="w-full uppercase bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono font-bold text-xs">
           </div>
           <div>
-            <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Hedef Fiyat (TL/$)</label>
+            <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Alarm Türü</label>
+            <select id="alarmType" class="w-full bg-white border border-slate-300 rounded-lg px-2 py-1.5 font-sans font-bold text-xs">
+              <option value="up">🚀 Hedef (Yükseliş)</option>
+              <option value="down">🛡️ Temkinli (Düşüş/Stop)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Eşik Fiyat (TL/$)</label>
             <input id="alarmTarget" type="number" step="any" placeholder="Örn: 50.00" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono text-xs">
           </div>
           <div class="flex items-end">
@@ -443,6 +460,7 @@
     </div>
   </div>
 
+  <!-- AI Asistan Modalı -->
   <div id="aiModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200 flex flex-col max-h-[90vh]">
       <div class="bg-gradient-to-r from-purple-900 to-indigo-900 text-white p-4 px-6 flex items-center justify-between shrink-0">
@@ -456,12 +474,12 @@
         <button id="aiModalCloseX" class="text-purple-200 hover:text-white text-xl">✕</button>
       </div>
       <div class="px-5 pt-3 shrink-0 flex items-center gap-2">
-        <input id="aiApiKey" type="password" placeholder="Gemini API Key (Opsiyonel)" 
+        <input id="aiApiKey" type="password" placeholder="Gemini API Key (Daha akıcı sohbet için opsiyonel)" 
                class="flex-1 bg-slate-100 border border-slate-300 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-purple-400">
       </div>
       <div class="p-5 overflow-y-auto space-y-4 flex-1 bg-slate-50" id="aiChatHistory">
         <div class="bg-purple-100 text-purple-900 p-3.5 rounded-2xl rounded-tl-sm text-xs md:text-sm max-w-[85%]">
-          Merhaba! Ben akıllı portföy asistanınım. Portföyündeki varlıkları, getiri oranlarını ve piyasa durumunu inceleyebilirim. Bana "Portföyümün durumu nasıl?", "Getirimi artırmak için ne yapmalıyım?" veya herhangi bir yatırım stratejisi hakkında sorular sorabilirsin, seninle sohbet etmekten memnuniyet duyarım! 😊
+          Merhaba! Ben akıllı portföy asistanınım. Portföyündeki varlıkları, getiri oranlarını ve piyasa durumunu inceleyebilirim. İstersen yukarıya kendi **Gemini API Key**'ini girerek benimle dünyanın en akıcı ve doğal sohbetini yapabilirsin, istersen anahtar girmeden de akıllı analizlerimle sana yardımcı olabilirim! 😊
         </div>
       </div>
       <div class="p-3 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0">
@@ -472,6 +490,7 @@
     </div>
   </div>
 
+  <!-- Watchlist Add/Edit Modal -->
   <div id="watchAssetModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-purple-900 text-white p-4 px-6 flex items-center justify-between">
@@ -505,6 +524,7 @@
     </div>
   </div>
 
+  <!-- Portfolio Edit/Add Modal -->
   <div id="editAssetModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-slate-900 text-white p-4 px-6 flex items-center justify-between">
@@ -548,6 +568,7 @@
     </div>
   </div>
 
+  <!-- Asset Chart Detail Modal -->
   <div id="chartDetailModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-slate-900 text-white p-4 px-6 flex items-center justify-between">
@@ -1091,8 +1112,12 @@
       alarms.forEach(a => {
         if (!a.active) return;
         const rate = liveRates[a.symbol.toUpperCase()];
-        if (rate && rate.price >= a.target) {
-          showToast(`🚨 ALARM: ${a.symbol} hedef fiyata ulaştı! Fiyat: ${formatTL(rate.price)}`, 'success');
+        if (!rate || rate.price <= 0) return;
+
+        if (a.type === 'up' && rate.price >= a.target) {
+          showToast(`🚀 HEDEF ALARMI: ${a.symbol} ${formatTL(a.target)} hedefine ulaştı! (Güncel: ${formatTL(rate.price)})`, 'success');
+        } else if (a.type === 'down' && rate.price <= a.target) {
+          showToast(`🛡️ TEMKİNLİ (STOP) ALARMI: ${a.symbol} ${formatTL(a.target)} desteğine geriledi! (Güncel: ${formatTL(rate.price)})`, 'error');
         }
       });
       const alarmCountBadge = document.getElementById('alarmCountBadge');
@@ -1111,10 +1136,14 @@
       }
 
       alarms.forEach(a => {
+        const isUp = a.type === 'up';
         const row = document.createElement('div');
         row.className = "flex items-center justify-between bg-slate-50 border border-slate-200 p-2.5 rounded-xl text-xs font-mono";
         row.innerHTML = `
-          <div><strong class="text-slate-900">${a.symbol}</strong> — Hedef: <span class="text-amber-700 font-bold">${formatTL(a.target)}</span></div>
+          <div>
+            <span class="font-bold px-1.5 py-0.5 rounded mr-1.5 ${isUp ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${isUp ? '🚀 Hedef' : '🛡️ Temkinli'}</span>
+            <strong class="text-slate-900">${a.symbol}</strong> — Eşik: <span class="font-bold text-slate-700">${formatTL(a.target)}</span>
+          </div>
           <button onclick="deleteAlarm('${a.id}')" class="text-rose-600 hover:text-rose-800 font-bold px-2 py-1 rounded bg-rose-50">Sil</button>
         `;
         container.appendChild(row);
@@ -1694,7 +1723,6 @@
       const netPLPct = totalCost > 0 ? (netPL / totalCost) * 100 : 0;
       const qLower = (question || '').toLowerCase();
 
-      // Durum / genel özet soruları
       if (qLower.includes('nasıl') || qlowerIncludes(qLower, ['durum', 'özet', 'portföyüm', 'genel', 'ne alemde'])) {
         let comment = `Harika bir sohbet! Hemen portföyünün tablosuna bakalım:\n\n` +
           `• Toplam Yatırım Maliyetin: ${formatTL(totalCost)}\n` +
@@ -1711,7 +1739,6 @@
         return comment;
       }
 
-      // En iyi / en kötü performans soruları
       if (qlowerIncludes(qLower, ['iyi', 'kazandıran', 'başarılı', 'getiri', 'en çok'])) {
         const sorted = [...portfolio].sort((a, b) => b.pct - a.pct);
         const best = sorted[0];
@@ -1720,7 +1747,6 @@
         }
       }
 
-      // Risk / dağılım soruları
       if (qlowerIncludes(qLower, ['risk', 'dağılım', 'sepet', 'çeşit', 'oran'])) {
         const totalCatVal = Object.values(catVals).reduce((a, b) => a + b, 0) || 1;
         const breakdown = Object.entries(catVals)
@@ -1731,9 +1757,8 @@
         return `Sepet dağılımına şöyle bir göz attım:\n\n${breakdown}\n\nGenel olarak varlıklarını bu şekilde konumlandırmışsın. Sence bu sepet risk iştahına uygun mu, yoksa altın veya fon ağırlığını artırmayı düşünüyor musun? 🤔`;
       }
 
-      // Genel sohbet veya tavsiye soruları
       return `Yatırımların hakkında harika bir soru! Portföyünün toplam büyüklüğü ${formatTL(totalVal)} seviyesinde ve %${netPLPct.toFixed(2)} getiriyle ilerliyor. ` +
-        `Piyasalardaki son gelişmeleri de dikkate alarak sepetini çeşitlendirmeye devam edebilirsin. Bu konuda özel olarak incelememi istediğin bir fon veya döviz kuru var mı? Sabırsızlıkla dinliyorum! 💡`;
+        `Piyasalardaki son gelişmeleri de dikkate alarak sepetini çeşitlendirmeye devam edebilirsin. Bu konuda özel olarak incelememi istediğin bir varlık var mı? Sabırsızlıkla dinliyorum! 💡`;
     }
 
     function qlowerIncludes(q, words) {
@@ -1766,18 +1791,28 @@
 
       if (apiKey) {
         try {
-          const prompt = `Sen samimi, dost canlısı ve uzman bir finansal sohbet asistanısın. Kullanıcının portföy verileri şu şekilde:\n` +
-            `Maliyet: ${summary.totalCost}, Değer: ${summary.totalVal}.\nVarlıklar: ${JSON.stringify(summary.portfolio)}\n` +
-            `Kullanıcının mesajı: "${question}"\nKullanıcıyla sohbet havasında, doğrudan onun verilerini yorumlayarak doğal bir Türkçe ile konuş.`;
-          
-          const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`, {
+          const systemInstruction = "Sen son derece samimi, dost canlısı, finansal piyasalara hakim ve karşısındaki yatırımcıyla koyu bir sohbet kuran kişisel bir portföy asistanısın. Asla mekanik veya robotik konuşma; arkadaşça, emoji kullanarak ve doğal bir Türkçe ile cevap ver.";
+          const prompt = `Kullanıcının portföy özeti:\n- Toplam Maliyet: ${summary.totalCost} TL\n- Toplam Değer: ${summary.totalVal} TL\n- Varlık Detayları: ${JSON.stringify(summary.portfolio)}\n\nKullanıcının mesajı: "${question}"\nYukarıdaki portföy verilerine dayanarak samimi ve akıcı bir şekilde yanıt ver.`;
+
+          const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+          const payload = {
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            systemInstruction: { parts: [{ text: systemInstruction }] }
+          };
+
+          const res = await fetchWithTimeout(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-          }, 12000);
-          const json = await res.json();
-          const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) reply = text;
+            body: JSON.stringify(payload)
+          }, 15000);
+
+          if (res && res.ok) {
+            const json = await res.json();
+            const candidate = json.candidates?.[0];
+            if (candidate && candidate.content?.parts?.[0]?.text) {
+              reply = candidate.content.parts[0].text;
+            }
+          }
         } catch(e) {}
       }
 
@@ -1799,7 +1834,7 @@
 
     async function fetchRss(feedUrl) {
       try {
-        const res = await fetchWithTimeout(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`, { cache: 'no-store' }, 8000);
+        const res = await fetchWithTimeout(`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}&api_key=free&count=10&_=${Date.now()}`, { cache: 'no-store' }, 8000);
         if (res && res.ok) {
           const data = await res.json();
           if (data && data.items && data.items.length > 0) {
@@ -1830,6 +1865,7 @@
           const container = document.getElementById(`newsList-${cat}`);
           if (container) renderNewsUnavailable(cat, container);
         });
+        showToast("Haberler alınamadı, tekrar deneniyor...", "error");
         return;
       }
 
@@ -1857,6 +1893,7 @@
         if (buckets[cat].length > 0) renderNewsItems(cat, buckets[cat].slice(0, 5), container);
         else renderNewsUnavailable(cat, container);
       });
+      showToast("Haberler güncellendi.", "success");
     }
 
     function renderNewsItems(category, items, container) {
@@ -2172,10 +2209,11 @@
       document.getElementById('alarmModalCloseBtn').onclick = () => document.getElementById('alarmModal').style.display = 'none';
       document.getElementById('btnAddAlarm').onclick = () => {
         const symbol = document.getElementById('alarmSymbol').value.trim().toUpperCase();
+        const type = document.getElementById('alarmType').value;
         const target = parseFloat(document.getElementById('alarmTarget').value);
         if (!symbol || isNaN(target)) { showToast('Geçerli kod ve hedef fiyat girin.', 'error'); return; }
         let alarms = loadAlarms();
-        alarms.push({ id: 'a_' + Date.now(), symbol, target, active: true });
+        alarms.push({ id: 'a_' + Date.now(), symbol, type, target, active: true });
         saveAlarms(alarms);
         renderAlarmsList();
         document.getElementById('alarmCountBadge').textContent = alarms.length;
@@ -2218,6 +2256,9 @@
 
       document.getElementById('btnRefreshNews').onclick = fetchMarketNews;
       fetchMarketNews();
+      setInterval(() => {
+        fetchMarketNews();
+      }, 30 * 60 * 1000);
       calculateCurrencyConversion();
     };
   </script>
