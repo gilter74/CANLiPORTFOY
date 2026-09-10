@@ -69,7 +69,7 @@
 
   <div class="max-w-7xl mx-auto space-y-6">
 
-    <!-- PİYASA HABERLERİ & ANALİZLER BÖLÜMÜ (CANLI VE GARANTİ GÖRÜNÜRLÜK) -->
+    <!-- PİYASA HABERLERİ & ANALİZLER BÖLÜMÜ (TÜRKİYE ODAKLI) -->
     <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
       <div class="bg-slate-900 text-white p-3 md:p-4 px-5 flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -77,7 +77,7 @@
           <h2 class="text-sm md:text-base font-bold tracking-wide">Türkiye Piyasaları: Canlı Haberler & Analizler</h2>
         </div>
         <div class="flex items-center gap-3">
-          <span class="text-[10px] text-slate-400 font-mono hidden md:inline">Canlı Akış Aktif</span>
+          <span class="text-[10px] text-slate-400 font-mono hidden md:inline">Oto-Güncelleme: Aktif</span>
           <button id="btnRefreshNews" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-slate-700">
             <span>🔄</span> Yenile
           </button>
@@ -141,7 +141,7 @@
           <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900">Portföy Takip & Analiz Merkezi</h1>
         </div>
         <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-          <p class="text-xs md:text-sm text-slate-500 font-medium">Google Sheets Senkronizasyonu, Varlık Dışı Fon İzleme, Fiyat Alarmları & AI Asistanı.</p>
+          <p class="text-xs md:text-sm text-slate-500 font-medium">Google Sheets Canlı Senkronizasyon, Kategori Analizi, Fiyat Alarmları & AI Asistanı.</p>
           <span id="sheetSyncBadge" class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1 cursor-pointer hover:bg-emerald-100 transition-colors">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Google Sheet Bağlı
           </span>
@@ -291,21 +291,24 @@
       </div>
     </section>
 
-    <!-- VARLIK DIŞI FON TAKİP (İZLEME LİSTESİ) -->
+    <!-- VARLIK DIŞI FON TAKİP (İZLEME LİSTESİ) - GOOGLE SHEETS ENTEGRELİ -->
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
           <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
             <span>👁️</span> Varlık Dışı Fon Takip (İzleme Listesi)
           </h2>
-          <p class="text-xs text-slate-500">Portföyünüzde bulunmayan ancak performansını takip etmek istediğiniz fon ve varlıklar (TEFAS'tan anlık fiyat sorgulama ve kaydetme)</p>
+          <p class="text-xs text-slate-500">Özel Google Sheet bağlantısından senkronize edilen veya manuel eklenen takip fonlarınız (TEFAS fiyatları ile anlık takip)</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-          <button id="btnRefreshWatchPrices" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5" title="Takip listesindeki fonların fiyatlarını TEFAS'tan yeniden çeker ve kaydeder">
-            <span>💾</span> Fiyatları Güncelle & Kaydet
+          <button id="btnSyncWatchlistSheet" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5" title="Belirtilen Google Sheet'ten listeyi günceller">
+            <span>📊</span> Sheet'ten Veri Çek
+          </button>
+          <button id="btnRefreshWatchPrices" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5" title="Takip listesindeki fonların fiyatlarını TEFAS'tan yeniden çeker ve günceller">
+            <span>🔄</span> Fiyatları Güncelle
           </button>
           <button id="btnOpenWatchModal" class="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
-            <span>➕</span> Takip Etmek İçin Fon Ekle
+            <span>➕</span> Fon Ekle
           </button>
         </div>
       </div>
@@ -348,7 +351,7 @@
           <tbody class="divide-y divide-slate-100 font-mono text-slate-700" id="watchlistBody"></tbody>
         </table>
         <div id="watchlistEmptyState" class="text-center py-8 text-slate-400 text-xs" style="display:none">
-          Henüz takip listesinde fon bulunmuyor. Yukarıdaki butona tıklayarak ekleyebilirsiniz.
+          Henüz takip listesinde fon bulunmuyor. "Sheet'ten Veri Çek" veya "Fon Ekle" butonunu kullanabilirsiniz.
         </div>
       </div>
     </section>
@@ -372,10 +375,16 @@
       </div>
       <div class="p-5 md:p-6 space-y-4 text-xs md:text-sm">
         <div>
-          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Google Sheets Paylaşım / CSV Linki</label>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Google Sheets Paylaşım / CSV Linki (Ana Portföy)</label>
           <input id="inputSheetUrl" type="text" 
                  value="https://docs.google.com/spreadsheets/d/1B66p3v4jeXPZaHDBoL51uVSZKLFzuPbrMaAtdom6qMg/edit?gid=1411824524#gid=1411824524"
                  class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono font-bold text-slate-800">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Varlık Dışı Fon Takip Google Sheets Linki</label>
+          <input id="inputWatchSheetUrl" type="text" 
+                 value="https://docs.google.com/spreadsheets/d/1wPq671mtaVJ6rp3ZPFl6sCtL2PRHqKObDBi4lOKGEdI/edit?hl=tr&gid=0#gid=0"
+                 class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono font-bold text-purple-800">
         </div>
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1 font-mono text-xs">
           <div>Son Senkronizasyon: <strong id="sheetLastSyncTime">--:--:--</strong></div>
@@ -654,6 +663,8 @@
     }
 
     const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1B66p3v4jeXPZaHDBoL51uVSZKLFzuPbrMaAtdom6qMg/edit?gid=1411824524#gid=1411824524";
+    const DEFAULT_WATCH_SHEET_URL = "https://docs.google.com/spreadsheets/d/1wPq671mtaVJ6rp3ZPFl6sCtL2PRHqKObDBi4lOKGEdI/edit?hl=tr&gid=0#gid=0";
+    
     let activeCategoryTab = 'all';
     let allocChartInstance = null;
     let autoUpdateEnabled = true;
@@ -723,6 +734,13 @@
     function loadAlarms() { return loadAlarmsLocal(); }
     function saveAlarms(list) { saveAlarmsLocal(list); pushToFirebaseCloud(); }
 
+    function getSavedWatchSheetUrl() {
+      try { return localStorage.getItem('portfoy_watch_sheet_url') || DEFAULT_WATCH_SHEET_URL; } catch(e) { return DEFAULT_WATCH_SHEET_URL; }
+    }
+    function setSavedWatchSheetUrl(url) {
+      try { localStorage.setItem('portfoy_watch_sheet_url', url); } catch(e) {}
+    }
+
     function loadWatchlistLocal() {
       try {
         const raw = localStorage.getItem('portfoy_external_watchlist_' + getPortfolioCode());
@@ -753,24 +771,20 @@
       finally { clearTimeout(t); }
     }
 
-    // TEFAS Fon Fiyatı Güncelleme Mekanizması (Çoklu Proxy ve Fallback Destekli)
     async function fetchTefasFundPriceProxy(fundCode) {
       if (!fundCode) return null;
       const cleanCode = fundCode.toUpperCase().trim();
       const targetUrl = `https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${cleanCode}`;
-      
       const proxies = [
         `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
         `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
         `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
       ];
-
       for (const proxyUrl of proxies) {
         try {
           const res = await fetchWithTimeout(proxyUrl, { cache: 'no-store' }, 6000);
           if (res && res.ok) {
             const html = await res.text();
-            // TEFAS sayfasından fiyat etiketini yakalama
             const match = html.match(/MainContent_PriceReturnBar_lblPrice[^>]*>([\d.,]+)</i) || html.match(/class="top-list-item"[^>]*>([\d.,]+)</i);
             if (match && match[1]) {
               const priceNum = cleanNumber(match[1]);
@@ -779,9 +793,50 @@
           }
         } catch(e) {}
       }
-
-      // Alternatif: MKK/TEFAS JSON veri endpoint denemesi veya akıllı simülasyon/cache koruması
       return null;
+    }
+
+    async function syncWatchlistFromSheet(quiet = false) {
+      const sheetUrl = getSavedWatchSheetUrl();
+      const statusText = document.getElementById('sheetStatusText');
+      if (statusText) statusText.textContent = "Takip Listesi Sheet'ten Çekiliyor...";
+
+      try {
+        const csvText = await fetchGoogleSheetCsvText(sheetUrl);
+        const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
+        const importedWatch = [];
+
+        lines.forEach((line, index) => {
+          if (index === 0) return;
+          const cols = parseCSVLine(line);
+          const code = (cols[0] || cols[1] || '').trim().toUpperCase();
+          if (!code || code.includes('KOD') || code.includes('VARLIK')) return;
+
+          const date = cols[1] && cols[1].includes('.') ? cols[1] : '01.01.2026';
+          const amount = cleanNumber(cols[2]) || 1;
+          const buyPrice = cleanNumber(cols[3]) || cleanNumber(cols[4]) || 10;
+
+          importedWatch.push({
+            id: 'ws_' + code + '_' + index,
+            code,
+            date,
+            amount,
+            buyPrice
+          });
+        });
+
+        if (importedWatch.length > 0) {
+          saveWatchlist(importedWatch);
+          renderWatchlistTable();
+          if (!quiet) showToast(`Varlık dışı takip listesi Sheet'ten (${importedWatch.length} fon) güncellendi.`, 'success');
+          return true;
+        } else {
+          if (!quiet) showToast("Sheet'te uygun formatta takip verisi bulunamadı.", 'error');
+        }
+      } catch(e) {
+        if (!quiet) showToast("Takip Sheet'ine erişilemedi: " + e.message, 'error');
+      }
+      return false;
     }
 
     async function updateLiveMarketData(quiet = false) {
@@ -812,33 +867,30 @@
         liveRates['CEYREK'].price = parseFloat((gram * 1.635).toFixed(2));
       }
 
-      // Varlık Dışı Fon Takip Listesindeki Fonların Fiyatlarını Güncelle
       const watchlist = loadWatchlist();
       let watchOk = 0, watchFail = 0;
-      
       for (const w of watchlist) {
         const code = w.code.toUpperCase();
         if (['USD', 'EUR', 'GBP', 'GRAM', 'CEYREK', 'ONS'].includes(code)) continue;
-        
         const p = await fetchTefasFundPriceProxy(code);
         if (p && p > 0) {
-          const prevPrice = liveRates[code]?.price || w.buyPrice || 0;
+          const prevPrice = liveRates[code]?.price || 0;
           const change = prevPrice > 0 ? parseFloat((((p - prevPrice) / prevPrice) * 100).toFixed(2)) : 0;
           liveRates[code] = { name: code + ' Fonu', price: p, change, category: 'fund' };
           watchOk++;
+        } else if (!liveRates[code]) {
+          liveRates[code] = { name: code + ' Fonu', price: w.buyPrice || 0, change: 0, category: 'fund' };
+          watchFail++;
         } else {
-          // Eğer TEFAS'tan anlık çekilemezse, daha önce kaydedilmiş fiyatı koru veya maliyeti baz al
-          if (!liveRates[code]) {
-            liveRates[code] = { name: code + ' Fonu', price: w.buyPrice || 10, change: 0, category: 'fund' };
-          }
           watchFail++;
         }
       }
 
       saveLiveRatesToStorage();
       renderLiveTicker();
+      renderWatchlistTable();
       checkPriceAlarms();
-      if (!quiet) showToast("Canlı piyasa ve takip fonu fiyatları güncellendi.", "success");
+      if (!quiet) showToast("Türkiye piyasaları ve takip fonları güncellendi.", "success");
       return { watchOk, watchFail, watchTotal: watchlist.length };
     }
 
@@ -1085,16 +1137,9 @@
           renderApp();
           if (!quiet) showToast(`Google Sheet'ten ${importedAssets.length} varlık senkronize edildi.`, 'success');
           return true;
-        } else {
-          if (statusText) { statusText.textContent = "⚠️ Satır bulunamadı"; statusText.className = "text-amber-600"; }
         }
       } catch(e) {
         if (statusText) { statusText.textContent = "⚠️ Hata: " + e.message; statusText.className = "text-rose-600"; }
-        if (sheetBadge) {
-          sheetBadge.className = "bg-rose-50 text-rose-700 border border-rose-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1 cursor-pointer hover:bg-rose-100 transition-colors";
-          sheetBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-rose-500"></span> Sheet'e ulaşılamadı`;
-        }
-        if (!quiet) showToast("Sheet yüklenemedi: " + e.message, 'error');
       }
       return false;
     }
@@ -1313,38 +1358,6 @@
       }
     }
 
-    async function refreshWatchlistPricesNow() {
-      const btn = document.getElementById('btnRefreshWatchPrices');
-      const original = btn ? btn.innerHTML : '';
-      if (btn) { btn.disabled = true; btn.innerHTML = '<span class="animate-spin">⏳</span> Güncelleniyor...'; }
-
-      const list = loadWatchlist();
-      let ok = 0, fail = 0;
-      for (const w of list) {
-        const code = w.code.toUpperCase();
-        if (['USD', 'EUR', 'GBP', 'GRAM', 'CEYREK', 'ONS'].includes(code)) continue;
-        const p = await fetchTefasFundPriceProxy(code);
-        if (p && p > 0) {
-          const prevPrice = liveRates[code]?.price || w.buyPrice || 0;
-          const change = prevPrice > 0 ? parseFloat((((p - prevPrice) / prevPrice) * 100).toFixed(2)) : 0;
-          liveRates[code] = { name: code + ' Fonu', price: p, change, category: 'fund' };
-          ok++;
-        } else {
-          fail++;
-        }
-      }
-      saveLiveRatesToStorage();
-      renderApp();
-
-      if (btn) { btn.disabled = false; btn.innerHTML = original; }
-
-      const total = ok + fail;
-      if (total === 0) showToast('Takip listesi boş, güncellenecek fon yok.', 'info');
-      else if (fail === 0) showToast(`${ok} fonun fiyatı güncellendi ve kaydedildi.`, 'success');
-      else if (ok > 0) showToast(`${ok}/${total} fon güncellendi, ${fail} tanesine TEFAS'tan şu an ulaşılamadı.`, 'info');
-      else showToast('TEFAS\'a şu an ulaşılamadı, hiçbir fiyat güncellenemedi.', 'error');
-    }
-
     function renderWatchlistTable() {
       const tbody = document.getElementById('watchlistBody');
       const emptyState = document.getElementById('watchlistEmptyState');
@@ -1517,14 +1530,13 @@
 
       const sorted = [...portfolio].sort((a, b) => b.pct - a.pct);
       const best = sorted[0];
-      const worst = sorted[sorted.length - 1];
 
-      let answer = `Portföyünüzün maliyeti ${formatTL(totalCost)}, güncel değeri ${formatTL(totalVal)}. Net kâr/zararınız ${netPL >= 0 ? '+' : ''}${formatTL(netPL)} (%${netPLPct.toFixed(2)}).`;
+      let answer = `Portföy maliyeti ${formatTL(totalCost)}, güncel değer ${formatTL(totalVal)}. Net kâr ${netPL >= 0 ? '+' : ''}${formatTL(netPL)} (%${netPLPct.toFixed(2)}).`;
       if (weights) answer += ` Dağılım: ${weights}.`;
-      if (best) answer += ` En iyi performans: ${best.code} (%${best.pct.toFixed(2)}).`;
+      if (best) answer += ` En iyi varlık: ${best.code} (%${best.pct.toFixed(2)}).`;
       if (watchlist.length > 0) {
         const bestWatch = [...watchlist].sort((a, b) => b.pct - a.pct)[0];
-        if (bestWatch) answer += ` İzleme listenizde en iyi seyreden: ${bestWatch.code} (%${bestWatch.pct.toFixed(2)}).`;
+        if (bestWatch) answer += ` İzleme listendeki en iyi fon: ${bestWatch.code} (%${bestWatch.pct.toFixed(2)}).`;
       }
       return answer;
     }
@@ -1555,7 +1567,7 @@
 
       if (apiKey) {
         try {
-          const prompt = `Kullanıcının portföyü: Maliyet ${summary.totalCost} TL, Güncel değer ${summary.totalVal} TL.\nVarlıklar: ${JSON.stringify(summary.portfolio)}\nİzleme listesi: ${JSON.stringify(summary.watchlist)}\n\nKullanıcı sorusu: "${question}"`;
+          const prompt = `Portföy: Maliyet ${summary.totalCost}, Değer ${summary.totalVal}.\nVarlıklar: ${JSON.stringify(summary.portfolio)}\nİzleme: ${JSON.stringify(summary.watchlist)}\nSoru: "${question}"`;
           const res = await fetchWithTimeout(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1577,12 +1589,64 @@
       historyEl.scrollTop = historyEl.scrollHeight;
     }
 
-    let activeEditAssetId = null;
+    async function fetchMarketNews() {
+      const rssFeeds = {
+        gold: 'https://www.dunya.com/rss/altin',
+        fx: 'https://bigpara.hurriyet.com.tr/rss/',
+        fund: 'https://www.tr.investing.com/rss/news_25.rss'
+      };
 
+      for (const category of Object.keys(rssFeeds)) {
+        const container = document.getElementById(`newsList-${category}`);
+        if (!container) continue;
+
+        try {
+          const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssFeeds[category])}`;
+          const res = await fetchWithTimeout(proxyUrl, {}, 8000);
+          if (res && res.ok) {
+            const data = await res.json();
+            if (data && data.items && data.items.length > 0) {
+              renderNewsItems(category, data.items.slice(0, 5), container);
+              continue;
+            }
+          }
+        } catch (e) {}
+      }
+    }
+
+    function renderNewsItems(category, items, container) {
+      container.innerHTML = '';
+      items.forEach(item => {
+        let dateStr = 'Az önce';
+        try {
+          if (item.pubDate) {
+            const d = new Date(item.pubDate.replace(' ', 'T'));
+            if (!isNaN(d.getTime())) dateStr = d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
+          }
+        } catch (e) {}
+        
+        const title = item.title || 'Piyasa Gelişmesi';
+        const link = item.link || '#';
+        
+        const div = document.createElement('div');
+        div.className = "group block border-b border-slate-100 last:border-0 pb-2.5 last:pb-0";
+        div.innerHTML = `
+          <a href="${link}" target="_blank" rel="noopener noreferrer" class="block cursor-pointer">
+            <h4 class="text-xs font-semibold text-slate-800 group-hover:text-sky-600 transition-colors line-clamp-2 leading-snug">${title}</h4>
+            <div class="flex items-center justify-between mt-1.5">
+              <span class="text-[9px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">${dateStr}</span>
+              <span class="text-[9px] font-bold text-slate-300 group-hover:text-sky-500 transition-colors">Habere Git ↗</span>
+            </div>
+          </a>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    let activeEditAssetId = null;
     window.openEditModal = function(assetId = null) {
       const data = loadUserData();
       activeEditAssetId = assetId;
-
       const titleEl = document.getElementById('editModalTitle');
       const warningEl = document.getElementById('editSheetWarning');
 
@@ -1607,9 +1671,7 @@
         document.getElementById('editAmount').value = '';
         document.getElementById('editBuyPrice').value = '';
       }
-
-      const editAssetModal = document.getElementById('editAssetModal');
-      if (editAssetModal) editAssetModal.style.display = 'flex';
+      document.getElementById('editAssetModal').style.display = 'flex';
     };
 
     window.saveEditedAsset = function() {
@@ -1630,27 +1692,18 @@
       if (activeEditAssetId) {
         const idx = data.portfolio.findIndex(i => i.id === activeEditAssetId);
         if (idx !== -1) {
-          data.portfolio[idx] = {
-            ...data.portfolio[idx],
-            code, type, amount, buyPrice, buyDate,
-            name: code
-          };
+          data.portfolio[idx] = { ...data.portfolio[idx], code, type, amount, buyPrice, buyDate, name: code };
         }
       } else {
         data.portfolio.push({
           id: 'manual_' + Date.now(),
           code, type, amount, buyPrice, buyDate,
-          name: code,
-          currentPrice: null,
-          currentVal: null,
-          note: 'Manuel Eklendi'
+          name: code, currentPrice: null, currentVal: null, note: 'Manuel Eklendi'
         });
       }
 
       saveUserData(data);
-      const editAssetModal = document.getElementById('editAssetModal');
-      if (editAssetModal) editAssetModal.style.display = 'none';
-      
+      document.getElementById('editAssetModal').style.display = 'none';
       updateLiveMarketData(true).then(() => renderApp());
       showToast(activeEditAssetId ? 'Varlık güncellendi.' : 'Manuel varlık eklendi.', 'success');
     };
@@ -1784,13 +1837,13 @@
       pullFromFirebaseCloud().then(() => {
         loadLiveRatesFromStorage();
         renderAlarmsList();
-        return Promise.all([syncGoogleSheetData(true), updateLiveMarketData(true)]);
+        return Promise.all([syncGoogleSheetData(true), syncWatchlistFromSheet(true), updateLiveMarketData(true)]);
       }).then(() => renderApp());
 
       if (autoUpdateIntervalId) clearInterval(autoUpdateIntervalId);
       autoUpdateIntervalId = setInterval(() => {
         if (!autoUpdateEnabled) return;
-        Promise.all([pullFromFirebaseCloud(), syncGoogleSheetData(true), updateLiveMarketData(true)]).then(() => renderApp());
+        Promise.all([pullFromFirebaseCloud(), syncGoogleSheetData(true), syncWatchlistFromSheet(true), updateLiveMarketData(true)]).then(() => renderApp());
       }, 60000);
 
       document.getElementById('btnToggleAutoUpdate').onclick = () => {
@@ -1824,11 +1877,16 @@
       const btnSyncNowEmpty = document.getElementById('btnSyncNowEmpty');
       if (btnSyncNowEmpty) btnSyncNowEmpty.onclick = () => syncGoogleSheetData(false);
 
+      const btnSyncWatchlistSheet = document.getElementById('btnSyncWatchlistSheet');
+      if (btnSyncWatchlistSheet) btnSyncWatchlistSheet.onclick = () => syncWatchlistFromSheet(false);
+
       const btnOpenSheetSettings = document.getElementById('btnOpenSheetSettings');
       if (btnOpenSheetSettings) {
         btnOpenSheetSettings.onclick = () => {
           const inputSheetUrl = document.getElementById('inputSheetUrl');
           if (inputSheetUrl) inputSheetUrl.value = getSavedSheetUrl();
+          const inputWatchSheetUrl = document.getElementById('inputWatchSheetUrl');
+          if (inputWatchSheetUrl) inputWatchSheetUrl.value = getSavedWatchSheetUrl();
           const sheetSettingsModal = document.getElementById('sheetSettingsModal');
           if (sheetSettingsModal) sheetSettingsModal.style.display = 'flex';
         };
@@ -1844,13 +1902,13 @@
       if (btnForceSyncNow) {
         btnForceSyncNow.onclick = () => {
           const inputUrl = document.getElementById('inputSheetUrl');
-          const url = inputUrl ? inputUrl.value.trim() : '';
-          if (url) {
-            setSavedSheetUrl(url);
-            syncGoogleSheetData(false);
-            const m = document.getElementById('sheetSettingsModal');
-            if (m) m.style.display = 'none';
-          }
+          const inputWatchUrl = document.getElementById('inputWatchSheetUrl');
+          if (inputUrl) setSavedSheetUrl(inputUrl.value.trim());
+          if (inputWatchUrl) setSavedWatchSheetUrl(inputWatchUrl.value.trim());
+          syncGoogleSheetData(false);
+          syncWatchlistFromSheet(false);
+          const m = document.getElementById('sheetSettingsModal');
+          if (m) m.style.display = 'none';
         };
       }
 
@@ -1899,7 +1957,7 @@
       if (btnOpenWatchModal) btnOpenWatchModal.onclick = () => openWatchModal(null);
 
       const btnRefreshWatchPrices = document.getElementById('btnRefreshWatchPrices');
-      if (btnRefreshWatchPrices) btnRefreshWatchPrices.onclick = refreshWatchlistPricesNow;
+      if (btnRefreshWatchPrices) btnRefreshWatchPrices.onclick = () => updateLiveMarketData(false);
 
       const watchModalCloseX = document.getElementById('watchModalCloseX');
       if (watchModalCloseX) watchModalCloseX.onclick = () => { const m = document.getElementById('watchAssetModal'); if (m) m.style.display = 'none'; };
@@ -1937,11 +1995,9 @@
       if (chartModalCloseBtn) chartModalCloseBtn.onclick = () => { const m = document.getElementById('chartDetailModal'); if (m) m.style.display = 'none'; };
 
       const btnRefreshNews = document.getElementById('btnRefreshNews');
-      if (btnRefreshNews) {
-        btnRefreshNews.onclick = () => {
-          showToast('Haber akışı güncellendi.', 'success');
-        };
-      }
+      if (btnRefreshNews) btnRefreshNews.onclick = fetchMarketNews;
+
+      fetchMarketNews();
     };
   </script>
 </body>
