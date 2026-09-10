@@ -69,7 +69,7 @@
 
   <div class="max-w-7xl mx-auto space-y-6">
 
-    <!-- PİYASA HABERLERİ & ANALİZLER BÖLÜMÜ -->
+    <!-- PİYASA HABERLERİ & ANALİZLER BÖLÜMÜ (TÜRKİYE ODAKLI) -->
     <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
       <div class="bg-slate-900 text-white p-3 md:p-4 px-5 flex items-center justify-between">
         <div class="flex items-center gap-2">
@@ -85,6 +85,7 @@
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100 bg-slate-50/50" id="newsContainer">
         
+        <!-- Altın Haberleri -->
         <div class="p-4 md:p-5 flex flex-col h-full">
           <h3 class="text-xs font-extrabold text-amber-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><span class="text-base">🥇</span> Kapalıçarşı & Altın</h3>
           <div class="space-y-3 flex-1" id="newsList-gold">
@@ -92,6 +93,7 @@
           </div>
         </div>
 
+        <!-- Döviz Haberleri -->
         <div class="p-4 md:p-5 flex flex-col h-full">
           <h3 class="text-xs font-extrabold text-blue-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><span class="text-base">💵</span> Döviz (USD/TRY - EUR/TRY)</h3>
           <div class="space-y-3 flex-1" id="newsList-fx">
@@ -99,6 +101,7 @@
           </div>
         </div>
 
+        <!-- Fon / Borsa Haberleri -->
         <div class="p-4 md:p-5 flex flex-col h-full">
           <h3 class="text-xs font-extrabold text-purple-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><span class="text-base">📈</span> BIST & TEFAS Fonları</h3>
           <div class="space-y-3 flex-1" id="newsList-fund">
@@ -135,10 +138,10 @@
           <span>📊</span> Sheet Bağlantısı
         </button>
         <button id="btnOpenAIModal" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
-          <span>🤖</span> AI Asistan
+          <span>🤖</span> AI Asistan & Soru Sor
         </button>
         <button id="btnOpenAlarmModal" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
-          <span>🔔</span> Alarmlar (<span id="alarmCountBadge">0</span>)
+          <span>🔔</span> Fiyat Alarmları (<span id="alarmCountBadge">0</span>)
         </button>
 
         <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-200 flex items-center gap-1.5">
@@ -155,6 +158,7 @@
       </div>
     </header>
 
+    <!-- CANLI PİYASA BÖLÜMÜ -->
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
@@ -267,17 +271,17 @@
       </div>
     </section>
 
-    <!-- VARLIK DIŞI FON TAKİP (İNCELENEN FONLAR) -->
+    <!-- VARLIK DIŞI FON TAKİP (İZLEME LİSTESİ) - GOOGLE SHEETS ENTEGRELİ -->
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
           <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
             <span>👁️</span> Varlık Dışı Fon Takip (İzleme Listesi)
           </h2>
-          <p class="text-xs text-slate-500">Google Sheet tablonuzdan ve TEFAS'tan anlık senkronize edilen fon takip listesi</p>
+          <p class="text-xs text-slate-500">Belirttiğiniz Google Sheet bağlantısından ve TEFAS'tan anlık senkronize edilen fon takip listesi</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-          <button id="btnSyncWatchlistSheet" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5 shadow-sm" title="Google Sheet'ten verileri çeker ve günceller">
+          <button id="btnSyncWatchlistSheet" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5" title="Google Sheet'ten verileri çeker ve günceller">
             <span>📊</span> Sheet'ten Veri Çek & Güncelle
           </button>
           <button id="btnRefreshWatchPrices" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5" title="TEFAS'tan fiyatları tazeler">
@@ -575,7 +579,7 @@
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <script>
-    // --- Firebase Realtime Database: cihazlar arası senkronizasyon ---
+    // --- Firebase Realtime Database: cihazlar arası senkronizasyon (Portföy Kodu ile) ---
     const firebaseConfig = {
       apiKey: "AIzaSyArF8yUBBgaMN5w7wVvqA0351aR3CVIQYw",
       authDomain: "canliportfoy.firebaseapp.com",
@@ -594,6 +598,8 @@
     } catch(e) { console.warn('Firebase başlatma uyarısı:', e); }
 
     function sanitizeCode(code) {
+      // Küçük harfe çeviriyoruz: mobil klavyeler ilk harfi otomatik büyük yazabilir,
+      // büyük/küçük harf farkı olursa mobil ve web FARKLI bulut kayıtlarına yazar/okur.
       return (code || 'default-user').trim().toLowerCase().replace(/[.#$\[\]\/]/g, '_') || 'default-user';
     }
     function getPortfolioCode() {
@@ -731,7 +737,10 @@
         const raw = localStorage.getItem('portfoy_external_watchlist_' + getPortfolioCode());
         if (raw) return JSON.parse(raw);
       } catch(e) {}
-      return [];
+      return [
+        { id: 'w_1', code: 'TGE', date: '01.01.2026', amount: 1, buyPrice: 45.20 },
+        { id: 'w_2', code: 'AFT', date: '15.01.2026', amount: 1, buyPrice: 180.50 }
+      ];
     }
     function saveWatchlistLocal(list) {
       try { localStorage.setItem('portfoy_external_watchlist_' + getPortfolioCode(), JSON.stringify(list)); } catch(e) {}
@@ -739,6 +748,8 @@
     function loadWatchlist() { return loadWatchlistLocal(); }
     function saveWatchlist(list) { saveWatchlistLocal(list); pushToFirebaseCloud(); }
 
+    // --- Kâr/Zarar EĞİLİM takibi (artıyor mu azalıyor mu) ---
+    // Her fiyat güncellemesinde hesaplanan toplam getiri %'sini bir öncekiyle karşılaştırıp saklıyoruz.
     function getWatchTrendStorageKey() { return 'portfoy_watch_trend_' + getPortfolioCode(); }
     function loadWatchTrendLocal() {
       try {
@@ -760,7 +771,7 @@
 
     async function fetchWithTimeout(url, opts, timeoutMs) {
       const controller = new AbortController();
-      const t = setTimeout(() => controller.abort(), timeoutMs || 5000);
+      const t = setTimeout(() => controller.abort(), timeoutMs || 7000);
       try { return await fetch(url, { ...(opts || {}), signal: controller.signal }); }
       finally { clearTimeout(t); }
     }
@@ -770,21 +781,16 @@
       const cleanCode = fundCode.toUpperCase().trim();
       const targetUrl = `https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${cleanCode}`;
       const proxies = [
-        `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
+        `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
       ];
       for (const proxyUrl of proxies) {
         try {
           const res = await fetchWithTimeout(proxyUrl, { cache: 'no-store' }, 6000);
           if (res && res.ok) {
-            let html = '';
-            if (proxyUrl.includes('allorigins.win/get')) {
-               const json = await res.json();
-               html = json.contents;
-            } else {
-               html = await res.text();
-            }
-            const match = html.match(/MainContent_FormViewMainIndicators_LabelPrice[^>]*>([\d.,]+)</i) || html.match(/top-list-item[^>]*>([\d.,]+)</i);
+            const html = await res.text();
+            const match = html.match(/MainContent_PriceReturnBar_lblPrice[^>]*>([\d.,]+)</i) || html.match(/class="top-list-item"[^>]*>([\d.,]+)</i);
             if (match && match[1]) {
               const priceNum = cleanNumber(match[1]);
               if (priceNum > 0) return priceNum;
@@ -804,59 +810,96 @@
       const gidMatch = rawUrl.match(/gid=([0-9]+)/);
       if (gidMatch && gidMatch[1]) gid = gidMatch[1];
       if (!sheetId) return null;
-      return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+      return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
+    }
+
+    function extractSheetIdGid(rawUrl) {
+      if (!rawUrl) return null;
+      const idMatch = rawUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
+      if (!idMatch) return null;
+      const gidMatch = rawUrl.match(/gid=([0-9]+)/);
+      return { sheetId: idMatch[1], gid: gidMatch ? gidMatch[1] : '0' };
+    }
+
+    // Kendi Apps Script web app'imiz (kırılgan üçüncü taraf CORS proxy'lerine muhtaç değil, doğrudan Google altyapısı üzerinden okur)
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzf4LoqHSWU1hrPkYQxH6tYiwXH-YUFZCdvEFVA0IEKx9wZxXb9RrUrNewbApaNQsbsvw/exec';
+
+    async function fetchSheetRowsViaAppsScript(sheetId, gid) {
+      if (!APPS_SCRIPT_URL || !sheetId) return null;
+      try {
+        const url = `${APPS_SCRIPT_URL}?id=${encodeURIComponent(sheetId)}&gid=${encodeURIComponent(gid || '0')}`;
+        const res = await fetchWithTimeout(url, { cache: 'no-store' }, 10000);
+        if (!res || !res.ok) return null;
+        const json = await res.json();
+        if (json && json.ok && Array.isArray(json.rows) && json.rows.length > 0) return json.rows;
+        return null;
+      } catch(e) { return null; }
+    }
+
+    // ISO tarih string'ini (Apps Script'in Date hücrelerini JSON'a çevirirken ürettiği format) GG.AA.YYYY'ye çevirir
+    function formatCellValue(raw) {
+      if (typeof raw === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(raw)) {
+        const d = new Date(raw);
+        if (!isNaN(d.getTime())) {
+          return `${String(d.getDate()).padStart(2,'0')}.${String(d.getMonth()+1).padStart(2,'0')}.${d.getFullYear()}`;
+        }
+      }
+      return raw;
+    }
+
+    // Sheet verisini satır dizisi (array-of-arrays) olarak döndürür.
+    // Önce kendi Apps Script uç noktamızı dener (güvenilir), olmazsa eski CSV+proxy zincirine düşer.
+    async function getSheetRows(rawUrl) {
+      const ids = extractSheetIdGid(rawUrl);
+      if (ids) {
+        const rows = await fetchSheetRowsViaAppsScript(ids.sheetId, ids.gid);
+        if (rows) return rows.map(row => row.map(formatCellValue));
+      }
+      const csvText = await fetchGoogleSheetCsvText(rawUrl);
+      const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
+      return lines.map(parseCSVLine);
     }
 
     async function fetchGoogleSheetCsvText(rawUrl) {
       const directUrl = extractCsvUrl(rawUrl);
       if (!directUrl) throw new Error("Geçersiz Google Sheet URL");
       const urls = [
-        `https://api.allorigins.win/get?url=${encodeURIComponent(directUrl)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(directUrl)}`
+        directUrl,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(directUrl)}`,
+        `https://corsproxy.io/?url=${encodeURIComponent(directUrl)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`
       ];
-      let lastErr = null;
+      let last401 = false;
       for (const u of urls) {
         try {
-          const res = await fetchWithTimeout(u, { cache: 'no-store' }, 8000);
+          const res = await fetchWithTimeout(u, { cache: 'no-store' }, 7000);
           if (res) {
-            if (res.status === 401 || res.status === 403) {
-              throw new Error("Sheet'e erişim izni yok (401/403). Lütfen Sheet'i 'Bağlantıya sahip olan herkes / Görüntüleyici' olarak paylaşın.");
-            }
+            if (res.status === 401 || res.status === 403) { last401 = true; continue; }
             if (res.ok) {
-              let txt = '';
-              if (u.includes('allorigins.win/get')) {
-                 const json = await res.json();
-                 txt = json.contents;
-              } else {
-                 txt = await res.text();
-              }
-              if (txt && txt.length > 2 && !txt.trim().startsWith('<')) return txt;
+              const txt = await res.text();
+              if (txt && txt.length > 5 && !txt.trim().startsWith('<')) return txt;
             }
           }
-        } catch(e) { lastErr = e; }
+        } catch(e) {}
       }
-      throw lastErr || new Error("Google Sheets tablosuna erişilemedi.");
+      if (last401) {
+        throw new Error("Bu Sheet'e erişim izni yok (401/403). Sheet'i 'Paylaş' → 'Genel erişim' → 'Bağlantıya sahip olan herkes / Görüntüleyici' olarak paylaşmanız gerekiyor.");
+      }
+      throw new Error("Google Sheets tablosuna erişilemedi.");
     }
 
-    async function getSheetRows(rawUrl) {
-      const csvText = await fetchGoogleSheetCsvText(rawUrl);
-      const lines = csvText.split(/\r?\n/).filter(l => l.trim().length > 0);
-      return lines.map(parseCSVLine);
-    }
-
-    function detectWatchlistColumnMap(headerCols) {
-      const map = { code: -1, date: -1, amount: -1, buyPrice: -1 };
+    // Başlık satırındaki metinlere bakarak sütunları otomatik eşler (sabit sütun sırasına güvenmez).
+    // Böylece kullanıcı sütun sırasını değiştirse veya farklı bir sheet kullansa bile çalışır.
+    function detectColumnMap(headerCols) {
+      const map = { code: -1, date: -1, amount: -1, buyPrice: -1, currentPrice: -1 };
       headerCols.forEach((raw, idx) => {
         const h = normalizeTr(raw);
-        if (map.code === -1 && (h.includes('KOD') || h.includes('FON') || h.includes('VARLIK') || h.includes('ISIM') || h === 'SEMBOL')) map.code = idx;
-        else if (map.date === -1 && (h.includes('TARIH') || h.includes('BASLANGIC') || h.includes('GUN'))) map.date = idx;
-        else if (map.amount === -1 && (h.includes('ADET') || h.includes('MIKTAR') || h.includes('PAY'))) map.amount = idx;
-        else if (map.buyPrice === -1 && (h.includes('ALIS') || h.includes('MALIYET') || h.includes('FIYAT') || h.includes('DEGER'))) map.buyPrice = idx;
+        if (map.code === -1 && (h.includes('KOD') || h.includes('VARLIK') && !h.includes('TIP'))) map.code = idx;
+        else if (map.date === -1 && (h.includes('TARIH') || h.includes('BASLANGIC'))) map.date = idx;
+        else if (map.amount === -1 && (h.includes('ADET') || h.includes('MIKTAR'))) map.amount = idx;
+        else if (map.buyPrice === -1 && (h.includes('ALIS') || h.includes('MALIYET') || h.includes('BASLANGIC FIYAT'))) map.buyPrice = idx;
+        else if (map.currentPrice === -1 && (h.includes('GUNCEL FIYAT') || (h.includes('GUNCEL') && h.includes('FIYAT')))) map.currentPrice = idx;
       });
-      if (map.code === -1) map.code = 0;
-      if (map.date === -1 && headerCols.length > 1) map.date = 1;
-      if (map.amount === -1 && headerCols.length > 2) map.amount = 2;
-      if (map.buyPrice === -1 && headerCols.length > 3) map.buyPrice = 3;
       return map;
     }
 
@@ -870,31 +913,54 @@
         if (!rows || rows.length === 0) throw new Error('Sheet boş görünüyor.');
 
         const headerCols = rows[0];
-        const colMap = detectWatchlistColumnMap(headerCols);
+        const colMap = detectColumnMap(headerCols);
+        // Başlıktan tespit edilemeyen sütunlar için makul varsayılanlara düş (Kod, Tarih, Adet, Alış, Güncel)
+        if (colMap.code === -1) colMap.code = 0;
+        if (colMap.date === -1) colMap.date = 1;
+        if (colMap.amount === -1) colMap.amount = 2;
+        if (colMap.buyPrice === -1) colMap.buyPrice = 3;
+        if (colMap.currentPrice === -1) colMap.currentPrice = 4; // Sheet'te "Güncel Fiyat" sütunu genelde 5. sütun (index 4)
 
         const importedWatch = [];
         rows.forEach((cols, index) => {
           if (index === 0) return;
-          const codeColIdx = colMap.code >= 0 ? colMap.code : 0;
-          const code = String(cols[codeColIdx] || '').trim().toUpperCase();
-          if (!code || code.includes('KOD') || code.includes('FON') || code.includes('VARLIK')) return;
+          const code = String(cols[colMap.code] || '').trim().toUpperCase();
+          if (!code || code.includes('KOD') || code.includes('VARLIK')) return;
 
           const dateRaw = colMap.date >= 0 ? String(cols[colMap.date] || '') : '';
           const date = dateRaw && dateRaw.includes('.') ? dateRaw : '01.01.2026';
           const amount = (colMap.amount >= 0 ? cleanNumber(cols[colMap.amount]) : 0) || 1;
           const buyPrice = (colMap.buyPrice >= 0 ? cleanNumber(cols[colMap.buyPrice]) : 0) || 0;
+          // Sheet'in kendi "Güncel Fiyat" sütunu (FONLAB/GOOGLEFINANCE formülüyle besleniyor olabilir) — varsa DOĞRUDAN bunu kullan,
+          // TEFAS proxy'sine güvenmeye çalışmaktan çok daha güvenilir çünkü Sheet zaten canlı fiyatı hesaplamış oluyor.
+          const sheetCurrentPrice = colMap.currentPrice >= 0 ? cleanNumber(cols[colMap.currentPrice]) : 0;
 
-          importedWatch.push({ id: 'ws_' + code + '_' + index, code, date, amount, buyPrice });
+          importedWatch.push({
+            id: 'ws_' + code + '_' + index,
+            code, date, amount, buyPrice,
+            currentPrice: sheetCurrentPrice > 0 ? sheetCurrentPrice : null
+          });
         });
 
         if (importedWatch.length > 0) {
+          // Sheet'ten gelen güncel fiyatları hemen liveRates'e de yansıt ki tablo TEFAS proxy'sini beklemeden anında güncel görünsün
+          importedWatch.forEach(w => {
+            if (w.currentPrice > 0) {
+              const prev = liveRates[w.code]?.price || 0;
+              const change = prev > 0 ? parseFloat((((w.currentPrice - prev) / prev) * 100).toFixed(2)) : 0;
+              liveRates[w.code] = { name: w.code + ' Fonu', price: w.currentPrice, change, category: 'fund' };
+            }
+          });
+          saveLiveRatesToStorage(false);
           saveWatchlist(importedWatch);
-          await updateLiveMarketData(true);
+          updateWatchTrendSnapshot(importedWatch);
           renderWatchlistTable();
-          if (!quiet) showToast(`İzleme listesi Sheet'ten (${importedWatch.length} fon) başarıyla güncellendi!`, 'success');
+          // Sheet'te fiyatı olmayan (currentPrice=null) kodlar için ek olarak TEFAS'tan dene, arka planda
+          updateLiveMarketData(true);
+          if (!quiet) showToast(`Varlık dışı takip listesi Sheet'ten (${importedWatch.length} fon) güncellendi.`, 'success');
           return true;
         } else {
-          if (!quiet) showToast("Sheet'te uygun formatta veri bulunamadı.", 'error');
+          if (!quiet) showToast("Sheet'te uygun formatta takip verisi bulunamadı.", 'error');
         }
       } catch(e) {
         console.warn('Watchlist sheet sync error:', e);
@@ -902,14 +968,14 @@
           errorBanner.classList.remove('hidden');
           errorBanner.innerHTML = `⚠️ <strong>Sheet'e bağlanılamadı:</strong> ${e.message}`;
         }
-        if (!quiet) showToast("Takip Sheet hatası: " + e.message, 'error');
+        if (!quiet) showToast("Takip Sheet'ine erişilemedi: " + e.message, 'error');
       }
       return false;
     }
 
     async function updateLiveMarketData(quiet = false) {
       try {
-        const res = await fetchWithTimeout('https://open.er-api.com/v6/latest/USD', {}, 5000);
+        const res = await fetchWithTimeout('https://open.er-api.com/v6/latest/USD', {}, 6000);
         if (res && res.ok) {
           const data = await res.json();
           if (data && data.rates && data.rates.TRY) {
@@ -922,7 +988,7 @@
       } catch(e) {}
 
       try {
-        const resGold = await fetchWithTimeout('https://api.gold-api.com/price/XAU', {}, 5000);
+        const resGold = await fetchWithTimeout('https://api.gold-api.com/price/XAU', {}, 6000);
         if (resGold && resGold.ok) {
           const g = await resGold.json();
           if (g && g.price) liveRates['ONS'].price = parseFloat(g.price.toFixed(2));
@@ -942,7 +1008,7 @@
         if (['USD', 'EUR', 'GBP', 'GRAM', 'CEYREK', 'ONS'].includes(code)) continue;
         const p = await fetchTefasFundPriceProxy(code);
         if (p && p > 0) {
-          const prevPrice = liveRates[code]?.price || w.buyPrice || p;
+          const prevPrice = liveRates[code]?.price || 0;
           const change = prevPrice > 0 ? parseFloat((((p - prevPrice) / prevPrice) * 100).toFixed(2)) : 0;
           liveRates[code] = { name: code + ' Fonu', price: p, change, category: 'fund' };
           watchOk++;
@@ -959,26 +1025,26 @@
       renderLiveTicker();
       renderWatchlistTable();
       checkPriceAlarms();
-      if (!quiet) showToast("Tüm piyasa fiyatları ve fonlar güncellendi.", "success");
+      if (!quiet) showToast("Türkiye piyasaları ve takip fonları güncellendi.", "success");
       return { watchOk, watchFail, watchTotal: watchlist.length };
     }
 
+    // Her güncellemede toplam ve fon-bazlı getiri %'sini bir öncekiyle karşılaştırıp eğilimi kaydeder
     function updateWatchTrendSnapshot(watchlist) {
       const trend = loadWatchTrendLocal();
-      const safePerItem = trend?.perItem || {};
       const newPerItem = {};
       let totalCost = 0, totalVal = 0;
 
       watchlist.forEach(w => {
         const code = w.code.toUpperCase();
-        const curPrice = liveRates[code]?.price > 0 ? liveRates[code].price : (w.buyPrice || 0);
+        const curPrice = getWatchItemCurrentPrice(w);
         const amount = w.amount || 1;
         const cost = amount * (w.buyPrice || 0);
         const val = amount * curPrice;
         totalCost += cost; totalVal += val;
         const pct = cost > 0 ? ((val - cost) / cost) * 100 : 0;
 
-        const prevPct = safePerItem[code]?.pct;
+        const prevPct = trend.perItem[code]?.pct;
         newPerItem[code] = {
           pct,
           direction: prevPct === undefined ? 'same' : (pct > prevPct ? 'up' : pct < prevPct ? 'down' : 'same')
@@ -986,7 +1052,7 @@
       });
 
       const totalPct = totalCost > 0 ? ((totalVal - totalCost) / totalCost) * 100 : 0;
-      const prevTotalPct = trend?.lastTotalPLPct;
+      const prevTotalPct = trend.lastTotalPLPct;
       const totalDirection = prevTotalPct === null || prevTotalPct === undefined ? 'same' : (totalPct > prevTotalPct ? 'up' : totalPct < prevTotalPct ? 'down' : 'same');
 
       saveWatchTrendLocal({
@@ -1027,7 +1093,7 @@
         if (!a.active) return;
         const rate = liveRates[a.symbol.toUpperCase()];
         if (rate && rate.price >= a.target) {
-          showToast(`🚨 ALARM: ${a.symbol} hedef fiyata ulaştı! Fiyat: ${formatTL(rate.price)}`, 'success');
+          showToast(`🚨 ALARM: ${a.symbol} hedef fiyata ulaştı! Fiyat: ${formatTL(rate.price)} (Hedef: ${formatTL(a.target)})`, 'success');
         }
       });
       const alarmCountBadge = document.getElementById('alarmCountBadge');
@@ -1203,11 +1269,11 @@
           }
 
           renderApp();
-          if (!quiet) showToast(`Ana portföy Google Sheet'ten senkronize edildi.`, 'success');
+          if (!quiet) showToast(`Google Sheet'ten ${importedAssets.length} varlık senkronize edildi.`, 'success');
           return true;
         }
       } catch(e) {
-        if (statusText) { statusText.textContent = "⚠️ Hata"; statusText.className = "text-rose-600"; }
+        if (statusText) { statusText.textContent = "⚠️ Hata: " + e.message; statusText.className = "text-rose-600"; }
       }
       return false;
     }
@@ -1404,11 +1470,17 @@
       return '<span class="text-slate-400 font-bold">–</span>';
     }
 
+    function getWatchItemCurrentPrice(w) {
+      if (w.currentPrice > 0) return w.currentPrice; // Sheet'in kendi Güncel Fiyat sütunu — en güvenilir kaynak
+      const code = w.code.toUpperCase();
+      if (liveRates[code]?.price > 0) return liveRates[code].price; // TEFAS proxy'den gelmiş olabilir
+      return w.buyPrice || 0; // hiçbiri yoksa alış fiyatını göster (fark yok gibi görünür ama en azından 0 olmaz)
+    }
+
     function renderWatchlistSummary(list) {
       let totalCost = 0, totalVal = 0;
       list.forEach(w => {
-        const code = w.code.toUpperCase();
-        const curPrice = liveRates[code]?.price > 0 ? liveRates[code].price : (w.buyPrice || 0);
+        const curPrice = getWatchItemCurrentPrice(w);
         const amount = w.amount || 1;
         totalCost += amount * (w.buyPrice || 0);
         totalVal += amount * curPrice;
@@ -1466,7 +1538,7 @@
       list.forEach(w => {
         const code = w.code.toUpperCase();
         const tefasUrl = getTefasUrl(code);
-        const curPrice = liveRates[code]?.price || w.buyPrice || 1;
+        const curPrice = getWatchItemCurrentPrice(w);
         const amount = w.amount || 1;
         const cost = amount * (w.buyPrice || 0);
         const curVal = amount * curPrice;
@@ -1664,7 +1736,7 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-          }, 8000);
+          }, 12000);
           const json = await res.json();
           const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
           if (text) reply = text;
@@ -1681,6 +1753,7 @@
       historyEl.scrollTop = historyEl.scrollHeight;
     }
 
+    // Gerçek, doğrulanmış Türkçe finans RSS kaynakları (rss2json'a bağımlı değil, XML doğrudan ayrıştırılıyor)
     const REAL_NEWS_FEEDS = [
       'https://www.doviz.com/news/rss',
       'https://www.bloomberght.com/rss'
@@ -1689,13 +1762,14 @@
     async function fetchRssXml(feedUrl) {
       const attempts = [
         feedUrl,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(feedUrl)}`,
         `https://corsproxy.io/?url=${encodeURIComponent(feedUrl)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(feedUrl)}`
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`,
+        `https://thingproxy.freeboard.io/fetch/${feedUrl}`
       ];
       for (const url of attempts) {
         try {
-          const res = await fetchWithTimeout(url, { cache: 'no-store' }, 5000);
+          const res = await fetchWithTimeout(url, { cache: 'no-store' }, 8000);
           if (res && res.ok) {
             const text = await res.text();
             if (text && text.includes('<item')) return text;
@@ -1891,7 +1965,7 @@
         start.setDate(end.getDate() - days);
         const fmt = d => d.toISOString().split('T')[0];
         const url = `https://api.frankfurter.app/${fmt(start)}..${fmt(end)}?from=${code}&to=TRY`;
-        const res = await fetchWithTimeout(url, {}, 6000);
+        const res = await fetchWithTimeout(url, {}, 8000);
         if (!res || !res.ok) return null;
         const json = await res.json();
         if (!json || !json.rates) return null;
@@ -1965,7 +2039,7 @@
         qualityNote.style.display = 'block';
         qualityNote.textContent = item.type === 'fund'
           ? '⚠️ TEFAS, fonlar için ücretsiz genel erişime açık geçmiş fiyat verisi sağlamıyor. Gösterilen yalnızca gerçek iki nokta: alım fiyatınız ve güncel fiyat.'
-          : '⚠️ Bu varlık türü için güvenilir geçmiş veri kaynağı yok. Gösterilen yalnızca alım fiyatınız ile güncel fiyat.';
+          : '⚠️ Bu varlık türü için güvenilir ücretsiz geçmiş veri kaynağı yok. Gösterilen yalnızca alım fiyatınız ile güncel fiyat.';
       } else {
         qualityNote.style.display = 'none';
       }
@@ -2025,6 +2099,8 @@
         renderApp();
       });
 
+      // ÖNEMLİ: pull önce ve tek başına bitmeli, ancak ondan sonra sync/update başlamalı
+      // (aksi halde bu cihazın bayat local verisi buluttan az önce çekilenin üzerine yazılabilir)
       if (autoUpdateIntervalId) clearInterval(autoUpdateIntervalId);
       autoUpdateIntervalId = setInterval(async () => {
         if (!autoUpdateEnabled) return;
@@ -2067,15 +2143,7 @@
       if (btnSyncNowEmpty) btnSyncNowEmpty.onclick = () => syncGoogleSheetData(false);
 
       const btnSyncWatchlistSheet = document.getElementById('btnSyncWatchlistSheet');
-      if (btnSyncWatchlistSheet) btnSyncWatchlistSheet.onclick = async () => {
-        const originalText = btnSyncWatchlistSheet.innerHTML;
-        btnSyncWatchlistSheet.innerHTML = "⏳ Çekiliyor...";
-        btnSyncWatchlistSheet.disabled = true;
-        showToast("İzleme listesi Sheet'ten çekiliyor...", "info");
-        await syncWatchlistFromSheet(false);
-        btnSyncWatchlistSheet.innerHTML = originalText;
-        btnSyncWatchlistSheet.disabled = false;
-      };
+      if (btnSyncWatchlistSheet) btnSyncWatchlistSheet.onclick = () => syncWatchlistFromSheet(false);
 
       const btnRefreshWatchPrices = document.getElementById('btnRefreshWatchPrices');
       if (btnRefreshWatchPrices) btnRefreshWatchPrices.onclick = () => updateLiveMarketData(false);
@@ -2100,13 +2168,13 @@
 
       const btnForceSyncNow = document.getElementById('btnForceSyncNow');
       if (btnForceSyncNow) {
-        btnForceSyncNow.onclick = async () => {
+        btnForceSyncNow.onclick = () => {
           const inputUrl = document.getElementById('inputSheetUrl');
           const inputWatchUrl = document.getElementById('inputWatchSheetUrl');
           if (inputUrl) setSavedSheetUrl(inputUrl.value.trim());
           if (inputWatchUrl) setSavedWatchSheetUrl(inputWatchUrl.value.trim());
-          await syncGoogleSheetData(false);
-          await syncWatchlistFromSheet(false);
+          syncGoogleSheetData(false);
+          syncWatchlistFromSheet(false);
           const m = document.getElementById('sheetSettingsModal');
           if (m) m.style.display = 'none';
         };
