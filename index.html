@@ -153,24 +153,69 @@
       </div>
     </header>
 
-    <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
+    <!-- CANLI PİYASA & DÖNÜŞTÜRÜCÜ BÖLÜMÜ -->
+    <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-5">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
           <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <span>📈</span> Canlı Piyasa Verileri (Türkiye Piyasaları)
+            <span>📈</span> Canlı Piyasa Verileri (Dolar, Euro, Gram & Çeyrek Altın)
           </h2>
-          <p class="text-xs text-slate-500">Gram Altın, Çeyrek Altın, ONS, Dolar, Euro ve diğer piyasa fiyatlarını yönetin</p>
+          <p class="text-xs text-slate-500">Piyasa kurlarını yönetin, ekleyin, silin ve aşağıdaki çeviriciyle anında hesaplayın</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <button id="btnOpenMarketModal" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5">
-            <span>➕</span> Piyasa Ekle
+            <span>➕</span> Piyasa Varlığı Ekle
           </button>
           <button id="btnRefreshLiveRates" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5">
             <span>🔄</span> Fiyatları Güncelle
           </button>
         </div>
       </div>
-      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3" id="liveTickerGrid"></div>
+
+      <!-- Ticker Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="liveTickerGrid"></div>
+
+      <!-- DÖVİZ & ALTIN ÇEVİRİCİ WIDGET -->
+      <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-5 space-y-3">
+        <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+          <span>💱</span> Döviz & Altın Dönüştürücü / Çevirici
+        </h3>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
+          <div>
+            <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Miktar ve Birim</label>
+            <div class="flex gap-2">
+              <input id="convAmount" type="number" step="any" value="1" class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-sky-500">
+              <select id="convFrom" class="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold font-mono focus:outline-none focus:ring-2 focus:ring-sky-500">
+                <option value="TRY">TRY (₺)</option>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GRAM">Gram Altın</option>
+                <option value="CEYREK">Çeyrek Altın</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-center">
+            <span class="text-slate-400 font-bold text-xl my-auto">➔</span>
+          </div>
+
+          <div>
+            <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Hedef Birim ve Karşılığı</label>
+            <div class="flex gap-2">
+              <select id="convTo" class="bg-white border border-slate-300 rounded-xl px-3 py-2 text-sm font-bold font-mono focus:outline-none focus:ring-2 focus:ring-sky-500">
+                <option value="TRY" selected>TRY (₺)</option>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GRAM">Gram Altın</option>
+                <option value="CEYREK">Çeyrek Altın</option>
+              </select>
+              <div id="convResult" class="flex-1 bg-white border border-emerald-300 bg-emerald-50 text-emerald-900 rounded-xl px-3 py-2 text-sm font-mono font-extrabold flex items-center shadow-inner">
+                0,00
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
@@ -343,21 +388,21 @@
       </div>
       <div class="p-6 space-y-4 text-xs md:text-sm">
         <div>
-          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Sembol / Kod (Örn: BTC, CHF, ONS)</label>
-          <input id="marketCode" type="text" placeholder="Örn: CHF" class="uppercase w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono font-bold">
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Sembol / Kod (Örn: BTC, EUR)</label>
+          <input id="marketCode" type="text" placeholder="Örn: EUR" class="uppercase w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono font-bold">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Açıklama / İsim</label>
-          <input id="marketName" type="text" placeholder="Örn: İsviçre Frangı" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <input id="marketName" type="text" placeholder="Örn: Euro (€)" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Güncel Fiyat (TL)</label>
-            <input id="marketPrice" type="number" step="any" placeholder="Örn: 38.50" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono">
+            <input id="marketPrice" type="number" step="any" placeholder="Örn: 36.40" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Günlük Değişim (%)</label>
-            <input id="marketChange" type="number" step="any" placeholder="Örn: 0.45" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono">
+            <input id="marketChange" type="number" step="any" placeholder="Örn: 0.20" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono">
           </div>
         </div>
         <div>
@@ -677,8 +722,6 @@
     let liveRates = {
       'USD': { name: 'Dolar ($)', price: 34.85, change: 0.15, category: 'fx' },
       'EUR': { name: 'Euro (€)', price: 36.40, change: 0.20, category: 'fx' },
-      'GBP': { name: 'Sterlin (£)', price: 43.80, change: -0.05, category: 'fx' },
-      'ONS': { name: 'ONS Altın ($)', price: 2920.50, change: 0.85, category: 'gold' },
       'GRAM': { name: 'Gram Altın', price: 3250.00, change: 1.10, category: 'gold' },
       'CEYREK': { name: 'Çeyrek Altın', price: 5320.00, change: 1.05, category: 'gold' }
     };
@@ -698,7 +741,6 @@
       if (push) pushToFirebaseCloud();
     }
 
-    // Canlı Piyasa Ekleme/Düzenleme Modal Fonksiyonları
     let activeMarketEditKey = null;
     window.openMarketModal = function(key = null) {
       activeMarketEditKey = key;
@@ -706,7 +748,7 @@
       if (key && liveRates[key]) {
         if (titleEl) titleEl.textContent = 'Canlı Piyasa Varlığını Düzenle';
         document.getElementById('marketCode').value = key;
-        document.getElementById('marketCode').disabled = true; // Kod değiştirilemez
+        document.getElementById('marketCode').disabled = true;
         document.getElementById('marketName').value = liveRates[key].name || '';
         document.getElementById('marketPrice').value = liveRates[key].price || 0;
         document.getElementById('marketChange').value = liveRates[key].change || 0;
@@ -739,18 +781,22 @@
       saveLiveRatesToStorage();
       document.getElementById('marketItemModal').style.display = 'none';
       renderLiveTicker();
+      updateCurrencyConverterDropdowns();
+      calculateCurrencyConversion();
       showToast('Piyasa varlığı başarıyla kaydedildi.', 'success');
     }
 
     window.deleteMarketItem = function(key) {
-      if (['USD', 'EUR', 'GRAM', 'ONS'].includes(key)) {
-        showToast('Temel piyasa birimleri silinemez.', 'error');
+      if (['USD', 'EUR', 'GRAM', 'CEYREK'].includes(key)) {
+        showToast('Temel piyasa birimleri (Dolar, Euro, Gram/Çeyrek Altın) silinemez.', 'error');
         return;
       }
       if (confirm(`'${key}' piyasa birimini silmek istediğinize emin misiniz?`)) {
         delete liveRates[key];
         saveLiveRatesToStorage();
         renderLiveTicker();
+        updateCurrencyConverterDropdowns();
+        calculateCurrencyConversion();
         showToast('Piyasa birimi silindi.', 'info');
       }
     };
@@ -780,6 +826,56 @@
         label.textContent = 'Otomatik Güncelleme: Kapalı';
         btn.className = 'text-xs px-2.5 py-0.5 rounded-full font-semibold border transition-colors flex items-center gap-1.5 bg-slate-100 text-slate-500 border-slate-200';
       }
+    }
+
+    function getRateInTRY(code) {
+      if (code === 'TRY') return 1;
+      if (liveRates[code] && liveRates[code].price > 0) return liveRates[code].price;
+      return 1;
+    }
+
+    function calculateCurrencyConversion() {
+      const amountEl = document.getElementById('convAmount');
+      const fromEl = document.getElementById('convFrom');
+      const toEl = document.getElementById('convTo');
+      const resultEl = document.getElementById('convResult');
+      if (!amountEl || !fromEl || !toEl || !resultEl) return;
+
+      const amount = parseFloat(amountEl.value) || 0;
+      const fromCode = fromEl.value;
+      const toCode = toEl.value;
+
+      const fromRateTRY = getRateInTRY(fromCode);
+      const toRateTRY = getRateInTRY(toCode);
+
+      const valueInTRY = amount * fromRateTRY;
+      const convertedValue = toRateTRY > 0 ? valueInTRY / toRateTRY : 0;
+
+      if (toCode === 'TRY') {
+        resultEl.textContent = formatTL(convertedValue);
+      } else {
+        resultEl.textContent = convertedValue.toLocaleString('tr-TR', { maximumFractionDigits: 4 }) + ' ' + toCode;
+      }
+    }
+
+    function updateCurrencyConverterDropdowns() {
+      const fromEl = document.getElementById('convFrom');
+      const toEl = document.getElementById('convTo');
+      if (!fromEl || !toEl) return;
+
+      const currentFrom = fromEl.value;
+      const currentTo = toEl.value;
+
+      let optionsHtml = '<option value="TRY">TRY (₺)</option>';
+      Object.keys(liveRates).forEach(code => {
+        optionsHtml += `<option value="${code}">${code} - ${liveRates[code].name}</option>`;
+      });
+
+      fromEl.innerHTML = optionsHtml;
+      toEl.innerHTML = optionsHtml;
+
+      if (fromEl.querySelector(`option[value="${currentFrom}"]`)) fromEl.value = currentFrom;
+      if (toEl.querySelector(`option[value="${currentTo}"]`)) toEl.value = currentTo;
     }
 
     function loadAlarmsLocal() {
@@ -834,7 +930,7 @@
     function getTefasUrl(symbol) {
       if (!symbol) return 'https://www.tefas.gov.tr/';
       const clean = symbol.toUpperCase().trim();
-      if (['USD', 'EUR', 'GBP', 'GRAM', 'CEYREK', 'ONS', 'XAUUSD', 'EURTRY'].includes(clean)) return 'https://www.tefas.gov.tr/';
+      if (['USD', 'EUR', 'GRAM', 'CEYREK', 'ONS', 'XAUUSD', 'EURTRY'].includes(clean)) return 'https://www.tefas.gov.tr/';
       return `https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${encodeURIComponent(clean)}`;
     }
 
@@ -1020,6 +1116,7 @@
           updateWatchTrendSnapshot(importedWatch);
           renderWatchlistTable();
           updateLiveMarketData(true);
+          updateCurrencyConverterDropdowns();
           if (!quiet) showToast(`Takip listesi Sheet'ten (${importedWatch.length} fon) güncellendi.`, 'success');
         } else {
           if (!quiet) showToast("Sheet'te uygun formatta takip verisi bulunamadı.", 'error');
@@ -1043,9 +1140,8 @@
           const data = await res.json();
           if (data && data.rates && data.rates.TRY) {
             const usdTry = data.rates.TRY;
-            liveRates['USD'].price = parseFloat(usdTry.toFixed(2));
-            if (data.rates.EUR) liveRates['EUR'].price = parseFloat((usdTry / data.rates.EUR).toFixed(2));
-            if (data.rates.GBP) liveRates['GBP'].price = parseFloat((usdTry / data.rates.GBP).toFixed(2));
+            if (liveRates['USD']) liveRates['USD'].price = parseFloat(usdTry.toFixed(2));
+            if (data.rates.EUR && liveRates['EUR']) liveRates['EUR'].price = parseFloat((usdTry / data.rates.EUR).toFixed(2));
           }
         }
       } catch(e) {}
@@ -1054,21 +1150,20 @@
         const resGold = await fetchWithTimeout('https://api.gold-api.com/price/XAU', {}, 6000);
         if (resGold && resGold.ok) {
           const g = await resGold.json();
-          if (g && g.price) liveRates['ONS'].price = parseFloat(g.price.toFixed(2));
+          if (g && g.price && liveRates['USD']) {
+            const onsTRY = g.price * liveRates['USD'].price;
+            const gram = onsTRY / 31.1034768;
+            if (liveRates['GRAM']) liveRates['GRAM'].price = parseFloat(gram.toFixed(2));
+            if (liveRates['CEYREK']) liveRates['CEYREK'].price = parseFloat((gram * 1.635).toFixed(2));
+          }
         }
       } catch(e) {}
-
-      if (liveRates['ONS'] && liveRates['ONS'].price > 0 && liveRates['USD'] && liveRates['USD'].price > 0) {
-        const gram = (liveRates['ONS'].price * liveRates['USD'].price) / 31.1034768;
-        if (liveRates['GRAM']) liveRates['GRAM'].price = parseFloat(gram.toFixed(2));
-        if (liveRates['CEYREK']) liveRates['CEYREK'].price = parseFloat((gram * 1.635).toFixed(2));
-      }
 
       const watchlist = loadWatchlist();
       let watchOk = 0, watchFail = 0;
       for (const w of watchlist) {
         const code = w.code.toUpperCase();
-        if (['USD', 'EUR', 'GBP', 'GRAM', 'CEYREK', 'ONS'].includes(code)) continue;
+        if (['USD', 'EUR', 'GRAM', 'CEYREK'].includes(code)) continue;
         const p = await fetchTefasFundPriceProxy(code);
         if (p && p > 0) {
           const prevPrice = liveRates[code]?.price || 0;
@@ -1087,6 +1182,8 @@
       updateWatchTrendSnapshot(watchlist);
       renderLiveTicker();
       renderWatchlistTable();
+      updateCurrencyConverterDropdowns();
+      calculateCurrencyConversion();
       checkPriceAlarms();
       if (!quiet) showToast("Piyasalar ve fiyatlar güncellendi.", "success");
       return { watchOk, watchFail, watchTotal: watchlist.length };
@@ -2110,11 +2207,14 @@
       updateFbSyncStatus('pulling');
       renderAlarmsList();
       checkPriceAlarms();
+      updateCurrencyConverterDropdowns();
 
       pullFromFirebaseCloud().then(async () => {
         loadLiveRatesFromStorage();
         renderAlarmsList();
         renderLiveTicker();
+        updateCurrencyConverterDropdowns();
+        calculateCurrencyConversion();
         await Promise.all([syncGoogleSheetData(true), syncWatchlistFromSheet(true), updateLiveMarketData(true)]);
         renderApp();
       });
@@ -2143,6 +2243,8 @@
         loadLiveRatesFromStorage();
         renderAlarmsList();
         renderLiveTicker();
+        updateCurrencyConverterDropdowns();
+        calculateCurrencyConversion();
         renderApp();
         showToast(found ? 'Buluttan yüklendi.' : 'Bulut verisi bulunamadı.', found ? 'success' : 'info');
       };
@@ -2162,6 +2264,11 @@
       document.getElementById('marketModalCloseX').onclick = () => document.getElementById('marketItemModal').style.display = 'none';
       document.getElementById('marketCancelBtn').onclick = () => document.getElementById('marketItemModal').style.display = 'none';
       document.getElementById('marketSaveBtn').onclick = saveMarketItem;
+
+      // Çevirici Dinamik Event Listener'ları
+      document.getElementById('convAmount').oninput = calculateCurrencyConversion;
+      document.getElementById('convFrom').onchange = calculateCurrencyConversion;
+      document.getElementById('convTo').onchange = calculateCurrencyConversion;
 
       document.getElementById('btnOpenSheetSettings').onclick = () => {
         document.getElementById('inputSheetUrl').value = getSavedSheetUrl();
@@ -2234,6 +2341,7 @@
 
       document.getElementById('btnRefreshNews').onclick = fetchMarketNews;
       fetchMarketNews();
+      calculateCurrencyConversion();
     };
   </script>
 </body>
