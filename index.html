@@ -37,45 +37,6 @@
 
   <div class="max-w-7xl mx-auto space-y-6">
 
-    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-      <div class="bg-slate-900 text-white p-3 md:p-4 px-5 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="text-xl animate-pulse">🇹🇷</span>
-          <h2 class="text-sm md:text-base font-bold tracking-wide">Türkiye Piyasaları: Canlı Haberler & Analizler</h2>
-        </div>
-        <div class="flex items-center gap-3">
-          <span class="text-[10px] text-slate-400 font-mono hidden md:inline">Oto-Güncelleme: 30dk</span>
-          <button id="btnRefreshNews" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 border border-slate-700">
-            <span>🔄</span> Yenile
-          </button>
-        </div>
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100 bg-slate-50/50" id="newsContainer">
-        
-        <div class="p-4 md:p-5 flex flex-col h-full">
-          <h3 class="text-xs font-extrabold text-amber-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><span class="text-base">🥇</span> Kapalıçarşı & Altın</h3>
-          <div class="space-y-3 flex-1" id="newsList-gold">
-            <div class="animate-pulse flex space-x-2"><div class="flex-1 space-y-2"><div class="h-2 bg-slate-200 rounded"></div><div class="h-2 bg-slate-200 rounded w-5/6"></div></div></div>
-          </div>
-        </div>
-
-        <div class="p-4 md:p-5 flex flex-col h-full">
-          <h3 class="text-xs font-extrabold text-blue-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><span class="text-base">💵</span> Döviz (USD/TRY - EUR/TRY)</h3>
-          <div class="space-y-3 flex-1" id="newsList-fx">
-             <div class="animate-pulse flex space-x-2"><div class="flex-1 space-y-2"><div class="h-2 bg-slate-200 rounded"></div><div class="h-2 bg-slate-200 rounded w-5/6"></div></div></div>
-          </div>
-        </div>
-
-        <div class="p-4 md:p-5 flex flex-col h-full">
-          <h3 class="text-xs font-extrabold text-purple-700 uppercase tracking-wider mb-3 flex items-center gap-1.5"><span class="text-base">📈</span> BIST & TEFAS Fonları</h3>
-          <div class="space-y-3 flex-1" id="newsList-fund">
-             <div class="animate-pulse flex space-x-2"><div class="flex-1 space-y-2"><div class="h-2 bg-slate-200 rounded"></div><div class="h-2 bg-slate-200 rounded w-5/6"></div></div></div>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
     <header class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
         <div class="flex items-center gap-2">
@@ -1776,149 +1737,6 @@
       historyEl.scrollTop = historyEl.scrollHeight;
     }
 
-    const REAL_NEWS_FEEDS = [
-      'https://www.trthaber.com/rss/ekonomi.xml',
-      'https://www.hurriyet.com.tr/rss/ekonomi',
-      'https://www.ntv.com.tr/ekonomi.rss'
-    ];
-
-    async function fetchRss(feedUrl) {
-      const bustUrl = feedUrl + (feedUrl.includes('?') ? '&' : '?') + 't=' + Date.now();
-      
-      const proxies = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(bustUrl)}`,
-        `https://corsproxy.io/?url=${encodeURIComponent(bustUrl)}`
-      ];
-
-      for (const proxy of proxies) {
-        try {
-          const res = await fetchWithTimeout(proxy, { cache: 'no-store' }, 7000);
-          if (res && res.ok) {
-            const text = await res.text();
-            if (text.includes('<?xml') || text.includes('<rss')) {
-              const parser = new DOMParser();
-              const xml = parser.parseFromString(text, "text/xml");
-              const items = Array.from(xml.querySelectorAll("item")).slice(0, 15);
-              if (items.length > 0) {
-                return items.map(item => ({
-                  title: item.querySelector("title")?.textContent || '',
-                  link: item.querySelector("link")?.textContent || '',
-                  pubDate: item.querySelector("pubDate")?.textContent || ''
-                }));
-              }
-            }
-          }
-        } catch(e) {}
-      }
-
-      try {
-        const rs2j = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(bustUrl)}&api_key=free&count=10&_=${Date.now()}`;
-        const res2 = await fetchWithTimeout(rs2j, { cache: 'no-store' }, 8000);
-        if (res2 && res2.ok) {
-          const data = await res2.json();
-          if (data && data.items && data.items.length > 0) {
-            return data.items.map(item => ({ title: item.title, link: item.link, pubDate: item.pubDate }));
-          }
-        }
-      } catch(e) {}
-      
-      return [];
-    }
-
-    function classifyNewsItem(title) {
-      const t = normalizeTr(title);
-      if (t.includes('ALTIN') || t.includes('ONS') || t.includes('GRAM') || t.includes('FED')) return 'gold';
-      if (t.includes('DOLAR') || t.includes('EURO') || t.includes('KUR') || t.includes('TCMB') || t.includes('FAIZ')) return 'fx';
-      if (t.includes('BORSA') || t.includes('BIST') || t.includes('HISSE') || t.includes('FON') || t.includes('TEFAS')) return 'fund';
-      return null;
-    }
-
-    async function fetchMarketNews() {
-      let allItems = [];
-      for (const feedUrl of REAL_NEWS_FEEDS) {
-        const items = await fetchRss(feedUrl);
-        if (items && items.length > 0) allItems = allItems.concat(items);
-      }
-
-      if (allItems.length === 0) {
-        ['gold', 'fx', 'fund'].forEach(cat => {
-          const container = document.getElementById(`newsList-${cat}`);
-          if (container) renderNewsUnavailable(cat, container);
-        });
-        showToast("Haberler alınamadı, tekrar deneniyor...", "error");
-        return;
-      }
-
-      allItems.sort((a, b) => new Date(b.pubDate || 0) - new Date(a.pubDate || 0));
-      const buckets = { gold: [], fx: [], fund: [] };
-      const overflow = [];
-      
-      allItems.forEach(item => {
-        const cat = classifyNewsItem(item.title);
-        if (cat) buckets[cat].push(item);
-        else overflow.push(item);
-      });
-      
-      let oi = 0;
-      ['gold', 'fx', 'fund'].forEach(cat => {
-        while (buckets[cat].length < 5 && oi < overflow.length) { 
-          buckets[cat].push(overflow[oi]); 
-          oi++; 
-        }
-      });
-      
-      ['gold', 'fx', 'fund'].forEach(cat => {
-        const container = document.getElementById(`newsList-${cat}`);
-        if (!container) return;
-        if (buckets[cat].length > 0) renderNewsItems(cat, buckets[cat].slice(0, 5), container);
-        else renderNewsUnavailable(cat, container);
-      });
-      showToast("Haberler güncellendi.", "success");
-    }
-
-    function renderNewsItems(category, items, container) {
-      container.innerHTML = '';
-      items.forEach(item => {
-        let dateStr = 'Az önce';
-        try {
-          if (item.pubDate) {
-            const d = new Date(item.pubDate);
-            if (!isNaN(d.getTime())) {
-              const now = new Date();
-              if (d.toDateString() === now.toDateString()) {
-                dateStr = 'Bugün ' + d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
-              } else {
-                dateStr = d.toLocaleDateString('tr-TR', {day:'2-digit', month:'short'}) + ' ' + d.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
-              }
-            }
-          }
-        } catch (e) {}
-        
-        const div = document.createElement('div');
-        div.className = "group block border-b border-slate-100 last:border-0 pb-2.5 last:pb-0";
-        div.innerHTML = `
-          <a href="${item.link || '#'}" target="_blank" rel="noopener noreferrer" class="block cursor-pointer">
-            <h4 class="text-xs font-semibold text-slate-800 group-hover:text-sky-600 transition-colors line-clamp-2 leading-snug">${item.title}</h4>
-            <div class="flex items-center justify-between mt-1.5">
-              <span class="text-[9px] font-mono text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">${dateStr}</span>
-              <span class="text-[9px] font-bold text-slate-300 group-hover:text-sky-500 transition-colors">Habere Git ↗</span>
-            </div>
-          </a>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    function renderNewsUnavailable(category, container) {
-      container.innerHTML = `
-        <div class="text-center py-4">
-          <span class="text-lg block mb-1">📡</span>
-          <p class="text-[11px] text-slate-400">Canlı haber şu anda alınamadı.</p>
-          <button onclick="fetchMarketNews()" class="mt-2 text-[10px] font-bold text-white bg-slate-700 px-2.5 py-1 rounded-lg">🔄 Tekrar Dene</button>
-        </div>
-      `;
-    }
-
     let activeEditAssetId = null;
     window.openEditModal = function(assetId = null) {
       const data = loadUserData();
@@ -2241,11 +2059,6 @@
         };
       });
 
-      document.getElementById('btnRefreshNews').onclick = fetchMarketNews;
-      fetchMarketNews();
-      setInterval(() => {
-        fetchMarketNews();
-      }, 30 * 60 * 1000);
       calculateCurrencyConversion();
     };
   </script>
