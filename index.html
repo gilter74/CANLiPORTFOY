@@ -153,19 +153,15 @@
       </div>
     </header>
 
-    <!-- CANLI PİYASA & DÖNÜŞTÜRÜCÜ BÖLÜMÜ -->
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-5">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
           <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
             <span>📈</span> Canlı Piyasa Verileri (Dolar, Euro, Gram & Çeyrek Altın)
           </h2>
-          <p class="text-xs text-slate-500">Piyasa kurlarını yönetin, ekleyin, silin ve aşağıdaki çeviriciyle anında hesaplayın</p>
+          <p class="text-xs text-slate-500">Piyasa kurlarını takip edin ve aşağıdaki dönüştürücü ile anında hesaplayın</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <button id="btnOpenMarketModal" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5">
-            <span>➕</span> Piyasa Varlığı Ekle
-          </button>
+        <div class="flex items-center gap-2">
           <button id="btnRefreshLiveRates" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5">
             <span>🔄</span> Fiyatları Güncelle
           </button>
@@ -175,10 +171,10 @@
       <!-- Ticker Grid -->
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="liveTickerGrid"></div>
 
-      <!-- DÖVİZ & ALTIN ÇEVİRİCİ WIDGET -->
+      <!-- DÖVİZ & ALTIN ÇEVİRİCİ WIDGET (22 ve 24 Ayar Ayrımıyla) -->
       <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-5 space-y-3">
         <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-          <span>💱</span> Döviz & Altın Dönüştürücü / Çevirici
+          <span>💱</span> Döviz & Altın Dönüştürücü / Çevirici (22 ve 24 Ayar Dahil)
         </h3>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
           <div>
@@ -189,7 +185,8 @@
                 <option value="TRY">TRY (₺)</option>
                 <option value="USD">USD ($)</option>
                 <option value="EUR">EUR (€)</option>
-                <option value="GRAM">Gram Altın</option>
+                <option value="GRAM24">24 Ayar Gram Altın</option>
+                <option value="GRAM22">22 Ayar Gram Altın</option>
                 <option value="CEYREK">Çeyrek Altın</option>
               </select>
             </div>
@@ -206,7 +203,8 @@
                 <option value="TRY" selected>TRY (₺)</option>
                 <option value="USD">USD ($)</option>
                 <option value="EUR">EUR (€)</option>
-                <option value="GRAM">Gram Altın</option>
+                <option value="GRAM24">24 Ayar Gram Altın</option>
+                <option value="GRAM22">22 Ayar Gram Altın</option>
                 <option value="CEYREK">Çeyrek Altın</option>
               </select>
               <div id="convResult" class="flex-1 bg-white border border-emerald-300 bg-emerald-50 text-emerald-900 rounded-xl px-3 py-2 text-sm font-mono font-extrabold flex items-center shadow-inner">
@@ -379,48 +377,6 @@
 
   </div>
 
-  <!-- MODAL: CANLI PİYASA EKLE / DÜZENLE -->
-  <div id="marketItemModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 modal-backdrop" style="display:none">
-    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl overflow-hidden border border-slate-200">
-      <div class="bg-slate-900 text-white p-4 px-6 flex items-center justify-between">
-        <h3 id="marketModalTitle" class="font-bold text-lg">Canlı Piyasa Varlığı Ekle</h3>
-        <button id="marketModalCloseX" class="text-slate-400 hover:text-white text-xl">✕</button>
-      </div>
-      <div class="p-6 space-y-4 text-xs md:text-sm">
-        <div>
-          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Sembol / Kod (Örn: BTC, EUR)</label>
-          <input id="marketCode" type="text" placeholder="Örn: EUR" class="uppercase w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono font-bold">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Açıklama / İsim</label>
-          <input id="marketName" type="text" placeholder="Örn: Euro (€)" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm">
-        </div>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Güncel Fiyat (TL)</label>
-            <input id="marketPrice" type="number" step="any" placeholder="Örn: 36.40" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Günlük Değişim (%)</label>
-            <input id="marketChange" type="number" step="any" placeholder="Örn: 0.20" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono">
-          </div>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Kategori</label>
-          <select id="marketCategory" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm">
-            <option value="fx">💵 Döviz</option>
-            <option value="gold">🥇 Altın / Emtia</option>
-            <option value="fund">📈 Fon / Diğer</option>
-          </select>
-        </div>
-      </div>
-      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-2">
-        <button id="marketCancelBtn" class="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-200">İptal</button>
-        <button id="marketSaveBtn" class="px-5 py-2 rounded-lg text-sm font-medium bg-sky-600 hover:bg-sky-700 text-white shadow-sm">Kaydet</button>
-      </div>
-    </div>
-  </div>
-
   <!-- MODAL: SHEET AYARLARI -->
   <div id="sheetSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200">
@@ -440,7 +396,6 @@
           <input id="inputWatchSheetUrl" type="text" 
                  value="https://docs.google.com/spreadsheets/d/1wPq671mtaVJ6rp3ZPFl6sCtL2PRHqKObDBi4lOKGEdI/edit?hl=tr&gid=0#gid=0"
                  class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono font-bold text-purple-800">
-          <p class="text-[11px] text-amber-700 mt-1.5 bg-amber-50 border border-amber-200 rounded-lg p-2">⚠️ Bu sayfa bu Sheet'i sadece "bağlantıya sahip herkes görüntüleyebilir" olarak paylaşılmışsa okuyabilir.</p>
         </div>
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1 font-mono text-xs">
           <div>Son Senkronizasyon: <strong id="sheetLastSyncTime">--:--:--</strong></div>
@@ -468,7 +423,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
           <div>
             <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Varlık / Kod</label>
-            <input id="alarmSymbol" type="text" placeholder="Örn: USD, GRAM" class="w-full uppercase bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono font-bold text-xs">
+            <input id="alarmSymbol" type="text" placeholder="Örn: USD, GRAM24" class="w-full uppercase bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 font-mono font-bold text-xs">
           </div>
           <div>
             <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Hedef Fiyat (TL/$)</label>
@@ -719,10 +674,11 @@
     let autoUpdateEnabled = true;
     let autoUpdateIntervalId = null;
 
+    // SADECE USD, EUR, GRAM ve CEYREK tanımlandı (24 ayar temel baz, 22 ayar otomatik hesaplanır)
     let liveRates = {
       'USD': { name: 'Dolar ($)', price: 34.85, change: 0.15, category: 'fx' },
       'EUR': { name: 'Euro (€)', price: 36.40, change: 0.20, category: 'fx' },
-      'GRAM': { name: 'Gram Altın', price: 3250.00, change: 1.10, category: 'gold' },
+      'GRAM': { name: '24 Ayar Gram Altın', price: 3250.00, change: 1.10, category: 'gold' },
       'CEYREK': { name: 'Çeyrek Altın', price: 5320.00, change: 1.05, category: 'gold' }
     };
 
@@ -732,7 +688,14 @@
         const raw = localStorage.getItem(getRatesStorageKey());
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed && typeof parsed === 'object') liveRates = { ...liveRates, ...parsed };
+          if (parsed && typeof parsed === 'object') {
+            liveRates = {
+              'USD': parsed['USD'] || liveRates['USD'],
+              'EUR': parsed['EUR'] || liveRates['EUR'],
+              'GRAM': parsed['GRAM'] || liveRates['GRAM'],
+              'CEYREK': parsed['CEYREK'] || liveRates['CEYREK']
+            };
+          }
         }
       } catch(e) {}
     }
@@ -741,95 +704,14 @@
       if (push) pushToFirebaseCloud();
     }
 
-    let activeMarketEditKey = null;
-    window.openMarketModal = function(key = null) {
-      activeMarketEditKey = key;
-      const titleEl = document.getElementById('marketModalTitle');
-      if (key && liveRates[key]) {
-        if (titleEl) titleEl.textContent = 'Canlı Piyasa Varlığını Düzenle';
-        document.getElementById('marketCode').value = key;
-        document.getElementById('marketCode').disabled = true;
-        document.getElementById('marketName').value = liveRates[key].name || '';
-        document.getElementById('marketPrice').value = liveRates[key].price || 0;
-        document.getElementById('marketChange').value = liveRates[key].change || 0;
-        document.getElementById('marketCategory').value = liveRates[key].category || 'fx';
-      } else {
-        if (titleEl) titleEl.textContent = 'Yeni Canlı Piyasa Varlığı Ekle';
-        document.getElementById('marketCode').value = '';
-        document.getElementById('marketCode').disabled = false;
-        document.getElementById('marketName').value = '';
-        document.getElementById('marketPrice').value = '';
-        document.getElementById('marketChange').value = '0';
-        document.getElementById('marketCategory').value = 'fx';
-      }
-      document.getElementById('marketItemModal').style.display = 'flex';
-    };
-
-    function saveMarketItem() {
-      const code = document.getElementById('marketCode').value.trim().toUpperCase();
-      const name = document.getElementById('marketName').value.trim();
-      const price = parseFloat(document.getElementById('marketPrice').value) || 0;
-      const change = parseFloat(document.getElementById('marketChange').value) || 0;
-      const category = document.getElementById('marketCategory').value;
-
-      if (!code || !name) {
-        showToast('Lütfen sembol ve isim girin.', 'error');
-        return;
-      }
-
-      liveRates[code] = { name, price, change, category };
-      saveLiveRatesToStorage();
-      document.getElementById('marketItemModal').style.display = 'none';
-      renderLiveTicker();
-      updateCurrencyConverterDropdowns();
-      calculateCurrencyConversion();
-      showToast('Piyasa varlığı başarıyla kaydedildi.', 'success');
-    }
-
-    window.deleteMarketItem = function(key) {
-      if (['USD', 'EUR', 'GRAM', 'CEYREK'].includes(key)) {
-        showToast('Temel piyasa birimleri (Dolar, Euro, Gram/Çeyrek Altın) silinemez.', 'error');
-        return;
-      }
-      if (confirm(`'${key}' piyasa birimini silmek istediğinize emin misiniz?`)) {
-        delete liveRates[key];
-        saveLiveRatesToStorage();
-        renderLiveTicker();
-        updateCurrencyConverterDropdowns();
-        calculateCurrencyConversion();
-        showToast('Piyasa birimi silindi.', 'info');
-      }
-    };
-
-    function getAutoUpdateStorageKey() { return 'portfoy_auto_update_enabled'; }
-    function loadAutoUpdatePref() {
-      try {
-        const raw = localStorage.getItem(getAutoUpdateStorageKey());
-        autoUpdateEnabled = raw === null ? true : raw === '1';
-      } catch(e) { autoUpdateEnabled = true; }
-      renderAutoUpdateToggle();
-    }
-    function saveAutoUpdatePref() {
-      try { localStorage.setItem(getAutoUpdateStorageKey(), autoUpdateEnabled ? '1' : '0'); } catch(e) {}
-    }
-    function renderAutoUpdateToggle() {
-      const dot = document.getElementById('autoUpdateDot');
-      const label = document.getElementById('autoUpdateLabel');
-      const btn = document.getElementById('btnToggleAutoUpdate');
-      if (!dot || !label || !btn) return;
-      if (autoUpdateEnabled) {
-        dot.className = 'w-2 h-2 rounded-full bg-emerald-500 animate-pulse';
-        label.textContent = 'Otomatik Güncelleme: Açık';
-        btn.className = 'text-xs px-2.5 py-0.5 rounded-full font-semibold border transition-colors flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border-emerald-200';
-      } else {
-        dot.className = 'w-2 h-2 rounded-full bg-slate-400';
-        label.textContent = 'Otomatik Güncelleme: Kapalı';
-        btn.className = 'text-xs px-2.5 py-0.5 rounded-full font-semibold border transition-colors flex items-center gap-1.5 bg-slate-100 text-slate-500 border-slate-200';
-      }
-    }
-
     function getRateInTRY(code) {
       if (code === 'TRY') return 1;
+      if (code === 'GRAM24') return liveRates['GRAM'] ? liveRates['GRAM'].price : 3250;
+      if (code === 'GRAM22') {
+        // 22 ayar altın, 24 ayar fiyatının yaklaşık %91.6'sıdır
+        const base24 = liveRates['GRAM'] ? liveRates['GRAM'].price : 3250;
+        return base24 * 0.9163;
+      }
       if (liveRates[code] && liveRates[code].price > 0) return liveRates[code].price;
       return 1;
     }
@@ -856,26 +738,6 @@
       } else {
         resultEl.textContent = convertedValue.toLocaleString('tr-TR', { maximumFractionDigits: 4 }) + ' ' + toCode;
       }
-    }
-
-    function updateCurrencyConverterDropdowns() {
-      const fromEl = document.getElementById('convFrom');
-      const toEl = document.getElementById('convTo');
-      if (!fromEl || !toEl) return;
-
-      const currentFrom = fromEl.value;
-      const currentTo = toEl.value;
-
-      let optionsHtml = '<option value="TRY">TRY (₺)</option>';
-      Object.keys(liveRates).forEach(code => {
-        optionsHtml += `<option value="${code}">${code} - ${liveRates[code].name}</option>`;
-      });
-
-      fromEl.innerHTML = optionsHtml;
-      toEl.innerHTML = optionsHtml;
-
-      if (fromEl.querySelector(`option[value="${currentFrom}"]`)) fromEl.value = currentFrom;
-      if (toEl.querySelector(`option[value="${currentTo}"]`)) toEl.value = currentTo;
     }
 
     function loadAlarmsLocal() {
@@ -930,7 +792,7 @@
     function getTefasUrl(symbol) {
       if (!symbol) return 'https://www.tefas.gov.tr/';
       const clean = symbol.toUpperCase().trim();
-      if (['USD', 'EUR', 'GRAM', 'CEYREK', 'ONS', 'XAUUSD', 'EURTRY'].includes(clean)) return 'https://www.tefas.gov.tr/';
+      if (['USD', 'EUR', 'GRAM', 'GRAM24', 'GRAM22', 'CEYREK', 'ONS', 'XAUUSD', 'EURTRY'].includes(clean)) return 'https://www.tefas.gov.tr/';
       return `https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${encodeURIComponent(clean)}`;
     }
 
@@ -1104,19 +966,10 @@
         });
 
         if (importedWatch.length > 0) {
-          importedWatch.forEach(w => {
-            if (w.currentPrice > 0) {
-              const prev = liveRates[w.code]?.price || 0;
-              const change = prev > 0 ? parseFloat((((w.currentPrice - prev) / prev) * 100).toFixed(2)) : 0;
-              liveRates[w.code] = { name: w.code + ' Fonu', price: w.currentPrice, change, category: 'fund' };
-            }
-          });
-          saveLiveRatesToStorage(false);
           saveWatchlist(importedWatch);
           updateWatchTrendSnapshot(importedWatch);
           renderWatchlistTable();
           updateLiveMarketData(true);
-          updateCurrencyConverterDropdowns();
           if (!quiet) showToast(`Takip listesi Sheet'ten (${importedWatch.length} fon) güncellendi.`, 'success');
         } else {
           if (!quiet) showToast("Sheet'te uygun formatta takip verisi bulunamadı.", 'error');
@@ -1160,7 +1013,6 @@
       } catch(e) {}
 
       const watchlist = loadWatchlist();
-      let watchOk = 0, watchFail = 0;
       for (const w of watchlist) {
         const code = w.code.toUpperCase();
         if (['USD', 'EUR', 'GRAM', 'CEYREK'].includes(code)) continue;
@@ -1169,12 +1021,6 @@
           const prevPrice = liveRates[code]?.price || 0;
           const change = prevPrice > 0 ? parseFloat((((p - prevPrice) / prevPrice) * 100).toFixed(2)) : 0;
           liveRates[code] = { name: code + ' Fonu', price: p, change, category: 'fund' };
-          watchOk++;
-        } else if (!liveRates[code]) {
-          liveRates[code] = { name: code + ' Fonu', price: w.buyPrice || 0, change: 0, category: 'fund' };
-          watchFail++;
-        } else {
-          watchFail++;
         }
       }
 
@@ -1182,11 +1028,9 @@
       updateWatchTrendSnapshot(watchlist);
       renderLiveTicker();
       renderWatchlistTable();
-      updateCurrencyConverterDropdowns();
       calculateCurrencyConversion();
       checkPriceAlarms();
       if (!quiet) showToast("Piyasalar ve fiyatlar güncellendi.", "success");
-      return { watchOk, watchFail, watchTotal: watchlist.length };
     }
 
     function updateWatchTrendSnapshot(watchlist) {
@@ -1228,8 +1072,9 @@
       if (!grid) return;
       grid.innerHTML = '';
 
-      Object.keys(liveRates).forEach(key => {
+      ['USD', 'EUR', 'GRAM', 'CEYREK'].forEach(key => {
         const item = liveRates[key];
+        if (!item) return;
         const isUp = item.change >= 0;
         const card = document.createElement('div');
         card.className = "bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col justify-between relative group";
@@ -1237,11 +1082,7 @@
           <div>
             <div class="flex items-center justify-between">
               <span class="text-xs font-bold text-slate-500 font-mono">${key}</span>
-              <div class="flex items-center gap-1">
-                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isUp ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${isUp ? '+' : ''}${item.change}%</span>
-                <button onclick="openMarketModal('${key}')" class="text-[10px] text-slate-400 hover:text-slate-700 p-0.5" title="Düzenle">✏️</button>
-                <button onclick="deleteMarketItem('${key}')" class="text-[10px] text-slate-400 hover:text-rose-600 p-0.5" title="Sil">✕</button>
-              </div>
+              <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${isUp ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${isUp ? '+' : ''}${item.change}%</span>
             </div>
             <div class="mt-2">
               <div class="text-sm font-extrabold text-slate-900 font-mono">${formatTL(item.price)}</div>
@@ -2202,18 +2043,15 @@
     }
 
     window.onload = function() {
-      loadAutoUpdatePref();
       loadLiveRatesFromStorage();
       updateFbSyncStatus('pulling');
       renderAlarmsList();
       checkPriceAlarms();
-      updateCurrencyConverterDropdowns();
 
       pullFromFirebaseCloud().then(async () => {
         loadLiveRatesFromStorage();
         renderAlarmsList();
         renderLiveTicker();
-        updateCurrencyConverterDropdowns();
         calculateCurrencyConversion();
         await Promise.all([syncGoogleSheetData(true), syncWatchlistFromSheet(true), updateLiveMarketData(true)]);
         renderApp();
@@ -2231,8 +2069,6 @@
 
       document.getElementById('btnToggleAutoUpdate').onclick = () => {
         autoUpdateEnabled = !autoUpdateEnabled;
-        saveAutoUpdatePref();
-        renderAutoUpdateToggle();
         showToast(autoUpdateEnabled ? 'Otomatik güncelleme açıldı.' : 'Otomatik güncelleme kapatıldı.', 'info');
       };
 
@@ -2243,7 +2079,6 @@
         loadLiveRatesFromStorage();
         renderAlarmsList();
         renderLiveTicker();
-        updateCurrencyConverterDropdowns();
         calculateCurrencyConversion();
         renderApp();
         showToast(found ? 'Buluttan yüklendi.' : 'Bulut verisi bulunamadı.', found ? 'success' : 'info');
@@ -2259,11 +2094,6 @@
       document.getElementById('btnSyncNowEmpty').onclick = () => syncGoogleSheetData(false);
       document.getElementById('btnSyncWatchlistSheet').onclick = () => syncWatchlistFromSheet(false);
       document.getElementById('btnRefreshWatchPrices').onclick = () => updateLiveMarketData(false);
-
-      document.getElementById('btnOpenMarketModal').onclick = () => openMarketModal(null);
-      document.getElementById('marketModalCloseX').onclick = () => document.getElementById('marketItemModal').style.display = 'none';
-      document.getElementById('marketCancelBtn').onclick = () => document.getElementById('marketItemModal').style.display = 'none';
-      document.getElementById('marketSaveBtn').onclick = saveMarketItem;
 
       // Çevirici Dinamik Event Listener'ları
       document.getElementById('convAmount').oninput = calculateCurrencyConversion;
