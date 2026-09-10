@@ -731,10 +731,7 @@
         const raw = localStorage.getItem('portfoy_external_watchlist_' + getPortfolioCode());
         if (raw) return JSON.parse(raw);
       } catch(e) {}
-      return [
-        { id: 'w_1', code: 'TGE', date: '01.01.2026', amount: 1, buyPrice: 45.20 },
-        { id: 'w_2', code: 'AFT', date: '15.01.2026', amount: 1, buyPrice: 180.50 }
-      ];
+      return [];
     }
     function saveWatchlistLocal(list) {
       try { localStorage.setItem('portfoy_external_watchlist_' + getPortfolioCode(), JSON.stringify(list)); } catch(e) {}
@@ -773,16 +770,21 @@
       const cleanCode = fundCode.toUpperCase().trim();
       const targetUrl = `https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod=${cleanCode}`;
       const proxies = [
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`,
-        `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`
+        `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(targetUrl)}`
       ];
       for (const proxyUrl of proxies) {
         try {
-          const res = await fetchWithTimeout(proxyUrl, { cache: 'no-store' }, 5000);
+          const res = await fetchWithTimeout(proxyUrl, { cache: 'no-store' }, 6000);
           if (res && res.ok) {
-            const html = await res.text();
-            const match = html.match(/MainContent_PriceReturnBar_lblPrice[^>]*>([\d.,]+)</i) || html.match(/class="top-list-item"[^>]*>([\d.,]+)</i);
+            let html = '';
+            if (proxyUrl.includes('allorigins.win/get')) {
+               const json = await res.json();
+               html = json.contents;
+            } else {
+               html = await res.text();
+            }
+            const match = html.match(/MainContent_FormViewMainIndicators_LabelPrice[^>]*>([\d.,]+)</i) || html.match(/top-list-item[^>]*>([\d.,]+)</i);
             if (match && match[1]) {
               const priceNum = cleanNumber(match[1]);
               if (priceNum > 0) return priceNum;
@@ -802,28 +804,32 @@
       const gidMatch = rawUrl.match(/gid=([0-9]+)/);
       if (gidMatch && gidMatch[1]) gid = gidMatch[1];
       if (!sheetId) return null;
-      return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&gid=${gid}`;
+      return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
     }
 
     async function fetchGoogleSheetCsvText(rawUrl) {
       const directUrl = extractCsvUrl(rawUrl);
       if (!directUrl) throw new Error("Geçersiz Google Sheet URL");
       const urls = [
-        directUrl,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`,
-        `https://corsproxy.io/?url=${encodeURIComponent(directUrl)}`,
+        `https://api.allorigins.win/get?url=${encodeURIComponent(directUrl)}`,
         `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(directUrl)}`
       ];
       let lastErr = null;
       for (const u of urls) {
         try {
-          const res = await fetchWithTimeout(u, { cache: 'no-store' }, 6000);
+          const res = await fetchWithTimeout(u, { cache: 'no-store' }, 8000);
           if (res) {
             if (res.status === 401 || res.status === 403) {
-              throw new Error("Bu Sheet'e erişim izni yok (401/403). Sheet'i 'Paylaş' → 'Genel erişim' → 'Bağlantıya sahip olan herkes / Görüntüleyici' olarak paylaşmanız gerekiyor.");
+              throw new Error("Sheet'e erişim izni yok (401/403). Lütfen Sheet'i 'Bağlantıya sahip olan herkes / Görüntüleyici' olarak paylaşın.");
             }
             if (res.ok) {
-              const txt = await res.text();
+              let txt = '';
+              if (u.includes('allorigins.win/get')) {
+                 const json = await res.json();
+                 txt = json.contents;
+              } else {
+                 txt = await res.text();
+              }
               if (txt && txt.length > 2 && !txt.trim().startsWith('<')) return txt;
             }
           }
@@ -842,12 +848,15 @@
       const map = { code: -1, date: -1, amount: -1, buyPrice: -1 };
       headerCols.forEach((raw, idx) => {
         const h = normalizeTr(raw);
-        if (map.code === -1 && (h.includes('KOD') || h.includes('FON') || h.includes('VARLIK') || h.includes('ISIM'))) map.code = idx;
+        if (map.code === -1 && (h.includes('KOD') || h.includes('FON') || h.includes('VARLIK') || h.includes('ISIM') || h === 'SEMBOL')) map.code = idx;
         else if (map.date === -1 && (h.includes('TARIH') || h.includes('BASLANGIC') || h.includes('GUN'))) map.date = idx;
         else if (map.amount === -1 && (h.includes('ADET') || h.includes('MIKTAR') || h.includes('PAY'))) map.amount = idx;
         else if (map.buyPrice === -1 && (h.includes('ALIS') || h.includes('MALIYET') || h.includes('FIYAT') || h.includes('DEGER'))) map.buyPrice = idx;
       });
       if (map.code === -1) map.code = 0;
+      if (map.date === -1 && headerCols.length > 1) map.date = 1;
+      if (map.amount === -1 && headerCols.length > 2) map.amount = 2;
+      if (map.buyPrice === -1 && headerCols.length > 3) map.buyPrice = 3;
       return map;
     }
 
@@ -956,6 +965,7 @@
 
     function updateWatchTrendSnapshot(watchlist) {
       const trend = loadWatchTrendLocal();
+      const safePerItem = trend?.perItem || {};
       const newPerItem = {};
       let totalCost = 0, totalVal = 0;
 
@@ -968,7 +978,7 @@
         totalCost += cost; totalVal += val;
         const pct = cost > 0 ? ((val - cost) / cost) * 100 : 0;
 
-        const prevPct = trend.perItem[code]?.pct;
+        const prevPct = safePerItem[code]?.pct;
         newPerItem[code] = {
           pct,
           direction: prevPct === undefined ? 'same' : (pct > prevPct ? 'up' : pct < prevPct ? 'down' : 'same')
@@ -976,7 +986,7 @@
       });
 
       const totalPct = totalCost > 0 ? ((totalVal - totalCost) / totalCost) * 100 : 0;
-      const prevTotalPct = trend.lastTotalPLPct;
+      const prevTotalPct = trend?.lastTotalPLPct;
       const totalDirection = prevTotalPct === null || prevTotalPct === undefined ? 'same' : (totalPct > prevTotalPct ? 'up' : totalPct < prevTotalPct ? 'down' : 'same');
 
       saveWatchTrendLocal({
@@ -2058,8 +2068,13 @@
 
       const btnSyncWatchlistSheet = document.getElementById('btnSyncWatchlistSheet');
       if (btnSyncWatchlistSheet) btnSyncWatchlistSheet.onclick = async () => {
+        const originalText = btnSyncWatchlistSheet.innerHTML;
+        btnSyncWatchlistSheet.innerHTML = "⏳ Çekiliyor...";
+        btnSyncWatchlistSheet.disabled = true;
         showToast("İzleme listesi Sheet'ten çekiliyor...", "info");
         await syncWatchlistFromSheet(false);
+        btnSyncWatchlistSheet.innerHTML = originalText;
+        btnSyncWatchlistSheet.disabled = false;
       };
 
       const btnRefreshWatchPrices = document.getElementById('btnRefreshWatchPrices');
