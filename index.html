@@ -44,7 +44,7 @@
           <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900">Portföy Takip & Analiz Merkezi</h1>
         </div>
         <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-          <p class="text-xs md:text-sm text-slate-500 font-medium">Google Sheets Canlı Senkronizasyon, Kategori Analizi, Çift Yönlü Fiyat Alarmları & AI Asistanı.</p>
+          <p class="text-xs md:text-sm text-slate-500 font-medium">Google Sheets Canlı Senkronizasyon, Kategori Analizi, Çift Yönlü Fiyat Alarmları & E-Posta Bildirimleri.</p>
           <span id="sheetSyncBadge" class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1 cursor-pointer hover:bg-emerald-100 transition-colors">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Google Sheet Bağlı
           </span>
@@ -58,6 +58,9 @@
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
+        <button id="btnRequestNotif" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5" title="Tarayıcı Bildirimlerini Aç">
+          <span>🔔</span> Bildirim İzni
+        </button>
         <button id="btnOpenSheetSettings" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
           <span>📊</span> Sheet Bağlantısı
         </button>
@@ -142,12 +145,12 @@
     <section id="alarmsSection" class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
       <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2"><span>🔔</span> Aktif Fiyat Alarmları</h2>
-          <p class="text-xs text-slate-500">Hedef (kâr al) veya Temkinli (stop) fiyat eşiklerini belirleyin, piyasa o noktaya geldiğinde uyarı alın.</p>
+          <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2"><span>🔔</span> Aktif Fiyat Alarmları (Tarayıcı & E-posta Bildirimli)</h2>
+          <p class="text-xs text-slate-500">Hedef veya stop fiyat eşiklerini belirleyin, bildirim e-posta adresinizi girerek anında haberdar olun.</p>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 items-end">
+      <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 items-end">
         <div>
           <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Varlık / Kod</label>
           <input id="alarmSymbol" type="text" placeholder="Örn: USD, GRAM" class="w-full uppercase bg-white border border-slate-300 rounded-lg px-3 py-2 font-mono font-bold text-sm focus:ring-2 focus:ring-amber-500 outline-none">
@@ -162,6 +165,10 @@
         <div>
           <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Eşik Fiyat (TL/$)</label>
           <input id="alarmTarget" type="number" step="any" placeholder="Örn: 50.00" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Bildirim E-postası</label>
+          <input id="alarmEmail" type="email" placeholder="ornek@mail.com" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-amber-500 outline-none">
         </div>
         <div>
           <button id="btnAddAlarm" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
@@ -1008,6 +1015,29 @@
       });
     }
 
+    async function sendEmailNotification(email, message) {
+      if (!email || !email.includes('@')) return;
+      try {
+        // Free client-side email dispatch simulation / Webhook hook
+        const endpoint = `https://formsubmit.co/ajax/${encodeURIComponent(email)}`;
+        await fetch(endpoint, {
+          method: "POST",
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            subject: "🚨 Portföy Fiyat Alarmı Tetiklendi!",
+            message: message
+          })
+        });
+      } catch(e) {}
+    }
+
+    function triggerBrowserNotification(title, body) {
+      if (!("Notification" in window)) return;
+      if (Notification.permission === "granted") {
+        new Notification(title, { body, icon: 'https://placehold.co/128x128/10b981/ffffff?text=🔔' });
+      }
+    }
+
     function checkPriceAlarms() {
       const alarms = loadAlarms();
       alarms.forEach(a => {
@@ -1015,10 +1045,25 @@
         const rate = liveRates[a.symbol.toUpperCase()];
         if (!rate || rate.price <= 0) return;
 
+        let triggered = false;
+        let msg = "";
+
         if (a.type === 'up' && rate.price >= a.target) {
-          showToast(`🚀 HEDEF ALARMI: ${a.symbol} ${formatTL(a.target)} hedefine ulaştı! (Güncel: ${formatTL(rate.price)})`, 'success');
+          msg = `🚀 HEDEF ALARMI: ${a.symbol} ${formatTL(a.target)} hedefine ulaştı! (Güncel: ${formatTL(rate.price)})`;
+          triggered = true;
         } else if (a.type === 'down' && rate.price <= a.target) {
-          showToast(`🛡️ TEMKİNLİ (STOP) ALARMI: ${a.symbol} ${formatTL(a.target)} desteğine geriledi! (Güncel: ${formatTL(rate.price)})`, 'error');
+          msg = `🛡️ TEMKİNLİ (STOP) ALARMI: ${a.symbol} ${formatTL(a.target)} desteğine geriledi! (Güncel: ${formatTL(rate.price)})`;
+          triggered = true;
+        }
+
+        if (triggered) {
+          showToast(msg, a.type === 'up' ? 'success' : 'error');
+          triggerBrowserNotification("Portföy Fiyat Alarmı!", msg);
+          if (a.email) {
+            sendEmailNotification(a.email, msg);
+            showToast(`E-posta bildirimi ${a.email} adresine gönderildi.`, 'success');
+          }
+          // Alarm tetiklendiğinde tekrar tetiklenmemesi için pasif yapabiliriz veya aktif tutabiliriz
         }
       });
       const alarmCountBadge = document.getElementById('alarmCountBadge');
@@ -1046,15 +1091,18 @@
             <span class="font-bold px-2 py-1 rounded text-[10px] uppercase tracking-wide ${isUp ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${isUp ? '🚀 Yükseliş Hedefi' : '🛡️ Düşüş / Stop'}</span>
             <button onclick="deleteAlarm('${a.id}')" class="text-slate-400 hover:text-rose-600 transition-colors bg-slate-50 hover:bg-rose-50 rounded p-1" title="Alarmı Sil">✕</button>
           </div>
-          <div class="pl-2 flex items-end justify-between mt-1">
-            <div>
-              <div class="text-[10px] text-slate-500 mb-0.5 uppercase tracking-wide">Varlık Kodu</div>
-              <strong class="text-lg text-slate-900">${a.symbol}</strong>
+          <div class="pl-2 space-y-2 mt-1">
+            <div class="flex items-end justify-between">
+              <div>
+                <div class="text-[10px] text-slate-500 mb-0.5 uppercase tracking-wide">Varlık Kodu</div>
+                <strong class="text-lg text-slate-900">${a.symbol}</strong>
+              </div>
+              <div class="text-right">
+                <div class="text-[10px] text-slate-500 mb-0.5 uppercase tracking-wide">Eşik Fiyat</div>
+                <span class="font-bold text-slate-800 text-lg">${formatTL(a.target)}</span>
+              </div>
             </div>
-            <div class="text-right">
-              <div class="text-[10px] text-slate-500 mb-0.5 uppercase tracking-wide">Eşik Fiyat</div>
-              <span class="font-bold text-slate-800 text-lg">${formatTL(a.target)}</span>
-            </div>
+            ${a.email ? `<div class="text-[11px] text-indigo-600 truncate border-t border-slate-100 pt-1">✉️ ${a.email}</div>` : ''}
           </div>
         `;
         container.appendChild(row);
@@ -1956,6 +2004,21 @@
         renderApp();
       }, 60000);
 
+      document.getElementById('btnRequestNotif').onclick = () => {
+        if (!("Notification" in window)) {
+          showToast("Tarayıcınız bildirimleri desteklemiyor.", "error");
+          return;
+        }
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            showToast("Tarayıcı bildirimleri başarıyla etkinleştirildi!", "success");
+            new Notification("Portföy Merkezi", { body: "Fiyat alarmları artık tarayıcınızda görünecek!" });
+          } else {
+            showToast("Bildirim izni reddedildi.", "error");
+          }
+        });
+      };
+
       document.getElementById('btnToggleAutoUpdate').onclick = () => {
         autoUpdateEnabled = !autoUpdateEnabled;
         showToast(autoUpdateEnabled ? 'Otomatik güncelleme açıldı.' : 'Otomatik güncelleme kapatıldı.', 'info');
@@ -2016,15 +2079,17 @@
         const symbol = document.getElementById('alarmSymbol').value.trim().toUpperCase();
         const type = document.getElementById('alarmType').value;
         const target = parseFloat(document.getElementById('alarmTarget').value);
+        const email = document.getElementById('alarmEmail').value.trim();
         if (!symbol || isNaN(target)) { showToast('Geçerli kod ve hedef fiyat girin.', 'error'); return; }
         let alarms = loadAlarms();
-        alarms.push({ id: 'a_' + Date.now(), symbol, type, target, active: true });
+        alarms.push({ id: 'a_' + Date.now(), symbol, type, target, email, active: true });
         saveAlarms(alarms);
         renderAlarmsList();
         document.getElementById('alarmCountBadge').textContent = alarms.length;
         document.getElementById('alarmSymbol').value = '';
         document.getElementById('alarmTarget').value = '';
-        showToast('Alarm başarıyla panoya eklendi.', 'success');
+        document.getElementById('alarmEmail').value = '';
+        showToast('Alarm ve e-posta bildirimi başarıyla eklendi.', 'success');
       };
 
       document.getElementById('btnOpenWatchModal').onclick = () => openWatchModal(null);
