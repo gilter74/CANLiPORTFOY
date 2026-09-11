@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portföy Takip & Analiz Merkezi - Canlı Piyasa, AI ve İzleme Listesi</title>
+  <title>Portföy Takip & Analiz Merkezi - E-Posta & Tarayıcı Alarmları</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23fbbf24' d='M21 11a10 10 0 0 0-10-10v10h10z'/><path fill='%236366f1' d='M11 21A10 10 0 0 0 21 13H11v8z'/><path fill='%2310b981' d='M9 21A10 10 0 0 1 9 3v18z'/></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -37,6 +37,7 @@
 
   <div class="max-w-7xl mx-auto space-y-6">
 
+    <!-- ÜST HEADER -->
     <header class="bg-white rounded-2xl p-4 md:p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
       <div>
         <div class="flex items-center gap-2">
@@ -44,7 +45,7 @@
           <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-900">Portföy Takip & Analiz Merkezi</h1>
         </div>
         <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-          <p class="text-xs md:text-sm text-slate-500 font-medium">Google Sheets Canlı Senkronizasyon, Kategori Analizi, Çift Yönlü Fiyat Alarmları & E-Posta Bildirimleri.</p>
+          <p class="text-xs md:text-sm text-slate-500 font-medium">Google Sheets Senkronizasyon, Çift Yönlü Alarmlar, Web Push & E-Posta Bildirimleri.</p>
           <span id="sheetSyncBadge" class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs px-2.5 py-0.5 rounded-full font-semibold flex items-center gap-1 cursor-pointer hover:bg-emerald-100 transition-colors">
             <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Google Sheet Bağlı
           </span>
@@ -59,7 +60,7 @@
 
       <div class="flex flex-wrap items-center gap-2">
         <button id="btnRequestNotif" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5" title="Tarayıcı Bildirimlerini Aç">
-          <span>🔔</span> Bildirim İzni
+          <span>🔔</span> Tarayıcı Bildirim İzni
         </button>
         <button id="btnOpenSheetSettings" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
           <span>📊</span> Sheet Bağlantısı
@@ -81,6 +82,7 @@
       </div>
     </header>
 
+    <!-- CANLI PİYASA & ÇEVİRİCİ -->
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-5">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
@@ -142,15 +144,16 @@
       </div>
     </section>
 
+    <!-- FİYAT ALARMLARI VE E-POSTA BİLDİRİM BÖLÜMÜ -->
     <section id="alarmsSection" class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
       <div class="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2"><span>🔔</span> Aktif Fiyat Alarmları (Tarayıcı & E-posta Bildirimli)</h2>
-          <p class="text-xs text-slate-500">Hedef veya stop fiyat eşiklerini belirleyin, bildirim e-posta adresinizi girerek anında haberdar olun.</p>
+          <p class="text-xs text-slate-500">Hedef veya stop fiyat eşiklerini belirleyin, bildirim e-posta adresinizi girerek anında e-posta alın.</p>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 items-end">
+      <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 bg-amber-50/60 p-3.5 rounded-xl border border-amber-200 items-end">
         <div>
           <label class="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Varlık / Kod</label>
           <input id="alarmSymbol" type="text" placeholder="Örn: USD, GRAM" class="w-full uppercase bg-white border border-slate-300 rounded-lg px-3 py-2 font-mono font-bold text-sm focus:ring-2 focus:ring-amber-500 outline-none">
@@ -180,6 +183,7 @@
       <div id="alarmListContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
     </section>
 
+    <!-- KATEGORİ PERFORMANS & ÖZET -->
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
       <div class="border-b border-slate-100 pb-3">
         <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2"><span>📊</span> Kategori Bazlı Performans & Analiz</h2>
@@ -212,6 +216,7 @@
       </div>
     </section>
 
+    <!-- PORTFÖY TABLOSU -->
     <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div class="p-4 md:p-6 border-b border-slate-200 space-y-4">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -264,6 +269,7 @@
       </div>
     </section>
 
+    <!-- İZLEME LİSTESİ -->
     <section class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-4">
       <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
@@ -331,6 +337,7 @@
       </div>
     </section>
 
+    <!-- VARLIK DAĞILIMI -->
     <section class="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm">
       <h2 class="text-lg font-bold text-slate-900 mb-4">Varlık Dağılımı</h2>
       <div class="chart-container">
@@ -340,6 +347,7 @@
 
   </div>
 
+  <!-- MODALLAR -->
   <div id="sheetSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200">
       <div class="bg-emerald-900 text-white p-4 px-6 flex items-center justify-between">
@@ -390,7 +398,7 @@
       </div>
       <div class="p-5 overflow-y-auto space-y-4 flex-1 bg-slate-50" id="aiChatHistory">
         <div class="bg-purple-100 text-purple-900 p-3.5 rounded-2xl rounded-tl-sm text-xs md:text-sm max-w-[85%] shadow-sm">
-          Merhaba! Ben akıllı portföy asistanınım. Portföyündeki varlıkları, getiri oranlarını ve piyasa durumunu inceleyebilirim. İstersen yukarıya kendi **Gemini API Key**'ini girerek benimle dünyanın en akıcı ve doğal sohbetini yapabilirsin, istersen anahtar girmeden de akıllı analizlerimle sana yardımcı olabilirim! 😊
+          Merhaba! Ben akıllı portföy asistanınım. Portföyündeki varlıkları, getiri oranlarını ve piyasa durumunu inceleyebilirim. 😊
         </div>
       </div>
       <div class="p-3 bg-white border-t border-slate-200 flex items-center gap-2 shrink-0">
@@ -1018,7 +1026,6 @@
     async function sendEmailNotification(email, message) {
       if (!email || !email.includes('@')) return;
       try {
-        // Free client-side email dispatch simulation / Webhook hook
         const endpoint = `https://formsubmit.co/ajax/${encodeURIComponent(email)}`;
         await fetch(endpoint, {
           method: "POST",
@@ -1063,7 +1070,6 @@
             sendEmailNotification(a.email, msg);
             showToast(`E-posta bildirimi ${a.email} adresine gönderildi.`, 'success');
           }
-          // Alarm tetiklendiğinde tekrar tetiklenmemesi için pasif yapabiliriz veya aktif tutabiliriz
         }
       });
       const alarmCountBadge = document.getElementById('alarmCountBadge');
@@ -1675,7 +1681,7 @@
     function generateConversationalAiAnswer(question, summary) {
       const { portfolio, watchlist, totalCost, totalVal, catVals } = summary;
       if (portfolio.length === 0 && watchlist.length === 0) {
-        return "Portföyünde henüz kayıtlı bir varlık görünmüyor. Üst kısımdan 'Sheet Bağlantısı' yapabilir veya manuel varlık ekleyebilirsin. Sonra seninle dilediğin gibi yatırımlarını konuşabiliriz! 😊";
+        return "Portföyünde henüz kayıtlı bir varlık görünmüyor. Üst kısımdan 'Sheet Bağlantısı' yapabilir veya manuel varlık ekleyebilirsin. 😊";
       }
 
       const netPL = totalVal - totalCost;
@@ -1683,41 +1689,14 @@
       const qLower = (question || '').toLowerCase();
 
       if (qLower.includes('nasıl') || qlowerIncludes(qLower, ['durum', 'özet', 'portföyüm', 'genel', 'ne alemde'])) {
-        let comment = `Harika bir sohbet! Hemen portföyünün tablosuna bakalım:\n\n` +
+        return `Harika bir sohbet! Hemen portföyünün tablosuna bakalım:\n\n` +
           `• Toplam Yatırım Maliyetin: ${formatTL(totalCost)}\n` +
           `• Güncel Portföy Değerin: ${formatTL(totalVal)}\n` +
-          `• Net Kâr/Zarar Durumun: ${netPL >= 0 ? '🎉 Kârda' : '⚠️ Zararda'} (${netPL >= 0 ? '+' : ''}${formatTL(netPL)} / %${netPLPct.toFixed(2)})\n\n`;
-        
-        if (netPLPct > 10) {
-          comment += "Getirilerin gayet güzel görünüyor, piyasayı iyi yakalamışsın! 🚀";
-        } else if (netPLPct >= 0) {
-          comment += "Portföyün istikrarlı bir şekilde artıda ilerliyor, sabırlı yatırım güzel sonuçlar verir.";
-        } else {
-          comment += "Piyasalar dalgalı seyrettiği için şu an hafif eksidesin, ancak uzun vadeli stratejide bu tür dalgalanmalar çok normaldir. Moral bozmak yok! 💪";
-        }
-        return comment;
+          `• Net Kâr/Zarar Durumun: ${netPL >= 0 ? '🎉 Kârda' : '⚠️ Zararda'} (${netPL >= 0 ? '+' : ''}${formatTL(netPL)} / %${netPLPct.toFixed(2)})\n\n` +
+          (netPLPct >= 0 ? "Portföyün istikrarlı bir şekilde artıda ilerliyor. 🚀" : "Piyasalar dalgalı seyrettiği için şu an hafif eksidesin, sabırlı yatırım güzel sonuçlar verir. 💪");
       }
 
-      if (qlowerIncludes(qLower, ['iyi', 'kazandıran', 'başarılı', 'getiri', 'en çok'])) {
-        const sorted = [...portfolio].sort((a, b) => b.pct - a.pct);
-        const best = sorted[0];
-        if (best) {
-          return `Portföyündeki yıldız parça kesinlikle **${best.code}**! Şu ana kadar sana %${best.pct.toFixed(2)} oranında getiri sağladı. Maşallah, doğru hamle olmuş. Başka hangi varlığını detaylı incelememi istersin? ✨`;
-        }
-      }
-
-      if (qlowerIncludes(qLower, ['risk', 'dağılım', 'sepet', 'çeşit', 'oran'])) {
-        const totalCatVal = Object.values(catVals).reduce((a, b) => a + b, 0) || 1;
-        const breakdown = Object.entries(catVals)
-          .filter(([, v]) => v > 0)
-          .map(([k, v]) => `• ${k === 'fund' ? 'TEFAS Fonları' : k === 'fx' ? 'Döviz' : k === 'gold' ? 'Altın' : k === 'eurobond' ? 'Eurobond' : 'Mevduat'}: %${((v / totalCatVal) * 100).toFixed(1)}`)
-          .join('\n');
-        
-        return `Sepet dağılımına şöyle bir göz attım:\n\n${breakdown}\n\nGenel olarak varlıklarını bu şekilde konumlandırmışsın. Sence bu sepet risk iştahına uygun mu, yoksa altın veya fon ağırlığını artırmayı düşünüyor musun? 🤔`;
-      }
-
-      return `Yatırımların hakkında harika bir soru! Portföyünün toplam büyüklüğü ${formatTL(totalVal)} seviyesinde ve %${netPLPct.toFixed(2)} getiriyle ilerliyor. ` +
-        `Piyasalardaki son gelişmeleri de dikkate alarak sepetini çeşitlendirmeye devam edebilirsin. Bu konuda özel olarak incelememi istediğin bir varlık var mı? Sabırsızlıkla dinliyorum! 💡`;
+      return `Yatırımların hakkında harika bir soru! Portföyünün toplam büyüklüğü ${formatTL(totalVal)} seviyesinde ve %${netPLPct.toFixed(2)} getiriyle ilerliyor. 💡`;
     }
 
     function qlowerIncludes(q, words) {
@@ -1750,27 +1729,18 @@
 
       if (apiKey) {
         try {
-          const systemInstruction = "Sen son derece samimi, dost canlısı, finansal piyasalara hakim ve karşısındaki yatırımcıyla koyu bir sohbet kuran kişisel bir portföy asistanısın. Asla mekanik veya robotik konuşma; arkadaşça, emoji kullanarak ve doğal bir Türkçe ile cevap ver.";
-          const prompt = `Kullanıcının portföy özeti:\n- Toplam Maliyet: ${summary.totalCost} TL\n- Toplam Değer: ${summary.totalVal} TL\n- Varlık Detayları: ${JSON.stringify(summary.portfolio)}\n\nKullanıcının mesajı: "${question}"\nYukarıdaki portföy verilerine dayanarak samimi ve akıcı bir şekilde yanıt ver.`;
-
+          const systemInstruction = "Sen son derece samimi, dost canlısı, finansal piyasalara hakim bir kişisel portföy asistanısın.";
+          const prompt = `Kullanıcının portföy özeti: ${JSON.stringify(summary)}\nSoru: "${question}"`;
           const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
-          const payload = {
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            systemInstruction: { parts: [{ text: systemInstruction }] }
-          };
-
           const res = await fetchWithTimeout(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: systemInstruction }] } })
           }, 15000);
 
           if (res && res.ok) {
             const json = await res.json();
-            const candidate = json.candidates?.[0];
-            if (candidate && candidate.content?.parts?.[0]?.text) {
-              reply = candidate.content.parts[0].text;
-            }
+            reply = json.candidates?.[0]?.content?.parts?.[0]?.text;
           }
         } catch(e) {}
       }
@@ -2012,7 +1982,7 @@
         Notification.requestPermission().then(permission => {
           if (permission === "granted") {
             showToast("Tarayıcı bildirimleri başarıyla etkinleştirildi!", "success");
-            new Notification("Portföy Merkezi", { body: "Fiyat alarmları artık tarayıcınızda görünecek!" });
+            new Notification("Portföy Merkezi", { body: "Fiyat alarmları artık tarayıcınızda ve e-postanızda görünecek!" });
           } else {
             showToast("Bildirim izni reddedildi.", "error");
           }
@@ -2089,7 +2059,7 @@
         document.getElementById('alarmSymbol').value = '';
         document.getElementById('alarmTarget').value = '';
         document.getElementById('alarmEmail').value = '';
-        showToast('Alarm ve e-posta bildirimi başarıyla eklendi.', 'success');
+        showToast('Alarm ve e-posta bildirimi başarıyla kaydedildi.', 'success');
       };
 
       document.getElementById('btnOpenWatchModal').onclick = () => openWatchModal(null);
