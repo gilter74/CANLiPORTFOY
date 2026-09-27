@@ -71,6 +71,9 @@
         <button id="btnScrollToAlarms" class="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
           <span>🔔</span> Alarmlara Git (<span id="alarmCountBadge">0</span>)
         </button>
+        <button id="btnOpenCompareModal" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
+          <span>🆚</span> Karşılaştır
+        </button>
 
         <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-200 flex items-center gap-1.5">
           <input id="authKod" type="text" placeholder="Portföy Kodu" value="goksin-portfoy"
@@ -180,7 +183,7 @@
         </div>
       </div>
 
-      <div id="alarmListContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+      <div id="alarmListContainer" class="space-y-5"></div>
     </section>
 
     <!-- KATEGORİ PERFORMANS & ÖZET -->
@@ -225,8 +228,14 @@
             <p class="text-xs text-slate-500">Google Sheet tablonuzdan ve canlı piyasalardan senkronize edilen varlıklarınız</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <input type="text" id="tableSearch" placeholder="Varlık ara..." 
+            <input type="text" id="tableSearch" placeholder="Varlık ara..."
                    class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500 w-48 md:w-64">
+            <select id="portfolioSortSelect" title="Sıralama" class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs md:text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500">
+              <option value="pl_desc">K/Z: Çoktan Aza</option>
+              <option value="pl_asc">K/Z: Azdan Çoğa</option>
+              <option value="date_new">Eklenme: Yeniden Eskiye</option>
+              <option value="date_old">Eklenme: Eskiden Yeniye</option>
+            </select>
             <button class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-3.5 py-2 rounded-lg transition-colors shadow-sm" id="btnSyncNowHeader">🔄 Sheet'ten Çek</button>
             <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-3.5 py-2 rounded-lg transition-colors shadow-sm" onclick="openEditModal(null)">➕ Manuel Ekle</button>
           </div>
@@ -520,13 +529,63 @@
           </div>
         </div>
         <div id="chartDataQualityNote" class="text-xs bg-amber-50 border border-amber-200 text-amber-800 p-2.5 rounded-lg" style="display:none"></div>
+        <div id="technicalAnalysisBar" class="flex flex-wrap items-center gap-2" style="display:none"></div>
         <div class="relative w-full h-72 md:h-80 bg-slate-50 border border-slate-200 rounded-2xl p-3">
           <canvas id="assetDetailChart"></canvas>
+        </div>
+        <div id="fundInfoPanel" style="display:none" class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5"><span>ℹ️</span> Fon Bilgileri (TEFAS)</h4>
+          <div id="fundInfoLoading" class="text-xs text-slate-400">Yükleniyor...</div>
+          <div id="fundInfoContent" style="display:none" class="space-y-3">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+              <div><div class="text-[10px] uppercase font-semibold text-slate-400">Fon Türü</div><div id="fiFonTuru" class="font-bold text-slate-800 mt-0.5">-</div></div>
+              <div><div class="text-[10px] uppercase font-semibold text-slate-400">Kategori</div><div id="fiKategori" class="font-bold text-slate-800 mt-0.5">-</div></div>
+              <div><div class="text-[10px] uppercase font-semibold text-slate-400">Risk Değeri</div><div id="fiRisk" class="font-bold text-slate-800 mt-0.5">-</div></div>
+              <div><div class="text-[10px] uppercase font-semibold text-slate-400">Yatırımcı Sayısı</div><div id="fiYatirimci" class="font-bold text-slate-800 mt-0.5">-</div></div>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400 mb-1.5">Varlık Dağılımı (Fon Neye Yatırım Yapıyor?)</div>
+              <div id="fiAllocationList" class="space-y-1.5"></div>
+            </div>
+          </div>
+          <div id="fundInfoError" class="text-xs text-slate-400" style="display:none">Fon detay verisi şu an TEFAS'tan alınamadı. Aşağıdaki "TEFAS'ta İncele" linkinden bakabilirsiniz.</div>
         </div>
       </div>
       <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between">
         <a id="chartModalTefasLink" href="#" target="_blank" rel="noopener noreferrer" class="text-xs font-bold text-purple-700 bg-purple-100 hover:bg-purple-200 border border-purple-300 px-3 py-1.5 rounded-lg transition-colors" style="display:none">🔍 TEFAS'ta İncele ↗</a>
         <button id="chartModalCloseBtn" class="px-5 py-2 rounded-xl text-sm font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors ml-auto">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="compareModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
+    <div class="bg-white rounded-2xl max-w-3xl w-full shadow-2xl overflow-hidden border border-slate-200">
+      <div class="bg-slate-900 text-white p-4 px-6 flex items-center justify-between">
+        <div>
+          <h3 class="font-bold text-lg">🆚 Varlık Karşılaştırma</h3>
+          <p class="text-xs text-slate-400">TEFAS fon kodları, USD/EUR/GBP döviz — normalize edilmiş (%) getiri karşılaştırması</p>
+        </div>
+        <button id="compareModalCloseX" class="text-slate-400 hover:text-white text-xl">✕</button>
+      </div>
+      <div class="p-4 md:p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+        <div class="flex flex-wrap items-center gap-2">
+          <input id="compareCodeInput" type="text" placeholder="Fon kodu veya USD/EUR/GBP (Enter'a basın)"
+                 class="uppercase flex-1 min-w-[180px] bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-teal-500">
+          <button id="btnCompareAddCode" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm px-3 py-2 rounded-lg transition-colors">➕ Ekle</button>
+          <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl" id="comparePeriodTabs">
+            <button data-days="30" class="compare-period-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">1 Ay</button>
+            <button data-days="90" class="compare-period-btn active px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-900 text-white">3 Ay</button>
+            <button data-days="180" class="compare-period-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">6 Ay</button>
+          </div>
+        </div>
+        <div id="compareChipsContainer" class="flex flex-wrap gap-2"></div>
+        <div id="compareNote" class="text-xs bg-amber-50 border border-amber-200 text-amber-800 p-2.5 rounded-lg">
+          Not: Altın ve mevduat için henüz geçmiş fiyat kaynağı yok, bu yüzden karşılaştırmaya yalnızca TEFAS fonları ve USD/EUR/GBP döviz eklenebiliyor. TEFAS verileri genel bir CORS proxy üzerinden çekildiği için ara sıra erişilemeyebilir.
+        </div>
+        <div class="relative w-full h-72 md:h-80 bg-slate-50 border border-slate-200 rounded-2xl p-3">
+          <canvas id="compareChart"></canvas>
+        </div>
+        <div id="compareStatus" class="text-xs text-slate-400 text-center"></div>
       </div>
     </div>
   </div>
@@ -736,6 +795,54 @@
       try { localStorage.setItem(getWatchTrendStorageKey(), JSON.stringify(trend)); } catch(e) {}
     }
 
+    // Portföy varlıkları için düşüş eğilimi/serisi takibi: her piyasa güncellemesinde
+    // varlığın kâr/zarar %'si bir önceki kontrole göre düştüyse "downStreak" artar,
+    // yükseldiyse sıfırlanır. Bu sayede "düşmeye meyilli" (2+ ardışık düşüş) ve
+    // "sürekli düşen" (4+ ardışık düşüş) varlıklar tabloda farklı renkte işaretlenebilir.
+    function getPortfolioTrendStorageKey() { return 'portfoy_portfolio_trend_' + getPortfolioCode(); }
+    function loadPortfolioTrendLocal() {
+      try {
+        const raw = localStorage.getItem(getPortfolioTrendStorageKey());
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (!parsed.perItem) parsed.perItem = {};
+          return parsed;
+        }
+      } catch(e) {}
+      return { perItem: {} };
+    }
+    function savePortfolioTrendLocal(trend) {
+      try { localStorage.setItem(getPortfolioTrendStorageKey(), JSON.stringify(trend)); } catch(e) {}
+    }
+    function updatePortfolioTrendSnapshot(portfolio) {
+      const trend = loadPortfolioTrendLocal();
+      const prevPerItem = trend.perItem || {};
+      const newPerItem = {};
+
+      portfolio.forEach(item => {
+        const cost = (item.amount || 0) * getBuyPriceInTRY(item);
+        const curVal = item.currentVal > 0 ? item.currentVal : ((item.amount || 0) * (item.currentPrice || getBuyPriceInTRY(item)));
+        const pct = cost > 0 ? ((curVal - cost) / cost) * 100 : 0;
+        const prev = prevPerItem[item.id];
+        let direction = 'same';
+        let downStreak = prev?.downStreak || 0;
+
+        if (prev && typeof prev.pct === 'number') {
+          if (pct < prev.pct - 0.0001) { direction = 'down'; downStreak += 1; }
+          else if (pct > prev.pct + 0.0001) { direction = 'up'; downStreak = 0; }
+          else { downStreak = prev.downStreak || 0; }
+        }
+
+        newPerItem[item.id] = { pct, direction, downStreak };
+      });
+
+      savePortfolioTrendLocal({ perItem: newPerItem, lastCheckedAt: Date.now() });
+      return newPerItem;
+    }
+    function getPortfolioTrendMap() {
+      return loadPortfolioTrendLocal().perItem || {};
+    }
+
     function getTefasUrl(symbol) {
       if (!symbol) return 'https://www.tefas.gov.tr/';
       const clean = symbol.toUpperCase().trim();
@@ -773,6 +880,87 @@
         } catch(e) {}
       }
       return null;
+    }
+
+    // TEFAS'ın kendi resmi API'si (GetAllFundAnalyzeData): tek çağrıda fonun türü/kategorisi,
+    // risk değeri, varlık dağılımı (hisse senedi/borçlanma araçları/ters repo vb.) ve son
+    // 1A/3A/6A günlük fiyat geçmişini döndürür. Bu endpoint POST gerektirdiği ve TEFAS
+    // tarayıcıdan doğrudan çağrıya izin vermediği (CORS) için genel bir CORS proxy üzerinden
+    // denenir; proxy erişilemezse fonksiyon null döner ve arayüz "TEFAS'ta İncele" linkine düşer.
+    const TEFAS_ASSET_TYPE_LABELS = {
+      'HS': 'Hisse Senedi', 'DT': 'Devlet Tahvili', 'TB': 'Hazine Bonosu',
+      'ÖST': 'Özel Sektör Tahvili', 'OST': 'Özel Sektör Tahvili',
+      'TPP': 'Ters Repo', 'VM': 'Vadeli Mevduat', 'VDM': 'Vadeli Döviz Mevduatı',
+      'BB': 'Banka Bonosu', 'FB': 'Finansman Bonosu', 'KM': 'Kıymetli Maden',
+      'KH': 'Kamu Kira Sertifikası', 'KKS': 'Kamu Kira Sertifikası', 'ÖSKS': 'Özel Sektör Kira Sertifikası',
+      'YV': 'Yabancı Menkul Kıymet', 'FKB': 'Fon Katılma Belgesi', 'TPY': 'Türk Parası Vadeli Mevduat',
+      'DÖT': 'Döviz Ödemeli Tahvil', 'EUT': 'Eurobond', 'DİĞ': 'Diğer', 'DIGER': 'Diğer'
+    };
+    function labelForAssetTypeCode(code) {
+      const c = (code || '').toString().trim().toUpperCase();
+      return TEFAS_ASSET_TYPE_LABELS[c] || c;
+    }
+
+    async function fetchTefasFundAnalyze(fundCode) {
+      if (!fundCode) return null;
+      const cleanCode = fundCode.toUpperCase().trim();
+      const targetUrl = 'https://www.tefas.gov.tr/api/DB/GetAllFundAnalyzeData';
+      const body = `dil=TR&fonkod=${encodeURIComponent(cleanCode)}`;
+      const attempts = [
+        `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
+        targetUrl
+      ];
+      for (const proxyUrl of attempts) {
+        try {
+          const res = await fetchWithTimeout(proxyUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+            body,
+            cache: 'no-store'
+          }, 9000);
+          if (!res || !res.ok) continue;
+          const json = await res.json();
+          const info = json?.fundInfo?.[0];
+          if (!info) continue;
+
+          const allocRaw = json?.fundAllocation || [];
+          const allocation = allocRaw
+            .map(a => ({ code: a.KIYMETTIP, label: labelForAssetTypeCode(a.KIYMETTIP), pct: parseFloat(a.PORTFOYORANI) || 0 }))
+            .filter(a => a.pct > 0.01)
+            .sort((a, b) => b.pct - a.pct);
+
+          const rawHistory = json?.fundPrices6A || json?.fundPrices3A || json?.fundPrices1A || [];
+          const history = rawHistory
+            .map(p => ({ date: p.TARIH, price: parseFloat(p.FIYAT) }))
+            .filter(p => p.price > 0)
+            .sort((a, b) => a.date - b.date);
+
+          return {
+            code: cleanCode,
+            name: info.FONUNVAN || cleanCode,
+            fundType: info.FONTUR || '',
+            category: info.FONKATEGORI || '',
+            riskValue: info.RISKDEGERI || null,
+            portfolioSize: parseFloat(info.PORTBUYUKLUK) || null,
+            investorCount: parseFloat(info.YATIRIMCISAYI) || null,
+            allocation,
+            history
+          };
+        } catch(e) {}
+      }
+      return null;
+    }
+
+    // Basit hareketli ortalama (teknik analiz için).
+    function simpleMovingAverage(values, window) {
+      const out = [];
+      for (let i = 0; i < values.length; i++) {
+        if (i < window - 1) { out.push(null); continue; }
+        let sum = 0;
+        for (let j = i - window + 1; j <= i; j++) sum += values[j];
+        out.push(sum / window);
+      }
+      return out;
     }
 
     function extractCsvUrl(rawUrl) {
@@ -973,6 +1161,7 @@
 
       saveLiveRatesToStorage();
       updateWatchTrendSnapshot(watchlist);
+      updatePortfolioTrendSnapshot(loadUserData().portfolio || []);
       renderLiveTicker();
       renderWatchlistTable();
       calculateCurrencyConversion();
@@ -1094,6 +1283,34 @@
       if (alarmCountBadge) alarmCountBadge.textContent = alarms.length;
     }
 
+    function renderAlarmCard(a) {
+      const isUp = a.type === 'up';
+      const row = document.createElement('div');
+      row.className = `flex flex-col justify-between bg-white border ${isUp ? 'border-emerald-200' : 'border-rose-200'} p-4 rounded-xl text-sm font-mono relative shadow-sm overflow-hidden group`;
+      row.innerHTML = `
+        <div class="absolute top-0 left-0 w-1 h-full ${isUp ? 'bg-emerald-500' : 'bg-rose-500'}"></div>
+        <div class="flex items-center justify-between mb-2 pl-2">
+          <span class="font-bold px-2 py-1 rounded text-[10px] uppercase tracking-wide ${isUp ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${isUp ? '🚀 Yükseliş Hedefi' : '🛡️ Düşüş / Stop'}</span>
+          <button onclick="deleteAlarm('${a.id}')" class="text-slate-400 hover:text-rose-600 transition-colors bg-slate-50 hover:bg-rose-50 rounded p-1" title="Alarmı Sil">✕</button>
+        </div>
+        <div class="pl-2 space-y-2 mt-1">
+          <div class="flex items-end justify-between">
+            <div>
+              <div class="text-[10px] text-slate-500 mb-0.5 uppercase tracking-wide">Varlık Kodu</div>
+              <strong class="text-lg text-slate-900">${a.symbol}</strong>
+            </div>
+            <div class="text-right">
+              <div class="text-[10px] text-slate-500 mb-0.5 uppercase tracking-wide">Eşik Fiyat</div>
+              <span class="font-bold text-slate-800 text-lg">${formatTL(a.target)}</span>
+            </div>
+          </div>
+          ${a.email ? `<div class="text-[11px] text-indigo-600 truncate border-t border-slate-100 pt-1">✉️ ${a.email}</div>` : ''}
+        </div>
+      `;
+      return row;
+    }
+
+    // Alarmları yükseliş (up) ve düşüş/stop (down) olarak iki ayrı grupta gösterir.
     function renderAlarmsList() {
       const container = document.getElementById('alarmListContainer');
       if (!container) return;
@@ -1101,35 +1318,30 @@
       container.innerHTML = '';
 
       if (alarms.length === 0) {
-        container.innerHTML = '<div class="col-span-full text-sm text-slate-400 py-6 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">Henüz fiyat alarmı eklenmemiş. Yukarıdan yeni hedefler belirleyebilirsiniz.</div>';
+        container.innerHTML = '<div class="text-sm text-slate-400 py-6 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">Henüz fiyat alarmı eklenmemiş. Yukarıdan yeni hedefler belirleyebilirsiniz.</div>';
         return;
       }
 
-      alarms.forEach(a => {
-        const isUp = a.type === 'up';
-        const row = document.createElement('div');
-        row.className = `flex flex-col justify-between bg-white border ${isUp ? 'border-emerald-200' : 'border-rose-200'} p-4 rounded-xl text-sm font-mono relative shadow-sm overflow-hidden group`;
-        row.innerHTML = `
-          <div class="absolute top-0 left-0 w-1 h-full ${isUp ? 'bg-emerald-500' : 'bg-rose-500'}"></div>
-          <div class="flex items-center justify-between mb-2 pl-2">
-            <span class="font-bold px-2 py-1 rounded text-[10px] uppercase tracking-wide ${isUp ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${isUp ? '🚀 Yükseliş Hedefi' : '🛡️ Düşüş / Stop'}</span>
-            <button onclick="deleteAlarm('${a.id}')" class="text-slate-400 hover:text-rose-600 transition-colors bg-slate-50 hover:bg-rose-50 rounded p-1" title="Alarmı Sil">✕</button>
-          </div>
-          <div class="pl-2 space-y-2 mt-1">
-            <div class="flex items-end justify-between">
-              <div>
-                <div class="text-[10px] text-slate-500 mb-0.5 uppercase tracking-wide">Varlık Kodu</div>
-                <strong class="text-lg text-slate-900">${a.symbol}</strong>
-              </div>
-              <div class="text-right">
-                <div class="text-[10px] text-slate-500 mb-0.5 uppercase tracking-wide">Eşik Fiyat</div>
-                <span class="font-bold text-slate-800 text-lg">${formatTL(a.target)}</span>
-              </div>
-            </div>
-            ${a.email ? `<div class="text-[11px] text-indigo-600 truncate border-t border-slate-100 pt-1">✉️ ${a.email}</div>` : ''}
-          </div>
-        `;
-        container.appendChild(row);
+      const upAlarms = alarms.filter(a => a.type === 'up');
+      const downAlarms = alarms.filter(a => a.type !== 'up');
+
+      const groups = [
+        { title: '🚀 Yükseliş Hedefleri', list: upAlarms, empty: 'Bu grupta alarm yok.' },
+        { title: '🛡️ Düşüş / Stop Hedefleri', list: downAlarms, empty: 'Bu grupta alarm yok.' }
+      ];
+
+      groups.forEach(g => {
+        const section = document.createElement('div');
+        section.innerHTML = `<h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">${g.title} <span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-full text-[10px]">${g.list.length}</span></h4>`;
+        const grid = document.createElement('div');
+        grid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3';
+        if (g.list.length === 0) {
+          grid.innerHTML = `<div class="col-span-full text-xs text-slate-400 py-4 text-center border-2 border-dashed border-slate-200 rounded-xl bg-slate-50">${g.empty}</div>`;
+        } else {
+          g.list.forEach(a => grid.appendChild(renderAlarmCard(a)));
+        }
+        section.appendChild(grid);
+        container.appendChild(section);
       });
     }
 
@@ -1248,14 +1460,26 @@
           let currentVal = cleanNumber(cols[7]);
 
           if (amount <= 0) return;
+
+          // L sütunu (12. kolon, index 11): DZM/DAS/DOV gibi birim alış maliyeti USD veya
+          // EUR üzerinden takip edilen fonlar için para birimi seçeneği (TRY/USD/EUR).
+          // A-K sütunları zaten dolu olduğundan yeni sütun sona (L) eklenir. Boşsa TRY varsayılır.
+          const currencyRaw = normalizeTr(String(cols[11] || '').trim());
+          const buyCurrency = ['USD', 'EUR'].includes(currencyRaw) ? currencyRaw : 'TRY';
+
+          let buyPrice;
+          if (buyCurrency !== 'TRY') {
+            // Döviz bazlı satırlarda birim alış, girildiği para biriminde saklanır;
+            // TL karşılığı her render'da güncel kura göre hesaplanır (getBuyPriceInTRY),
+            // bu yüzden sheet'teki eski/sabit "Toplam Maliyet (TL)" değeri burada kullanılmaz.
+            buyPrice = unitBuyPrice > 0 ? unitBuyPrice : 0;
+          } else {
+            buyPrice = unitBuyPrice > 0 ? unitBuyPrice : (amount > 0 ? totalCost / amount : 0);
+          }
+
           if (totalCost === 0 && amount > 0 && unitBuyPrice > 0) totalCost = amount * unitBuyPrice;
           if (currentPrice === 0 && currentVal > 0 && amount > 0) currentPrice = currentVal / amount;
           if (currentVal === 0 && currentPrice > 0 && amount > 0) currentVal = amount * currentPrice;
-
-          // Opsiyonel 9. kolon: DZM/DAS/DOV gibi birim alışı USD/EUR üzerinden yapılan
-          // fonlar için para birimi (TRY/USD/EUR). Sheet'te bu kolon yoksa TRY varsayılır.
-          const currencyRaw = normalizeTr(String(cols[8] || '').trim());
-          const buyCurrency = ['USD', 'EUR'].includes(currencyRaw) ? currencyRaw : 'TRY';
 
           const type = mapAssetType(typeRaw);
           importedAssets.push({
@@ -1264,7 +1488,7 @@
             code,
             name: code,
             amount,
-            buyPrice: unitBuyPrice > 0 ? unitBuyPrice : (amount > 0 ? totalCost / amount : 0),
+            buyPrice,
             buyCurrency,
             currentPrice: currentPrice > 0 ? currentPrice : null,
             currentVal: currentVal > 0 ? currentVal : null,
@@ -1288,6 +1512,7 @@
             sheetBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Sheet Bağlı — ${timeStr}`;
           }
 
+          updatePortfolioTrendSnapshot(data.portfolio);
           renderApp();
           if (!quiet) showToast(`Google Sheet'ten ${importedAssets.length} varlık senkronize edildi.`, 'success');
           return true;
@@ -1405,18 +1630,47 @@
       });
     }
 
+    function getPortfolioSortStorageKey() { return 'portfoy_sort_mode_' + getPortfolioCode(); }
+    function getPortfolioSortMode() {
+      try { return localStorage.getItem(getPortfolioSortStorageKey()) || 'pl_desc'; } catch(e) { return 'pl_desc'; }
+    }
+    function setPortfolioSortMode(mode) {
+      try { localStorage.setItem(getPortfolioSortStorageKey(), mode); } catch(e) {}
+    }
+
     function renderPortfolioTable(portfolio) {
       const tbody = document.getElementById('portfolioBody');
       const emptyState = document.getElementById('emptyState');
       if (!tbody) return;
       tbody.innerHTML = '';
       const searchQuery = (document.getElementById('tableSearch')?.value || '').toLowerCase();
+      const trendMap = getPortfolioTrendMap();
 
-      const filtered = portfolio.filter(item => {
+      // Varlıklar (altın/fon/döviz vb.) "Tümü" sekmesinde her zaman tek bir liste halinde
+      // bir arada gösterilir; sıralama modu kâr/zarar veya eklenme sırasına göre uygulanır.
+      const sortMode = getPortfolioSortMode();
+      const sortSelectEl = document.getElementById('portfolioSortSelect');
+      if (sortSelectEl && sortSelectEl.value !== sortMode) sortSelectEl.value = sortMode;
+
+      const withMeta = portfolio.map((item, addIndex) => {
+        const cost = (item.amount || 0) * getBuyPriceInTRY(item);
+        const curVal = item.currentVal > 0 ? item.currentVal : ((item.amount || 0) * (item.currentPrice || getBuyPriceInTRY(item)));
+        const pl = curVal - cost;
+        return { item, addIndex, pl };
+      });
+
+      let filtered = withMeta.filter(({ item }) => {
         if (activeCategoryTab !== 'all' && item.type !== activeCategoryTab) return false;
         if (searchQuery && !item.code.toLowerCase().includes(searchQuery)) return false;
         return true;
       });
+
+      if (sortMode === 'pl_desc') filtered.sort((a, b) => b.pl - a.pl);
+      else if (sortMode === 'pl_asc') filtered.sort((a, b) => a.pl - b.pl);
+      else if (sortMode === 'date_new') filtered.sort((a, b) => b.addIndex - a.addIndex);
+      else if (sortMode === 'date_old') filtered.sort((a, b) => a.addIndex - b.addIndex);
+
+      filtered = filtered.map(m => m.item);
 
       const tabCountAll = document.getElementById('tabCountAll');
       if (tabCountAll) tabCountAll.textContent = portfolio.length;
@@ -1455,19 +1709,37 @@
         else if (item.type === 'eurobond') typeIcon = '🏛️';
         else if (item.type === 'deposit') typeIcon = '🏦';
 
+        // Düşüş eğilimi rozeti: 2+ ardışık düşüş "meyilli" (turuncu), 4+ ardışık düşüş
+        // "sürekli düşen" (kırmızı) olarak işaretlenir. Bir önceki piyasa güncellemesine
+        // göre hesaplanır (bkz. updatePortfolioTrendSnapshot).
+        const trendInfo = trendMap[item.id];
+        const downStreak = trendInfo?.downStreak || 0;
+        let rowExtraClass = '';
+        let trendBadge = '';
+        if (downStreak >= 4) {
+          rowExtraClass = 'bg-rose-50/60';
+          trendBadge = `<span class="text-[9px] font-bold bg-rose-100 text-rose-700 border border-rose-300 px-1.5 py-0.5 rounded-full ml-1" title="${downStreak} kontroldür düşüşte">⚠️ Sürekli Düşüşte</span>`;
+        } else if (downStreak >= 2) {
+          rowExtraClass = 'bg-amber-50/60';
+          trendBadge = `<span class="text-[9px] font-bold bg-amber-100 text-amber-700 border border-amber-300 px-1.5 py-0.5 rounded-full ml-1" title="${downStreak} kontroldür düşüşte">📉 Düşüşe Meyilli</span>`;
+        } else if (trendInfo?.direction === 'up') {
+          trendBadge = `<span class="text-[9px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-300 px-1.5 py-0.5 rounded-full ml-1">▲</span>`;
+        }
+
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100";
+        tr.className = `hover:bg-slate-50 transition-colors border-b border-slate-100 ${rowExtraClass}`;
         tr.innerHTML = `
           <td class="py-3 px-4 font-bold text-slate-900">
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
               <span class="text-xl" title="${item.type}">${typeIcon}</span>
-              ${item.type === 'fund' 
+              ${item.type === 'fund'
                 ? `<a href="${tefasUrl}" target="_blank" rel="noopener noreferrer" class="text-purple-700 hover:text-purple-900 hover:underline flex items-center gap-1" title="TEFAS / Detay">
                      <span>${item.code}</span>
                      <span class="text-[9px] bg-purple-100 text-purple-800 px-1 py-0.5 rounded font-sans font-semibold">↗ TEFAS</span>
                    </a>`
                 : `<span>${item.code}</span>`
               }
+              ${trendBadge}
             </div>
           </td>
           <td class="py-3 px-4 text-center text-xs text-slate-500">${item.buyDate || '-'}</td>
@@ -1873,6 +2145,7 @@
 
     let activeChartAssetId = null;
     let activeChartDays = 90;
+    let activeFundAnalyzeData = null;
     let detailChartInstance = null;
 
     async function fetchFxHistoryReal(code, days) {
@@ -1894,8 +2167,123 @@
       } catch(e) { return null; }
     }
 
+    // ── KARŞILAŞTIRMA ARACI ──────────────────────────────────────────
+    // Portföydeki varlıklarla sınırlı kalmadan, herhangi bir TEFAS fon kodu veya
+    // USD/EUR/GBP dövizini ekleyip normalize edilmiş (%) getiri olarak karşılaştırır.
+    let compareList = [];
+    let compareChartInstance = null;
+    let compareChartDays = 90;
+    const COMPARE_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#f43f5e', '#0ea5e9', '#a855f7', '#14b8a6', '#eab308'];
+
+    function renderCompareChips() {
+      const container = document.getElementById('compareChipsContainer');
+      if (!container) return;
+      container.innerHTML = '';
+      compareList.forEach((code, idx) => {
+        const chip = document.createElement('span');
+        chip.className = 'inline-flex items-center gap-1.5 text-xs font-bold font-mono px-2.5 py-1 rounded-full border';
+        chip.style.borderColor = COMPARE_COLORS[idx % COMPARE_COLORS.length];
+        chip.style.color = COMPARE_COLORS[idx % COMPARE_COLORS.length];
+        chip.innerHTML = `${code} <button data-code="${code}" class="compare-remove-btn hover:text-rose-600">✕</button>`;
+        container.appendChild(chip);
+      });
+      container.querySelectorAll('.compare-remove-btn').forEach(btn => {
+        btn.onclick = () => {
+          compareList = compareList.filter(c => c !== btn.getAttribute('data-code'));
+          renderCompareChips();
+          renderCompareChart();
+        };
+      });
+    }
+
+    window.addCompareCode = function() {
+      const input = document.getElementById('compareCodeInput');
+      const code = (input.value || '').trim().toUpperCase();
+      if (!code) return;
+      if (!compareList.includes(code)) compareList.push(code);
+      input.value = '';
+      renderCompareChips();
+      renderCompareChart();
+    };
+
+    async function fetchCompareSeries(code) {
+      if (['USD', 'EUR', 'GBP'].includes(code)) {
+        const hist = await fetchFxHistoryReal(code, compareChartDays);
+        return hist ? hist.map(h => ({ label: h.label, price: h.price })) : null;
+      }
+      // Diğer her şeyi TEFAS fon kodu olarak dene.
+      const analyze = await fetchTefasFundAnalyze(code);
+      if (!analyze || !analyze.history || analyze.history.length < 2) return null;
+      const cutoff = Date.now() - compareChartDays * 86400000;
+      const hist = analyze.history.filter(h => h.date >= cutoff);
+      const usable = hist.length > 1 ? hist : analyze.history;
+      return usable.map(h => ({ label: new Date(h.date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }), price: h.price }));
+    }
+
+    async function renderCompareChart() {
+      const statusEl = document.getElementById('compareStatus');
+      const canvas = document.getElementById('compareChart');
+      if (!canvas) return;
+      if (compareList.length === 0) {
+        if (compareChartInstance) { compareChartInstance.destroy(); compareChartInstance = null; }
+        if (statusEl) statusEl.textContent = 'Karşılaştırmak istediğiniz fon kodlarını veya USD/EUR/GBP\'yi yukarıdan ekleyin.';
+        return;
+      }
+      if (statusEl) statusEl.textContent = 'Veriler çekiliyor...';
+
+      const results = await Promise.all(compareList.map(async code => ({ code, series: await fetchCompareSeries(code) })));
+      const valid = results.filter(r => r.series && r.series.length > 1);
+      const failed = results.filter(r => !r.series || r.series.length < 2).map(r => r.code);
+
+      if (statusEl) {
+        statusEl.textContent = failed.length > 0
+          ? `⚠️ Şu kodlar için veri alınamadı: ${failed.join(', ')}`
+          : '';
+      }
+      if (valid.length === 0) return;
+
+      // Ortak (en kısa) uzunluğa göre hizala ve ilk değeri 100 kabul ederek normalize et.
+      const minLen = Math.min(...valid.map(v => v.series.length));
+      const labels = valid[0].series.slice(-minLen).map(p => p.label);
+      const datasets = valid.map((v, idx) => {
+        const trimmed = v.series.slice(-minLen);
+        const base = trimmed[0].price;
+        const normalized = trimmed.map(p => base > 0 ? (p.price / base) * 100 : 100);
+        return {
+          label: v.code,
+          data: normalized,
+          borderColor: COMPARE_COLORS[compareList.indexOf(v.code) % COMPARE_COLORS.length],
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.2
+        };
+      });
+
+      if (typeof Chart === 'undefined') return;
+      const ctx = canvas.getContext('2d');
+      if (compareChartInstance) compareChartInstance.destroy();
+      compareChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+            tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${c.raw.toFixed(2)} (baz 100)` } }
+          },
+          scales: {
+            x: { grid: { display: false }, ticks: { font: { size: 10 }, maxTicksLimit: 10 } },
+            y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } }
+          }
+        }
+      });
+    }
+
     window.openChartModal = async function(assetId) {
       activeChartAssetId = assetId;
+      activeFundAnalyzeData = null;
       const data = loadUserData();
       const item = (data.portfolio || []).find(i => i.id === assetId);
       if (!item) return;
@@ -1904,16 +2292,73 @@
       document.getElementById('chartModalSub').textContent = `${item.type} • Performans Analizi`;
 
       const tefasBtn = document.getElementById('chartModalTefasLink');
+      const fundInfoPanel = document.getElementById('fundInfoPanel');
+      const fundInfoLoading = document.getElementById('fundInfoLoading');
+      const fundInfoContent = document.getElementById('fundInfoContent');
+      const fundInfoError = document.getElementById('fundInfoError');
       if (item.type === 'fund') {
         tefasBtn.href = getTefasUrl(item.code);
         tefasBtn.style.display = 'inline-flex';
+        fundInfoPanel.style.display = 'block';
+        fundInfoLoading.style.display = 'block';
+        fundInfoContent.style.display = 'none';
+        fundInfoError.style.display = 'none';
       } else {
         tefasBtn.style.display = 'none';
+        fundInfoPanel.style.display = 'none';
       }
 
       document.getElementById('chartDetailModal').style.display = 'flex';
       await renderChartModalContent();
+
+      if (item.type === 'fund') {
+        activeFundAnalyzeData = await fetchTefasFundAnalyze(item.code);
+        if (activeChartAssetId === assetId) {
+          renderFundInfoPanel();
+          renderChartModalContent();
+        }
+      }
     };
+
+    function renderFundInfoPanel() {
+      const fundInfoLoading = document.getElementById('fundInfoLoading');
+      const fundInfoContent = document.getElementById('fundInfoContent');
+      const fundInfoError = document.getElementById('fundInfoError');
+      fundInfoLoading.style.display = 'none';
+
+      if (!activeFundAnalyzeData) {
+        fundInfoError.style.display = 'block';
+        fundInfoContent.style.display = 'none';
+        return;
+      }
+      fundInfoError.style.display = 'none';
+      fundInfoContent.style.display = 'block';
+
+      document.getElementById('fiFonTuru').textContent = activeFundAnalyzeData.fundType || '-';
+      document.getElementById('fiKategori').textContent = activeFundAnalyzeData.category || '-';
+      document.getElementById('fiRisk').textContent = activeFundAnalyzeData.riskValue ? `${activeFundAnalyzeData.riskValue} / 7` : '-';
+      document.getElementById('fiYatirimci').textContent = activeFundAnalyzeData.investorCount ? Math.round(activeFundAnalyzeData.investorCount).toLocaleString('tr-TR') : '-';
+
+      const allocList = document.getElementById('fiAllocationList');
+      allocList.innerHTML = '';
+      if (!activeFundAnalyzeData.allocation || activeFundAnalyzeData.allocation.length === 0) {
+        allocList.innerHTML = '<div class="text-xs text-slate-400">Dağılım verisi alınamadı.</div>';
+        return;
+      }
+      const barColors = ['bg-purple-500','bg-sky-500','bg-amber-500','bg-emerald-500','bg-rose-500','bg-teal-500','bg-indigo-500','bg-fuchsia-500'];
+      activeFundAnalyzeData.allocation.forEach((a, idx) => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center gap-2 text-xs';
+        row.innerHTML = `
+          <div class="w-32 md:w-40 truncate font-semibold text-slate-600" title="${a.label}">${a.label}</div>
+          <div class="flex-1 bg-slate-200 rounded-full h-2.5 overflow-hidden">
+            <div class="${barColors[idx % barColors.length]} h-full rounded-full" style="width:${Math.min(a.pct, 100)}%"></div>
+          </div>
+          <div class="w-12 text-right font-mono font-bold text-slate-700">%${a.pct.toFixed(1)}</div>
+        `;
+        allocList.appendChild(row);
+      });
+    }
 
     async function renderChartModalContent() {
       const data = loadUserData();
@@ -1953,15 +2398,56 @@
           dataPoints = hist.map(h => h.price);
           isRealHistory = true;
         }
+      } else if (item.type === 'fund' && activeFundAnalyzeData && activeFundAnalyzeData.history && activeFundAnalyzeData.history.length > 1) {
+        const cutoff = Date.now() - activeChartDays * 86400000;
+        const hist = activeFundAnalyzeData.history.filter(h => h.date >= cutoff);
+        const usable = hist.length > 1 ? hist : activeFundAnalyzeData.history;
+        labels = usable.map(h => new Date(h.date).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }));
+        dataPoints = usable.map(h => h.price);
+        isRealHistory = true;
       }
 
       if (!isRealHistory) {
         labels = [item.buyDate || 'Alım', 'Bugün'];
         dataPoints = [buyPriceTRY, curPrice];
         qualityNote.style.display = 'block';
-        qualityNote.textContent = 'Alış fiyatınız ile güncel piyasa fiyatı arasındaki değişim grafiği.';
+        qualityNote.textContent = item.type === 'fund'
+          ? 'TEFAS geçmiş fiyat verisi şu an alınamadı; alış fiyatınız ile güncel fiyat arasındaki basit değişim gösteriliyor.'
+          : 'Alış fiyatınız ile güncel piyasa fiyatı arasındaki değişim grafiği.';
       } else {
         qualityNote.style.display = 'none';
+      }
+
+      // Hızlı teknik analiz: kısa (7 nokta) ve uzun (20 nokta) hareketli ortalama ile
+      // basit bir trend rozeti. Fonbul'daki teknik analiz sayfasının küçük bir benzeri.
+      const techBar = document.getElementById('technicalAnalysisBar');
+      const ma7 = simpleMovingAverage(dataPoints, Math.min(7, dataPoints.length));
+      const ma20 = dataPoints.length >= 20 ? simpleMovingAverage(dataPoints, 20) : null;
+      if (isRealHistory && dataPoints.length >= 5) {
+        const lastPrice = dataPoints[dataPoints.length - 1];
+        const lastMa7 = ma7[ma7.length - 1];
+        const lastMa20 = ma20 ? ma20[ma20.length - 1] : null;
+        let trendLabel = 'Yatay Seyir'; let trendClass = 'bg-slate-100 text-slate-600 border-slate-300';
+        if (lastMa20 !== null && lastMa20 !== undefined) {
+          if (lastPrice > lastMa7 && lastMa7 > lastMa20) { trendLabel = '📈 Yükseliş Eğiliminde'; trendClass = 'bg-emerald-100 text-emerald-700 border-emerald-300'; }
+          else if (lastPrice < lastMa7 && lastMa7 < lastMa20) { trendLabel = '📉 Düşüş Eğiliminde'; trendClass = 'bg-rose-100 text-rose-700 border-rose-300'; }
+        } else if (lastMa7 !== null && lastMa7 !== undefined) {
+          if (lastPrice > lastMa7) { trendLabel = '📈 Kısa Vadede Yükseliş'; trendClass = 'bg-emerald-100 text-emerald-700 border-emerald-300'; }
+          else if (lastPrice < lastMa7) { trendLabel = '📉 Kısa Vadede Düşüş'; trendClass = 'bg-rose-100 text-rose-700 border-rose-300'; }
+        }
+        const periodHigh = Math.max(...dataPoints);
+        const periodLow = Math.min(...dataPoints);
+        const distFromHigh = periodHigh > 0 ? ((lastPrice - periodHigh) / periodHigh) * 100 : 0;
+        techBar.style.display = 'flex';
+        techBar.innerHTML = `
+          <span class="text-[11px] font-bold px-2.5 py-1 rounded-full border ${trendClass}">${trendLabel}</span>
+          <span class="text-[11px] font-bold px-2.5 py-1 rounded-full border bg-slate-50 text-slate-600 border-slate-200 font-mono">Dönem En Yüksek: ${formatTL(periodHigh)}</span>
+          <span class="text-[11px] font-bold px-2.5 py-1 rounded-full border bg-slate-50 text-slate-600 border-slate-200 font-mono">Dönem En Düşük: ${formatTL(periodLow)}</span>
+          <span class="text-[11px] font-bold px-2.5 py-1 rounded-full border bg-slate-50 text-slate-600 border-slate-200 font-mono">Zirveden Uzaklık: %${distFromHigh.toFixed(1)}</span>
+        `;
+      } else {
+        techBar.style.display = 'none';
+        techBar.innerHTML = '';
       }
 
       if (typeof Chart === 'undefined') return;
@@ -1973,29 +2459,54 @@
       const isGain = dataPoints[dataPoints.length - 1] >= dataPoints[0];
       const lineColor = isGain ? '#10b981' : '#f43f5e';
 
+      const datasets = [{
+        label: isRealHistory ? 'Gerçek Piyasa Fiyatı' : 'Değişim Grafiği',
+        data: dataPoints,
+        borderColor: lineColor,
+        backgroundColor: isGain ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)',
+        fill: true,
+        borderWidth: 2.5,
+        tension: 0.2,
+        pointRadius: dataPoints.length > 60 ? 0 : 2
+      }];
+
+      if (isRealHistory && dataPoints.length >= 8) {
+        datasets.push({
+          label: 'MA7 (Kısa Vadeli Ortalama)',
+          data: ma7,
+          borderColor: '#6366f1',
+          borderDash: [4, 3],
+          borderWidth: 1.5,
+          fill: false,
+          pointRadius: 0,
+          tension: 0.2
+        });
+      }
+      if (ma20) {
+        datasets.push({
+          label: 'MA20 (Uzun Vadeli Ortalama)',
+          data: ma20,
+          borderColor: '#f59e0b',
+          borderDash: [2, 2],
+          borderWidth: 1.5,
+          fill: false,
+          pointRadius: 0,
+          tension: 0.2
+        });
+      }
+
       detailChartInstance = new Chart(ctx, {
         type: 'line',
-        data: {
-          labels,
-          datasets: [{
-            label: isRealHistory ? 'Gerçek Piyasa Fiyatı' : 'Değişim Grafiği',
-            data: dataPoints,
-            borderColor: lineColor,
-            backgroundColor: isGain ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)',
-            fill: true,
-            borderWidth: 2.5,
-            tension: 0.2
-          }]
-        },
+        data: { labels, datasets },
         options: {
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
             legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
-            tooltip: { callbacks: { label: (c) => ` ${formatTL(c.raw)}` } }
+            tooltip: { callbacks: { label: (c) => ` ${c.dataset.label}: ${formatTL(c.raw)}` } }
           },
           scales: {
-            x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+            x: { grid: { display: false }, ticks: { font: { size: 10 }, maxTicksLimit: 10 } },
             y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 }, callback: (v) => formatTL(v) } }
           }
         }
@@ -2130,6 +2641,11 @@
       });
 
       document.getElementById('tableSearch').oninput = () => renderApp();
+      document.getElementById('portfolioSortSelect').value = getPortfolioSortMode();
+      document.getElementById('portfolioSortSelect').onchange = (e) => {
+        setPortfolioSortMode(e.target.value);
+        renderApp();
+      };
 
       document.getElementById('editModalCloseX').onclick = () => document.getElementById('editAssetModal').style.display = 'none';
       document.getElementById('editCancelBtn').onclick = () => document.getElementById('editAssetModal').style.display = 'none';
@@ -2146,6 +2662,25 @@
           btn.className = 'period-tab-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-900 text-white';
           activeChartDays = parseInt(btn.getAttribute('data-days')) || 90;
           renderChartModalContent();
+        };
+      });
+
+      document.getElementById('btnOpenCompareModal').onclick = () => {
+        document.getElementById('compareModal').style.display = 'flex';
+        renderCompareChips();
+        renderCompareChart();
+      };
+      document.getElementById('compareModalCloseX').onclick = () => document.getElementById('compareModal').style.display = 'none';
+      document.getElementById('btnCompareAddCode').onclick = () => window.addCompareCode();
+      document.getElementById('compareCodeInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); window.addCompareCode(); }
+      });
+      document.querySelectorAll('#comparePeriodTabs .compare-period-btn').forEach(btn => {
+        btn.onclick = () => {
+          document.querySelectorAll('#comparePeriodTabs .compare-period-btn').forEach(b => b.className = 'compare-period-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900');
+          btn.className = 'compare-period-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-900 text-white';
+          compareChartDays = parseInt(btn.getAttribute('data-days')) || 90;
+          renderCompareChart();
         };
       });
 
