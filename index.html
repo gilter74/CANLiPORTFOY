@@ -379,6 +379,36 @@
           <div>Çekilen Satır Sayısı: <strong id="sheetRowCount">0 Satır</strong></div>
           <div>Durum: <strong id="sheetStatusText" class="text-emerald-600">Hazır</strong></div>
         </div>
+        <div class="border-t border-slate-200 pt-4">
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">TEFAS Fon Analiz Script URL (opsiyonel, önerilir)</label>
+          <input id="inputTefasAnalyzeScriptUrl" type="text" placeholder="https://script.google.com/macros/s/.../exec"
+                 class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono font-bold text-teal-800">
+          <p class="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
+            Fon detay penceresindeki "Fon Türü / Kategori / Varlık Dağılımı" bilgisi, genel CORS proxy'leri TEFAS'ın API'sini çoğu zaman engellediği için güvenilir çalışmıyor. Bunun yerine kendi Google Apps Script'inizi kullanmanız çok daha sağlam çalışır:
+            <br>1) <a href="https://script.google.com" target="_blank" rel="noopener noreferrer" class="text-teal-700 underline font-semibold">script.google.com</a>'da yeni bir proje açın.
+            <br>2) Aşağıdaki kodu yapıştırıp kaydedin, sonra Deploy → New deployment → Web app → "Execute as: Me", "Who has access: Anyone" seçip Deploy'a basın.
+            <br>3) Verilen URL'yi buraya yapıştırın.
+          </p>
+          <pre class="mt-2 bg-slate-900 text-emerald-300 text-[10px] p-3 rounded-lg overflow-x-auto">function doGet(e) {
+  try {
+    var code = (e.parameter.code || '').toString().trim().toUpperCase();
+    if (!code) return ContentService.createTextOutput(JSON.stringify({ok:false,error:'code parametresi gerekli'})).setMimeType(ContentService.MimeType.JSON);
+    var resp = UrlFetchApp.fetch('https://www.tefas.gov.tr/api/DB/GetAllFundAnalyzeData', {
+      method: 'post',
+      contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'Referer': 'https://www.tefas.gov.tr/FonAnaliz.aspx', 'User-Agent': 'Mozilla/5.0' },
+      payload: 'dil=TR&fonkod=' + encodeURIComponent(code),
+      muteHttpExceptions: true
+    });
+    var status = resp.getResponseCode();
+    if (status !== 200) return ContentService.createTextOutput(JSON.stringify({ok:false,error:'TEFAS HTTP '+status})).setMimeType(ContentService.MimeType.JSON);
+    var json = JSON.parse(resp.getContentText('UTF-8'));
+    return ContentService.createTextOutput(JSON.stringify({ok:true,data:json})).setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ok:false,error:String(err)})).setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+        </div>
       </div>
       <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-2">
         <button id="btnForceSyncNow" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white">🔄 Şimdi Senkronize Et</button>
@@ -903,14 +933,73 @@
     // arayüzde ve konsolda (F12 > Console) gösterilir ki sorun teşhis edilebilsin.
     let lastFundAnalyzeDebug = [];
 
+    // TEFAS'ın GetAllFundAnalyzeData yanıtını (hangi yoldan geldiği fark etmeksizin)
+    // ortak formata çevirir.
+    function parseTefasAnalyzeJson(json, cleanCode) {
+      const info = json?.fundInfo?.[0];
+      if (!info) return null;
+
+      const allocRaw = json?.fundAllocation || [];
+      const allocation = allocRaw
+        .map(a => ({ code: a.KIYMETTIP, label: labelForAssetTypeCode(a.KIYMETTIP), pct: parseFloat(a.PORTFOYORANI) || 0 }))
+        .filter(a => a.pct > 0.01)
+        .sort((a, b) => b.pct - a.pct);
+
+      const rawHistory = json?.fundPrices6A || json?.fundPrices3A || json?.fundPrices1A || [];
+      const history = rawHistory
+        .map(p => ({ date: p.TARIH, price: parseFloat(p.FIYAT) }))
+        .filter(p => p.price > 0)
+        .sort((a, b) => a.date - b.date);
+
+      return {
+        code: cleanCode,
+        name: info.FONUNVAN || cleanCode,
+        fundType: info.FONTUR || '',
+        category: info.FONKATEGORI || '',
+        riskValue: info.RISKDEGERI || null,
+        portfolioSize: parseFloat(info.PORTBUYUKLUK) || null,
+        investorCount: parseFloat(info.YATIRIMCISAYI) || null,
+        allocation,
+        history
+      };
+    }
+
     async function fetchTefasFundAnalyze(fundCode) {
       lastFundAnalyzeDebug = [];
       if (!fundCode) return null;
       const cleanCode = fundCode.toUpperCase().trim();
+
+      // 1) En güvenilir yol: kullanıcının kendi Google Apps Script'i (varsa). Bu, TEFAS'a
+      // sunucu tarafından (UrlFetchApp ile) istek attığı için tarayıcı CORS/proxy sorunlarına
+      // hiç takılmaz — Ayarlar > Google Sheets Canlı Bağlantı'da tanımlanabilir.
+      const scriptUrl = getSavedTefasAnalyzeScriptUrl();
+      if (scriptUrl) {
+        try {
+          const res = await fetchWithTimeout(`${scriptUrl}?code=${encodeURIComponent(cleanCode)}`, { cache: 'no-store' }, 12000);
+          if (!res || !res.ok) {
+            lastFundAnalyzeDebug.push(`Apps Script: HTTP ${res ? res.status : 'yanıt yok'}`);
+          } else {
+            const wrapped = await res.json();
+            if (!wrapped.ok) {
+              lastFundAnalyzeDebug.push(`Apps Script: ${wrapped.error || 'bilinmeyen hata'}`);
+            } else {
+              const parsed = parseTefasAnalyzeJson(wrapped.data, cleanCode);
+              if (parsed) {
+                lastFundAnalyzeDebug.push('Apps Script: başarılı ✅');
+                return parsed;
+              }
+              lastFundAnalyzeDebug.push('Apps Script: yanıt geldi ama beklenen "fundInfo" alanı yok');
+            }
+          }
+        } catch(e) {
+          lastFundAnalyzeDebug.push(`Apps Script: ${e.message || e}`);
+        }
+      }
+
+      // 2) Apps Script tanımlı değilse (veya başarısız olduysa) genel CORS proxy'lerini dene.
+      // Bunlar TEFAS'ın kendi API'sini çoğu zaman engellediği için güvenilir değildir.
       const targetUrl = 'https://www.tefas.gov.tr/api/DB/GetAllFundAnalyzeData';
       const body = `dil=TR&fonkod=${encodeURIComponent(cleanCode)}`;
-      // Genel CORS proxy'lerinin çoğu (codetabs, allorigins) yalnızca GET yönlendirir;
-      // POST + body geçirebilenleri (corsproxy.io, thingproxy) ve doğrudan çağrıyı deniyoruz.
       const attempts = [
         { name: 'corsproxy.io', url: `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}` },
         { name: 'thingproxy', url: `https://thingproxy.freeboard.io/fetch/${targetUrl}` },
@@ -929,33 +1018,10 @@
           let json;
           try { json = await res.json(); }
           catch(parseErr) { lastFundAnalyzeDebug.push(`${attempt.name}: JSON parse hatası (muhtemelen HTML/hata sayfası döndü)`); continue; }
-          const info = json?.fundInfo?.[0];
-          if (!info) { lastFundAnalyzeDebug.push(`${attempt.name}: yanıt geldi ama beklenen "fundInfo" alanı yok`); continue; }
-
-          const allocRaw = json?.fundAllocation || [];
-          const allocation = allocRaw
-            .map(a => ({ code: a.KIYMETTIP, label: labelForAssetTypeCode(a.KIYMETTIP), pct: parseFloat(a.PORTFOYORANI) || 0 }))
-            .filter(a => a.pct > 0.01)
-            .sort((a, b) => b.pct - a.pct);
-
-          const rawHistory = json?.fundPrices6A || json?.fundPrices3A || json?.fundPrices1A || [];
-          const history = rawHistory
-            .map(p => ({ date: p.TARIH, price: parseFloat(p.FIYAT) }))
-            .filter(p => p.price > 0)
-            .sort((a, b) => a.date - b.date);
-
+          const parsed = parseTefasAnalyzeJson(json, cleanCode);
+          if (!parsed) { lastFundAnalyzeDebug.push(`${attempt.name}: yanıt geldi ama beklenen "fundInfo" alanı yok`); continue; }
           lastFundAnalyzeDebug.push(`${attempt.name}: başarılı ✅`);
-          return {
-            code: cleanCode,
-            name: info.FONUNVAN || cleanCode,
-            fundType: info.FONTUR || '',
-            category: info.FONKATEGORI || '',
-            riskValue: info.RISKDEGERI || null,
-            portfolioSize: parseFloat(info.PORTBUYUKLUK) || null,
-            investorCount: parseFloat(info.YATIRIMCISAYI) || null,
-            allocation,
-            history
-          };
+          return parsed;
         } catch(e) {
           lastFundAnalyzeDebug.push(`${attempt.name}: ${e.message || e}`);
         }
@@ -1372,6 +1438,12 @@
     }
     function setSavedSheetUrl(url) {
       try { localStorage.setItem('portfoy_sheet_url', url); } catch(e) {}
+    }
+    function getSavedTefasAnalyzeScriptUrl() {
+      try { return localStorage.getItem('portfoy_tefas_analyze_script_url') || ''; } catch(e) { return ''; }
+    }
+    function setSavedTefasAnalyzeScriptUrl(url) {
+      try { localStorage.setItem('portfoy_tefas_analyze_script_url', url); } catch(e) {}
     }
 
     function showToast(message, type = 'info') {
@@ -1948,14 +2020,20 @@
       if (!ctx) return;
       if (allocChartInstance) allocChartInstance.destroy();
       
-      const investTotal = (catTotals.gold || 0) + (catTotals.fx || 0) + (catTotals.fund || 0);
+      const allSlices = [
+        { label: '🥇 Altın', val: catTotals.gold || 0, color: '#f59e0b' },
+        { label: '💵 Döviz', val: catTotals.fx || 0, color: '#3b82f6' },
+        { label: '📈 Fon', val: catTotals.fund || 0, color: '#8b5cf6' },
+        { label: '🏛️ Eurobond', val: catTotals.eurobond || 0, color: '#14b8a6' },
+        { label: '🏦 Mevduat', val: catTotals.deposit || 0, color: '#10b981' }
+      ].filter(s => s.val > 0);
       allocChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-          labels: ['Yatırımlarım (Altın+Döviz+Fon)', 'Eurobond', 'Mevduat'],
+          labels: allSlices.map(s => s.label),
           datasets: [{
-            data: [investTotal, catTotals.eurobond || 0, catTotals.deposit || 0],
-            backgroundColor: ['#6366f1', '#14b8a6', '#10b981'],
+            data: allSlices.map(s => s.val),
+            backgroundColor: allSlices.map(s => s.color),
             borderWidth: 2,
             borderColor: '#ffffff'
           }]
@@ -2607,6 +2685,7 @@
       document.getElementById('btnOpenSheetSettings').onclick = () => {
         document.getElementById('inputSheetUrl').value = getSavedSheetUrl();
         document.getElementById('inputWatchSheetUrl').value = getSavedWatchSheetUrl();
+        document.getElementById('inputTefasAnalyzeScriptUrl').value = getSavedTefasAnalyzeScriptUrl();
         document.getElementById('sheetSettingsModal').style.display = 'flex';
       };
       document.getElementById('sheetSettingsCloseX').onclick = () => document.getElementById('sheetSettingsModal').style.display = 'none';
@@ -2614,6 +2693,7 @@
       document.getElementById('btnForceSyncNow').onclick = () => {
         setSavedSheetUrl(document.getElementById('inputSheetUrl').value.trim());
         setSavedWatchSheetUrl(document.getElementById('inputWatchSheetUrl').value.trim());
+        setSavedTefasAnalyzeScriptUrl(document.getElementById('inputTefasAnalyzeScriptUrl').value.trim());
         syncGoogleSheetData(false);
         syncWatchlistFromSheet(false);
         document.getElementById('sheetSettingsModal').style.display = 'none';
