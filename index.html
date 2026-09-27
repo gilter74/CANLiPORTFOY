@@ -243,9 +243,7 @@
 
         <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100" id="categoryTabs">
           <button data-cat="all" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-slate-900 text-white">Tümü (<span id="tabCountAll">0</span>)</button>
-          <button data-cat="gold" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-amber-100 text-amber-900">🥇 Altın (<span id="tabCountGold">0</span>)</button>
-          <button data-cat="fx" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-blue-100 text-blue-900">💵 Döviz (<span id="tabCountFx">0</span>)</button>
-          <button data-cat="fund" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-purple-100 text-purple-900">📈 Fonlar (<span id="tabCountFund">0</span>)</button>
+          <button data-cat="invest" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-indigo-100 text-indigo-900">🥇💵📈 Yatırımlarım (Altın+Döviz+Fon) (<span id="tabCountInvest">0</span>)</button>
           <button data-cat="eurobond" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-teal-100 text-teal-900">🏛️ Eurobond (<span id="tabCountEurobond">0</span>)</button>
           <button data-cat="deposit" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-emerald-100 text-emerald-900">🏦 Mevduat (<span id="tabCountDeposit">0</span>)</button>
         </div>
@@ -1429,6 +1427,13 @@
       return 'fund';
     }
 
+    // Altın, döviz ve fon yatırımları tek bir "Yatırımlarım" kategorisi altında bir arada
+    // gösterilir (kategori kartlarında ve filtre sekmelerinde); Eurobond ve Mevduat ayrı kalır.
+    function getAssetGroup(type) {
+      if (type === 'gold' || type === 'fx' || type === 'fund') return 'invest';
+      return type;
+    }
+
     async function syncGoogleSheetData(quiet = false) {
       const sheetUrl = getSavedSheetUrl();
       const statusText = document.getElementById('sheetStatusText');
@@ -1597,18 +1602,17 @@
       if (!grid) return;
       grid.innerHTML = '';
 
+      // Altın, döviz ve fon yatırımları tek bir "Yatırımlarım" kartında bir arada gösterilir.
       const categories = [
-        { key: 'gold', name: '🥇 Altın Varlıkları', icon: '🥇', bg: 'bg-amber-50 border-amber-200 text-amber-900' },
-        { key: 'fx', name: '💵 Döviz Varlıkları', icon: '💵', bg: 'bg-blue-50 border-blue-200 text-blue-900' },
-        { key: 'fund', name: '📈 TEFAS Fonları', icon: '📈', bg: 'bg-purple-50 border-purple-200 text-purple-900' },
-        { key: 'eurobond', name: '🏛️ Eurobond', icon: '🏛️', bg: 'bg-teal-50 border-teal-200 text-teal-900' },
-        { key: 'deposit', name: '🏦 Mevduat / Diğer', icon: '🏦', bg: 'bg-emerald-50 border-emerald-200 text-emerald-900' }
+        { keys: ['gold', 'fx', 'fund'], name: '🥇💵📈 Yatırımlarım (Altın + Döviz + Fon)', icon: '💰', bg: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+        { keys: ['eurobond'], name: '🏛️ Eurobond', icon: '🏛️', bg: 'bg-teal-50 border-teal-200 text-teal-900' },
+        { keys: ['deposit'], name: '🏦 Mevduat / Diğer', icon: '🏦', bg: 'bg-emerald-50 border-emerald-200 text-emerald-900' }
       ];
 
       categories.forEach(cat => {
-        const val = catTotals[cat.key] || 0;
-        const cost = catCosts[cat.key] || 0;
-        const count = catCounts[cat.key] || 0;
+        const val = cat.keys.reduce((sum, k) => sum + (catTotals[k] || 0), 0);
+        const cost = cat.keys.reduce((sum, k) => sum + (catCosts[k] || 0), 0);
+        const count = cat.keys.reduce((sum, k) => sum + (catCounts[k] || 0), 0);
         const pl = val - cost;
         const plPct = cost > 0 ? (pl / cost) * 100 : 0;
         const weight = totalVal > 0 ? (val / totalVal) * 100 : 0;
@@ -1660,7 +1664,7 @@
       });
 
       let filtered = withMeta.filter(({ item }) => {
-        if (activeCategoryTab !== 'all' && item.type !== activeCategoryTab) return false;
+        if (activeCategoryTab !== 'all' && getAssetGroup(item.type) !== activeCategoryTab) return false;
         if (searchQuery && !item.code.toLowerCase().includes(searchQuery)) return false;
         return true;
       });
@@ -1674,12 +1678,8 @@
 
       const tabCountAll = document.getElementById('tabCountAll');
       if (tabCountAll) tabCountAll.textContent = portfolio.length;
-      const tabCountGold = document.getElementById('tabCountGold');
-      if (tabCountGold) tabCountGold.textContent = portfolio.filter(i => i.type === 'gold').length;
-      const tabCountFx = document.getElementById('tabCountFx');
-      if (tabCountFx) tabCountFx.textContent = portfolio.filter(i => i.type === 'fx').length;
-      const tabCountFund = document.getElementById('tabCountFund');
-      if (tabCountFund) tabCountFund.textContent = portfolio.filter(i => i.type === 'fund').length;
+      const tabCountInvest = document.getElementById('tabCountInvest');
+      if (tabCountInvest) tabCountInvest.textContent = portfolio.filter(i => getAssetGroup(i.type) === 'invest').length;
       const tabCountEurobond = document.getElementById('tabCountEurobond');
       if (tabCountEurobond) tabCountEurobond.textContent = portfolio.filter(i => i.type === 'eurobond').length;
       const tabCountDeposit = document.getElementById('tabCountDeposit');
@@ -1933,13 +1933,14 @@
       if (!ctx) return;
       if (allocChartInstance) allocChartInstance.destroy();
       
+      const investTotal = (catTotals.gold || 0) + (catTotals.fx || 0) + (catTotals.fund || 0);
       allocChartInstance = new Chart(ctx, {
         type: 'doughnut',
         data: {
-          labels: ['Altın', 'Döviz', 'Fonlar', 'Eurobond', 'Mevduat'],
+          labels: ['Yatırımlarım (Altın+Döviz+Fon)', 'Eurobond', 'Mevduat'],
           datasets: [{
-            data: [catTotals.gold || 0, catTotals.fx || 0, catTotals.fund || 0, catTotals.eurobond || 0, catTotals.deposit || 0],
-            backgroundColor: ['#f59e0b', '#3b82f6', '#a855f7', '#14b8a6', '#10b981'],
+            data: [investTotal, catTotals.eurobond || 0, catTotals.deposit || 0],
+            backgroundColor: ['#6366f1', '#14b8a6', '#10b981'],
             borderWidth: 2,
             borderColor: '#ffffff'
           }]
