@@ -899,27 +899,38 @@
       return TEFAS_ASSET_TYPE_LABELS[c] || c;
     }
 
+    // Son deneme sırasında hangi proxy'nin hangi sebeple başarısız olduğunu tutar;
+    // arayüzde ve konsolda (F12 > Console) gösterilir ki sorun teşhis edilebilsin.
+    let lastFundAnalyzeDebug = [];
+
     async function fetchTefasFundAnalyze(fundCode) {
+      lastFundAnalyzeDebug = [];
       if (!fundCode) return null;
       const cleanCode = fundCode.toUpperCase().trim();
       const targetUrl = 'https://www.tefas.gov.tr/api/DB/GetAllFundAnalyzeData';
       const body = `dil=TR&fonkod=${encodeURIComponent(cleanCode)}`;
+      // Genel CORS proxy'lerinin çoğu (codetabs, allorigins) yalnızca GET yönlendirir;
+      // POST + body geçirebilenleri (corsproxy.io, thingproxy) ve doğrudan çağrıyı deniyoruz.
       const attempts = [
-        `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}`,
-        targetUrl
+        { name: 'corsproxy.io', url: `https://corsproxy.io/?url=${encodeURIComponent(targetUrl)}` },
+        { name: 'thingproxy', url: `https://thingproxy.freeboard.io/fetch/${targetUrl}` },
+        { name: 'doğrudan', url: targetUrl }
       ];
-      for (const proxyUrl of attempts) {
+      for (const attempt of attempts) {
         try {
-          const res = await fetchWithTimeout(proxyUrl, {
+          const res = await fetchWithTimeout(attempt.url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
             body,
             cache: 'no-store'
           }, 9000);
-          if (!res || !res.ok) continue;
-          const json = await res.json();
+          if (!res) { lastFundAnalyzeDebug.push(`${attempt.name}: yanıt yok / ağ hatası`); continue; }
+          if (!res.ok) { lastFundAnalyzeDebug.push(`${attempt.name}: HTTP ${res.status}`); continue; }
+          let json;
+          try { json = await res.json(); }
+          catch(parseErr) { lastFundAnalyzeDebug.push(`${attempt.name}: JSON parse hatası (muhtemelen HTML/hata sayfası döndü)`); continue; }
           const info = json?.fundInfo?.[0];
-          if (!info) continue;
+          if (!info) { lastFundAnalyzeDebug.push(`${attempt.name}: yanıt geldi ama beklenen "fundInfo" alanı yok`); continue; }
 
           const allocRaw = json?.fundAllocation || [];
           const allocation = allocRaw
@@ -933,6 +944,7 @@
             .filter(p => p.price > 0)
             .sort((a, b) => a.date - b.date);
 
+          lastFundAnalyzeDebug.push(`${attempt.name}: başarılı ✅`);
           return {
             code: cleanCode,
             name: info.FONUNVAN || cleanCode,
@@ -944,8 +956,11 @@
             allocation,
             history
           };
-        } catch(e) {}
+        } catch(e) {
+          lastFundAnalyzeDebug.push(`${attempt.name}: ${e.message || e}`);
+        }
       }
+      console.warn('TEFAS fon detay verisi alınamadı. Denemeler:', lastFundAnalyzeDebug);
       return null;
     }
 
@@ -2330,6 +2345,9 @@
       if (!activeFundAnalyzeData) {
         fundInfoError.style.display = 'block';
         fundInfoContent.style.display = 'none';
+        const debugLines = (lastFundAnalyzeDebug || []).join(' • ');
+        fundInfoError.innerHTML = `Fon detay verisi şu an TEFAS'tan alınamadı. Aşağıdaki "TEFAS'ta İncele" linkinden bakabilirsiniz.` +
+          (debugLines ? `<div class="mt-1.5 font-mono text-[10px] text-slate-400 bg-slate-100 rounded p-1.5">${debugLines}</div>` : '');
         return;
       }
       fundInfoError.style.display = 'none';
