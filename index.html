@@ -3,6 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <script>
+    (function(){
+      try {
+        var pref = localStorage.getItem('portfoy_theme') || 'light';
+        var dark = pref === 'dark' || (pref === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (dark) document.documentElement.classList.add('dark');
+      } catch(e) {}
+    })();
+  </script>
   <title>Portföy Takip & Analiz Merkezi - E-Posta & Tarayıcı Alarmları</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%23fbbf24' d='M21 11a10 10 0 0 0-10-10v10h10z'/><path fill='%236366f1' d='M11 21A10 10 0 0 0 21 13H11v8z'/><path fill='%2310b981' d='M9 21A10 10 0 0 1 9 3v18z'/></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -31,6 +41,82 @@
     ::-webkit-scrollbar-track { background: #f1f5f9; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     .modal-backdrop { background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(5px); }
+
+    /* ── GECE MODU ── (html.dark sınıfı ile açılır; Tailwind sınıflarının koyu karşılıkları) */
+    html.dark { color-scheme: dark; --bg-main: #0b1220; --bg-card: #111827; --border-color: #2b3648; --text-main: #e2e8f0; --text-muted: #94a3b8; }
+    html.dark body { background-color: var(--bg-main); color: var(--text-main); }
+    html.dark .bg-white { background-color: #111827; }
+    html.dark .bg-white\/60 { background-color: rgba(255,255,255,0.08); }
+    html.dark .bg-slate-50 { background-color: #182131; }
+    html.dark .bg-slate-100 { background-color: #1f2937; }
+    html.dark .bg-slate-100\/70 { background-color: rgba(148,163,184,0.10); }
+    html.dark .bg-slate-200 { background-color: #334155; }
+    html.dark .bg-slate-900 { background-color: #334155; }
+    html.dark .bg-slate-800 { background-color: #1e293b; }
+    html.dark .border-slate-100 { border-color: #1f2937; }
+    html.dark .border-slate-200 { border-color: #2b3648; }
+    html.dark .border-slate-300 { border-color: #3b4a61; }
+    html.dark .border-slate-900 { border-color: #e2e8f0; }
+    html.dark .border-white { border-color: #111827; }
+    html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]) { border-color: #1f2937; }
+    html.dark .text-slate-900, html.dark .text-slate-800 { color: #f1f5f9; }
+    html.dark .text-slate-700 { color: #e2e8f0; }
+    html.dark .text-slate-600 { color: #cbd5e1; }
+    html.dark .text-slate-500 { color: #94a3b8; }
+    html.dark .text-slate-400 { color: #7c8aa0; }
+    html.dark .text-emerald-600, html.dark .text-emerald-700 { color: #34d399; }
+    html.dark .text-emerald-800, html.dark .text-emerald-900 { color: #6ee7b7; }
+    html.dark .text-rose-500, html.dark .text-rose-600, html.dark .text-rose-700 { color: #fb7185; }
+    html.dark .text-rose-800 { color: #fda4af; }
+    html.dark .text-amber-600, html.dark .text-amber-700 { color: #fbbf24; }
+    html.dark .text-amber-800, html.dark .text-amber-900 { color: #fcd34d; }
+    html.dark .text-purple-600, html.dark .text-purple-700, html.dark .text-purple-800, html.dark .text-purple-900 { color: #c4b5fd; }
+    html.dark .text-indigo-600, html.dark .text-indigo-700, html.dark .text-indigo-900 { color: #a5b4fc; }
+    html.dark .text-teal-700, html.dark .text-teal-800, html.dark .text-teal-900 { color: #5eead4; }
+    html.dark .text-sky-600, html.dark .text-sky-700 { color: #7dd3fc; }
+    /* renkli açık zeminler → yarı saydam koyu tonlar */
+    html.dark .bg-amber-50 { background-color: rgba(245,158,11,0.12); }
+    html.dark .bg-amber-50\/60 { background-color: rgba(245,158,11,0.10); }
+    html.dark .bg-amber-100 { background-color: rgba(245,158,11,0.22); }
+    html.dark .bg-emerald-50 { background-color: rgba(16,185,129,0.12); }
+    html.dark .bg-emerald-100 { background-color: rgba(16,185,129,0.22); }
+    html.dark .bg-rose-50 { background-color: rgba(244,63,94,0.12); }
+    html.dark .bg-rose-50\/60 { background-color: rgba(244,63,94,0.10); }
+    html.dark .bg-rose-100 { background-color: rgba(244,63,94,0.22); }
+    html.dark .bg-purple-50 { background-color: rgba(168,85,247,0.12); }
+    html.dark .bg-purple-100 { background-color: rgba(168,85,247,0.22); }
+    html.dark .bg-purple-200 { background-color: rgba(168,85,247,0.32); }
+    html.dark .bg-indigo-50 { background-color: rgba(99,102,241,0.12); }
+    html.dark .bg-indigo-100 { background-color: rgba(99,102,241,0.22); }
+    html.dark .bg-teal-50 { background-color: rgba(20,184,166,0.12); }
+    html.dark .bg-teal-100 { background-color: rgba(20,184,166,0.22); }
+    html.dark .bg-sky-50 { background-color: rgba(14,165,233,0.12); }
+    html.dark .border-amber-200, html.dark .border-amber-300 { border-color: rgba(245,158,11,0.40); }
+    html.dark .border-emerald-200, html.dark .border-emerald-300 { border-color: rgba(16,185,129,0.40); }
+    html.dark .border-rose-200, html.dark .border-rose-300 { border-color: rgba(244,63,94,0.40); }
+    html.dark .border-purple-100, html.dark .border-purple-300 { border-color: rgba(168,85,247,0.40); }
+    html.dark .border-indigo-200 { border-color: rgba(99,102,241,0.40); }
+    html.dark .border-teal-200 { border-color: rgba(20,184,166,0.40); }
+    html.dark .border-sky-200 { border-color: rgba(14,165,233,0.40); }
+    /* hover durumları */
+    html.dark .hover\:bg-slate-50:hover { background-color: #182131; }
+    html.dark .hover\:bg-slate-200:hover { background-color: #334155; }
+    html.dark .hover\:bg-emerald-100:hover { background-color: rgba(16,185,129,0.30); }
+    html.dark .hover\:bg-rose-100:hover, html.dark .hover\:bg-rose-50:hover { background-color: rgba(244,63,94,0.28); }
+    html.dark .hover\:bg-indigo-100:hover { background-color: rgba(99,102,241,0.32); }
+    html.dark .hover\:bg-purple-200:hover { background-color: rgba(168,85,247,0.40); }
+    html.dark .hover\:text-slate-900:hover { color: #f1f5f9; }
+    /* form alanları */
+    html.dark input, html.dark select, html.dark textarea { color: #e2e8f0; }
+    html.dark input::placeholder, html.dark textarea::placeholder { color: #64748b; }
+    html.dark ::-webkit-scrollbar-track { background: #111827; }
+    html.dark ::-webkit-scrollbar-thumb { background: #334155; }
+    html.dark .modal-backdrop { background-color: rgba(2, 6, 23, 0.75); }
+    /* tema düğmesi */
+    .theme-btn { padding: 4px 9px; border-radius: 8px; font-size: 12px; font-weight: 700; color: #64748b; white-space: nowrap; }
+    .theme-btn.active { background: #0f172a; color: #fff; }
+    html.dark .theme-btn { color: #94a3b8; }
+    html.dark .theme-btn.active { background: #e2e8f0; color: #0f172a; }
   </style>
 </head>
 <body class="p-3 md:p-6 pb-24">
@@ -74,6 +160,12 @@
         <button id="btnOpenCompareModal" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-all shadow-md flex items-center gap-1.5">
           <span>🆚</span> Karşılaştır
         </button>
+
+        <div id="themeSwitch" class="bg-slate-50 p-1 rounded-xl border border-slate-200 flex items-center gap-0.5" title="Ekran teması">
+          <button type="button" class="theme-btn" data-theme="light">☀️ Gündüz</button>
+          <button type="button" class="theme-btn" data-theme="dark">🌙 Gece</button>
+          <button type="button" class="theme-btn" data-theme="auto">🖥️ Otomatik</button>
+        </div>
 
         <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-200 flex items-center gap-1.5">
           <input id="authKod" type="text" placeholder="Portföy Kodu" value="goksin-portfoy"
@@ -750,6 +842,35 @@
     }
     function setWatchLiqViewMode(mode) {
       try { localStorage.setItem(getWatchLiqViewKey(), mode === 'show' ? 'show' : 'hide'); } catch(e) {}
+    }
+
+    // ── GÜNDÜZ / GECE MODU ───────────────────────────────────────────
+    // Tercih cihaza özeldir (tarayıcıda saklanır): 'light' | 'dark' | 'auto' (sistem ayarını izler).
+    function getThemePref() {
+      try { const t = localStorage.getItem('portfoy_theme'); if (t === 'dark' || t === 'auto') return t; } catch(e) {}
+      return 'light';
+    }
+    function isDarkActive() {
+      const pref = getThemePref();
+      if (pref === 'dark') return true;
+      if (pref === 'auto') return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      return false;
+    }
+    function chartGridColor() { return isDarkActive() ? 'rgba(148,163,184,0.15)' : '#f1f5f9'; }
+    function chartSurfaceColor() { return isDarkActive() ? '#111827' : '#ffffff'; }
+    function applyTheme(rerender) {
+      const dark = isDarkActive();
+      document.documentElement.classList.toggle('dark', dark);
+      document.querySelectorAll('#themeSwitch .theme-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-theme') === getThemePref()));
+      if (typeof Chart !== 'undefined' && Chart.defaults) {
+        Chart.defaults.color = dark ? '#cbd5e1' : '#666666';
+        Chart.defaults.borderColor = dark ? 'rgba(148,163,184,0.2)' : 'rgba(0,0,0,0.1)';
+      }
+      if (rerender) {
+        try { renderApp(); } catch(e) {}
+        try { if (document.getElementById('chartDetailModal').style.display === 'flex') renderChartModalContent(); } catch(e) {}
+        try { if (document.getElementById('compareModal').style.display === 'flex') renderCompareChart(); } catch(e) {}
+      }
     }
 
     // ── AÇIKLAMA & RENK GRUPLARI ─────────────────────────────────────
@@ -2334,7 +2455,7 @@
             data: allSlices.map(s => s.val),
             backgroundColor: allSlices.map(s => s.color),
             borderWidth: 2,
-            borderColor: '#ffffff'
+            borderColor: chartSurfaceColor()
           }]
         },
         options: {
@@ -2695,7 +2816,7 @@
           },
           scales: {
             x: { grid: { display: false }, ticks: { font: { size: 10 }, maxTicksLimit: 10 } },
-            y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 } } }
+            y: { grid: { color: chartGridColor() }, ticks: { font: { size: 11 } } }
           }
         }
       });
@@ -2935,13 +3056,25 @@
           },
           scales: {
             x: { grid: { display: false }, ticks: { font: { size: 10 }, maxTicksLimit: 10 } },
-            y: { grid: { color: '#f1f5f9' }, ticks: { font: { size: 11 }, callback: (v) => formatTL(v) } }
+            y: { grid: { color: chartGridColor() }, ticks: { font: { size: 11 }, callback: (v) => formatTL(v) } }
           }
         }
       });
     }
 
     window.onload = function() {
+      applyTheme(false);
+      document.querySelectorAll('#themeSwitch .theme-btn').forEach(btn => {
+        btn.onclick = () => {
+          try { localStorage.setItem('portfoy_theme', btn.getAttribute('data-theme')); } catch(e) {}
+          applyTheme(true);
+        };
+      });
+      if (window.matchMedia) {
+        const mq = window.matchMedia('(prefers-color-scheme: dark)');
+        const onSys = () => { if (getThemePref() === 'auto') applyTheme(true); };
+        if (mq.addEventListener) mq.addEventListener('change', onSys); else if (mq.addListener) mq.addListener(onSys);
+      }
       loadLiveRatesFromStorage();
       updateFbSyncStatus('pulling');
       renderAlarmsList();
