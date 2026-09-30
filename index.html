@@ -290,6 +290,10 @@
           <p class="text-xs text-slate-500">Belirttiğiniz Google Sheet bağlantısından ve TEFAS'tan anlık senkronize edilen fon takip listesi</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
+          <select id="watchLiqViewSelect" title="Tasfiyedeki takip fonlarının görünümü" class="border border-amber-300 bg-amber-50 rounded-lg px-2.5 py-1.5 text-xs md:text-sm font-semibold text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
+            <option value="hide">⏳ Tasfiyedekiler: Gizle</option>
+            <option value="show">⏳ Tasfiyedekiler: Soluk Göster</option>
+          </select>
           <button id="btnSyncWatchlistSheet" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors flex items-center gap-1.5" title="Google Sheet'ten verileri çeker ve günceller">
             <span>📊</span> Sheet'ten Veri Çek & Güncelle
           </button>
@@ -325,6 +329,7 @@
           <div id="wsTrendNote" class="text-[10px] text-slate-400 mt-0.5"></div>
         </div>
       </div>
+      <div id="wsLiqNote" class="text-xs font-semibold text-amber-600" style="display:none"></div>
 
       <div class="overflow-x-auto">
         <table class="w-full text-left text-sm" id="watchlistTable">
@@ -345,7 +350,7 @@
           <tbody class="divide-y divide-slate-100 font-mono text-slate-700" id="watchlistBody"></tbody>
         </table>
         <div id="watchlistEmptyState" class="text-center py-8 text-slate-400 text-xs" style="display:none">
-          Henüz takip listesinde fon bulunmuyor. "Sheet'ten Veri Çek & Güncelle" butonuna basabilirsiniz veya manuel ekleyebilirsiniz.
+          Görüntülenecek takip fonu yok (tasfiyedekiler gizli olabilir). Henüz takip listesinde fon bulunmuyor. "Sheet'ten Veri Çek & Güncelle" butonuna basabilirsiniz veya manuel ekleyebilirsiniz.
         </div>
       </div>
     </section>
@@ -382,6 +387,9 @@
           <input id="inputWatchSheetUrl" type="text" 
                  value="https://docs.google.com/spreadsheets/d/1wPq671mtaVJ6rp3ZPFl6sCtL2PRHqKObDBi4lOKGEdI/edit?hl=tr&gid=0#gid=0"
                  class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono font-bold text-purple-800">
+          <p class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-1.5 leading-relaxed">
+            ⏳ Takip Sheet'inde başlığı <strong>DURUM</strong> olan sütuna (yoksa <strong>F sütununa</strong>) <strong>TASFİYE</strong> yazdığınız fonlar takip toplamlarına dahil edilmez.
+          </p>
         </div>
         <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-1 font-mono text-xs">
           <div>Son Senkronizasyon: <strong id="sheetLastSyncTime">--:--:--</strong></div>
@@ -480,6 +488,19 @@
             <input id="watchBuyPrice" type="number" step="any" placeholder="Örn: 45.50" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono">
           </div>
         </div>
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <label class="flex items-start gap-2 cursor-pointer">
+            <input id="watchLiquidated" type="checkbox" class="mt-0.5 w-4 h-4 accent-amber-600">
+            <span class="text-xs font-semibold text-amber-900">⏳ Tasfiye sürecinde (takip toplamlarına ve getiriye dahil etme)</span>
+          </label>
+          <div id="watchLiqHint" class="text-[11px] text-amber-700 mt-1.5" style="display:none"></div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Açıklama (opsiyonel)</label>
+          <input id="watchDesc" type="text" list="descDatalist" maxlength="60" placeholder="Örn: Ziraat mevduattan gelen" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <div class="text-[11px] text-slate-500 mt-2 mb-1">Renk grubu <span id="watchDescColorHint" class="text-emerald-600 font-semibold"></span></div>
+          <div id="watchDescColors" class="flex flex-wrap gap-1.5"></div>
+        </div>
       </div>
       <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-2">
         <button id="watchCancelBtn" class="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-200">İptal</button>
@@ -537,6 +558,12 @@
             <span class="text-xs font-semibold text-amber-900">⏳ Tasfiye sürecinde (kâr/zarar ve toplamlara dahil etme)</span>
           </label>
           <div id="editLiqHint" class="text-[11px] text-amber-700 mt-1.5" style="display:none"></div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Açıklama (opsiyonel)</label>
+          <input id="editDesc" type="text" list="descDatalist" maxlength="60" placeholder="Örn: Ziraat mevduattan gelen" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm">
+          <div class="text-[11px] text-slate-500 mt-2 mb-1">Renk grubu <span id="editDescColorHint" class="text-emerald-600 font-semibold"></span></div>
+          <div id="editDescColors" class="flex flex-wrap gap-1.5"></div>
         </div>
       </div>
       <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-2">
@@ -634,6 +661,7 @@
     </div>
   </div>
 
+  <datalist id="descDatalist"></datalist>
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <script>
@@ -700,6 +728,127 @@
       try { localStorage.setItem(getLiqViewKey(), mode === 'show' ? 'show' : 'hide'); } catch(e) {}
     }
 
+    // Varlık dışı (takip listesi) fonlar için tasfiye işareti: portföydekinden bağımsızdır.
+    // Onay kutusu (koda göre saklanır) veya takip Sheet'inde "DURUM" başlıklı sütuna (yoksa F sütunu) TASFİYE yazılması.
+    function getWatchLiqCodesKey() { return 'portfoy_watch_liq_codes_' + getPortfolioCode(); }
+    function loadWatchLiqCodesLocal() {
+      try { const raw = localStorage.getItem(getWatchLiqCodesKey()); if (raw) { const p = JSON.parse(raw); if (Array.isArray(p)) return p; } } catch(e) {}
+      return [];
+    }
+    function saveWatchLiqCodesLocal(list) {
+      try { localStorage.setItem(getWatchLiqCodesKey(), JSON.stringify(list || [])); } catch(e) {}
+    }
+    function getWatchLiqSet() { return new Set(loadWatchLiqCodesLocal().map(c => String(c).toUpperCase())); }
+    function isWatchLiquidated(w, liqSet) {
+      if (!w) return false;
+      if (w.sheetLiq) return true;
+      return (liqSet || getWatchLiqSet()).has(String(w.code || '').toUpperCase());
+    }
+    function getWatchLiqViewKey() { return 'portfoy_watch_liq_view_' + getPortfolioCode(); }
+    function getWatchLiqViewMode() {
+      try { return localStorage.getItem(getWatchLiqViewKey()) === 'show' ? 'show' : 'hide'; } catch(e) { return 'hide'; }
+    }
+    function setWatchLiqViewMode(mode) {
+      try { localStorage.setItem(getWatchLiqViewKey(), mode === 'show' ? 'show' : 'hide'); } catch(e) {}
+    }
+
+    // ── AÇIKLAMA & RENK GRUPLARI ─────────────────────────────────────
+    // Her fon koduna kısa bir açıklama ("Ziraat mevduattan gelen") yazılabilir. Aynı açıklamaya
+    // sahip fonlar aynı renk grubunu paylaşır: renk açıklamaya bağlıdır, bir kez seçilince aynı
+    // açıklamayı yazdığınız tüm fonlara otomatik yansır. 'p' = portföy, 'w' = takip listesi.
+    const DESC_PALETTE = ['#ef4444','#f97316','#f59e0b','#84cc16','#10b981','#14b8a6','#0ea5e9','#3b82f6','#6366f1','#a855f7','#ec4899','#64748b'];
+    function normDesc(d) { return String(d || '').trim().toLocaleLowerCase('tr'); }
+    function descKey(kind) { return 'portfoy_desc_' + kind + '_' + getPortfolioCode(); }
+    function loadDescMap(kind) {
+      try { const r = localStorage.getItem(descKey(kind)); if (r) { const o = JSON.parse(r); if (o && typeof o === 'object') return o; } } catch(e) {}
+      return {};
+    }
+    function saveDescMap(kind, map) { try { localStorage.setItem(descKey(kind), JSON.stringify(map || {})); } catch(e) {} }
+    function loadDescColors() {
+      try { const r = localStorage.getItem('portfoy_desc_colors_' + getPortfolioCode()); if (r) { const o = JSON.parse(r); if (o && typeof o === 'object') return o; } } catch(e) {}
+      return {};
+    }
+    function saveDescColors(map) { try { localStorage.setItem('portfoy_desc_colors_' + getPortfolioCode(), JSON.stringify(map || {})); } catch(e) {} }
+    function getDescInfo(kind, code) {
+      const desc = loadDescMap(kind)[String(code || '').toUpperCase()];
+      if (!desc) return null;
+      return { desc, color: loadDescColors()[normDesc(desc)] || null };
+    }
+    function setDescription(kind, code, desc, color) {
+      const c = String(code || '').toUpperCase();
+      const map = loadDescMap(kind);
+      const d = String(desc || '').trim();
+      if (d) map[c] = d; else delete map[c];
+      saveDescMap(kind, map);
+      if (d && color) {
+        const colors = loadDescColors();
+        colors[normDesc(d)] = color;
+        saveDescColors(colors);
+      }
+    }
+    function escHtml(t) { return String(t).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
+    function descChipHtml(info) {
+      if (!info) return '';
+      const col = info.color || '#64748b';
+      return `<div class="mt-1"><span class="inline-block text-[10px] font-semibold font-sans px-2 py-0.5 rounded-full border max-w-[180px] truncate align-middle" style="background:${col}22;border-color:${col};color:${col}" title="${escHtml(info.desc)}">${escHtml(info.desc)}</span></div>`;
+    }
+    function applyDescRowStyle(tr, info) {
+      if (info && info.color) {
+        tr.style.boxShadow = `inset 4px 0 0 ${info.color}`;
+        tr.style.backgroundColor = info.color + '12';
+      }
+    }
+    function refreshDescDatalist() {
+      const dl = document.getElementById('descDatalist');
+      if (!dl) return;
+      const seen = new Map();
+      [...Object.values(loadDescMap('p')), ...Object.values(loadDescMap('w'))].forEach(d => { if (d && !seen.has(normDesc(d))) seen.set(normDesc(d), d); });
+      dl.innerHTML = [...seen.values()].map(d => `<option value="${escHtml(d)}"></option>`).join('');
+    }
+    // Renk kartelası: modal başına seçili renk tutulur; açıklama yazılınca o açıklamanın rengi varsa otomatik seçilir.
+    const descPickerState = { edit: null, watch: null };
+    function renderDescSwatches(which) {
+      const box = document.getElementById(which + 'DescColors');
+      if (!box) return;
+      const sel = descPickerState[which];
+      box.innerHTML = '';
+      const none = document.createElement('button');
+      none.type = 'button';
+      none.title = 'Renksiz';
+      none.className = 'w-6 h-6 rounded-full border-2 text-[10px] text-slate-400 leading-none ' + (!sel ? 'border-slate-900' : 'border-slate-300');
+      none.textContent = '∅';
+      none.onclick = () => { descPickerState[which] = null; renderDescSwatches(which); };
+      box.appendChild(none);
+      DESC_PALETTE.forEach(c => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.title = c;
+        b.className = 'w-6 h-6 rounded-full border-2 ' + (sel === c ? 'border-slate-900 ring-2 ring-offset-1 ring-slate-400' : 'border-white');
+        b.style.background = c;
+        b.onclick = () => { descPickerState[which] = c; renderDescSwatches(which); };
+        box.appendChild(b);
+      });
+    }
+    function onDescInput(which) {
+      const inp = document.getElementById(which + 'Desc');
+      const hint = document.getElementById(which + 'DescColorHint');
+      const existing = loadDescColors()[normDesc(inp.value)];
+      if (inp.value.trim() && existing) {
+        descPickerState[which] = existing;
+        if (hint) hint.textContent = '— bu açıklamanın rengi otomatik uygulandı';
+      } else if (hint) hint.textContent = '';
+      renderDescSwatches(which);
+    }
+    function initDescPicker(which, kind, code) {
+      const info = code ? getDescInfo(kind, code) : null;
+      document.getElementById(which + 'Desc').value = info ? info.desc : '';
+      descPickerState[which] = info ? info.color : null;
+      const hint = document.getElementById(which + 'DescColorHint');
+      if (hint) hint.textContent = '';
+      renderDescSwatches(which);
+      refreshDescDatalist();
+    }
+
     async function pushToFirebaseCloud() {
       if (!fbDb) { updateFbSyncStatus('off'); return false; }
       try {
@@ -709,6 +858,10 @@
           watchlist: loadWatchlistLocal(),
           watchTrend: loadWatchTrendLocal(),
           liqCodesStr: loadLiqCodesLocal().join(','),
+          descPStr: JSON.stringify(loadDescMap('p')),
+          descWStr: JSON.stringify(loadDescMap('w')),
+          descColorsStr: JSON.stringify(loadDescColors()),
+          watchLiqCodesStr: loadWatchLiqCodesLocal().join(','),
           rates: liveRates,
           updatedAt: Date.now()
         };
@@ -729,6 +882,12 @@
           if (val.alarms) saveAlarmsLocal(val.alarms);
           if (val.watchlist) saveWatchlistLocal(val.watchlist);
           if (val.watchTrend) saveWatchTrendLocal(val.watchTrend);
+          if (typeof val.watchLiqCodesStr === 'string') saveWatchLiqCodesLocal(val.watchLiqCodesStr.split(',').map(x => x.trim()).filter(Boolean));
+          try {
+            if (typeof val.descPStr === 'string') saveDescMap('p', JSON.parse(val.descPStr));
+            if (typeof val.descWStr === 'string') saveDescMap('w', JSON.parse(val.descWStr));
+            if (typeof val.descColorsStr === 'string') saveDescColors(JSON.parse(val.descColorsStr));
+          } catch(e) {}
           if (typeof val.liqCodesStr === 'string') saveLiqCodesLocal(val.liqCodesStr.split(',').map(x => x.trim()).filter(Boolean));
           if (val.rates) { liveRates = { ...liveRates, ...val.rates }; saveLiveRatesToStorage(false); }
           return true;
@@ -1206,6 +1365,9 @@
         if (colMap.amount === -1) colMap.amount = 2;
         if (colMap.buyPrice === -1) colMap.buyPrice = 3;
         if (colMap.currentPrice === -1) colMap.currentPrice = 4; 
+        // Durum sütunu: başlığında DURUM/TASFIYE geçen sütun, yoksa F sütunu (index 5).
+        let statusCol = headerCols.findIndex(h => { const n = normalizeTr(h); return n.includes('DURUM') || n.includes('TASFIYE'); });
+        if (statusCol === -1) statusCol = 5;
 
         const importedWatch = [];
         rows.forEach((cols, index) => {
@@ -1219,9 +1381,11 @@
           const buyPrice = (colMap.buyPrice >= 0 ? cleanNumber(cols[colMap.buyPrice]) : 0) || 0;
           const sheetCurrentPrice = colMap.currentPrice >= 0 ? cleanNumber(cols[colMap.currentPrice]) : 0;
 
+          const sheetLiq = normalizeTr(String(cols[statusCol] || '').trim()).includes('TASFIYE');
+
           importedWatch.push({
             id: 'ws_' + code + '_' + index,
-            code, date, amount, buyPrice,
+            code, date, amount, buyPrice, sheetLiq,
             currentPrice: sheetCurrentPrice > 0 ? sheetCurrentPrice : null
           });
         });
@@ -1300,8 +1464,10 @@
       const newPerItem = {};
       let totalCost = 0, totalVal = 0;
       const safePerItemCache = trend.perItem || {};
+      const wLiqSet = getWatchLiqSet();
 
       watchlist.forEach(w => {
+        if (isWatchLiquidated(w, wLiqSet)) return;
         const code = w.code.toUpperCase();
         const curPrice = getWatchItemCurrentPrice(w);
         const amount = w.amount || 1;
@@ -1897,6 +2063,8 @@
 
         const tr = document.createElement('tr');
         tr.className = `hover:bg-slate-50 transition-colors border-b border-slate-100 ${rowExtraClass}`;
+        const descInfo = getDescInfo('p', item.code);
+        applyDescRowStyle(tr, descInfo);
         tr.innerHTML = `
           <td class="py-3 px-4 font-bold text-slate-900">
             <div class="flex items-center gap-2 flex-wrap">
@@ -1910,6 +2078,7 @@
               }
               ${trendBadge}
             </div>
+            ${descChipHtml(descInfo)}
           </td>
           <td class="py-3 px-4 text-center text-xs text-slate-500">${item.buyDate || '-'}</td>
           <td class="py-3 px-4 text-right">${(item.amount || 0).toLocaleString('tr-TR', { maximumFractionDigits: 4 })}</td>
@@ -1945,13 +2114,20 @@
     }
 
     function renderWatchlistSummary(list) {
-      let totalCost = 0, totalVal = 0;
+      let totalCost = 0, totalVal = 0, liqCount = 0;
+      const wLiqSet = getWatchLiqSet();
       list.forEach(w => {
+        if (isWatchLiquidated(w, wLiqSet)) { liqCount++; return; }
         const curPrice = getWatchItemCurrentPrice(w);
         const amount = w.amount || 1;
         totalCost += amount * (w.buyPrice || 0);
         totalVal += amount * curPrice;
       });
+      const wsLiqNote = document.getElementById('wsLiqNote');
+      if (wsLiqNote) {
+        wsLiqNote.style.display = liqCount > 0 ? 'block' : 'none';
+        wsLiqNote.textContent = liqCount > 0 ? `⏳ ${liqCount} fon tasfiyede (toplamlara dahil edilmedi)` : '';
+      }
       const pl = totalVal - totalCost;
       const plPct = totalCost > 0 ? (pl / totalCost) * 100 : 0;
 
@@ -1991,11 +2167,22 @@
       const emptyState = document.getElementById('watchlistEmptyState');
       if (!tbody) return;
       tbody.innerHTML = '';
-      const list = loadWatchlist();
+      const fullList = loadWatchlist();
       const trend = loadWatchTrendLocal();
       const safePerItemCache = trend.perItem || {};
+      const wLiqSet = getWatchLiqSet();
+      const wLiqMode = getWatchLiqViewMode();
+      const wLiqSelect = document.getElementById('watchLiqViewSelect');
+      if (wLiqSelect && wLiqSelect.value !== wLiqMode) wLiqSelect.value = wLiqMode;
 
-      renderWatchlistSummary(list);
+      renderWatchlistSummary(fullList);
+
+      // Gizle modunda tasfiyedekiler listelenmez; soluk modda en sonda gösterilir.
+      const list = fullList
+        .filter(w => wLiqMode === 'show' || !isWatchLiquidated(w, wLiqSet))
+        .map((w, i) => ({ w, i, liq: isWatchLiquidated(w, wLiqSet) }))
+        .sort((a, b) => (a.liq === b.liq ? a.i - b.i : (a.liq ? 1 : -1)))
+        .map(x => x.w);
 
       if (list.length === 0) {
         if (emptyState) emptyState.style.display = 'block';
@@ -2004,6 +2191,7 @@
       if (emptyState) emptyState.style.display = 'none';
 
       list.forEach(w => {
+        const liq = isWatchLiquidated(w, wLiqSet);
         const code = w.code.toUpperCase();
         const tefasUrl = getTefasUrl(code);
         const curPrice = getWatchItemCurrentPrice(w);
@@ -2013,24 +2201,32 @@
         const pl = curVal - cost;
         const plPct = cost > 0 ? (pl / cost) * 100 : 0;
         const itemDirection = safePerItemCache[code]?.direction || 'same';
+        const dash = '<span class="text-slate-400">—</span>';
+        const liqBadge = liq ? `<span class="text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 rounded-full ml-1 font-sans" title="Tasfiye sürecinde — hesaba dahil değil">⏳ Tasfiyede</span>` : '';
+        const plCls = liq ? 'text-slate-400' : (pl >= 0 ? 'text-emerald-600' : 'text-rose-600');
+        const plPctCls = liq ? 'text-slate-400' : (plPct >= 0 ? 'text-emerald-600' : 'text-rose-600');
 
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100";
+        tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100" + (liq ? " bg-slate-100/70 opacity-60" : "");
+        const descInfo = getDescInfo('w', code);
+        applyDescRowStyle(tr, descInfo);
         tr.innerHTML = `
           <td class="py-3 px-4 font-bold text-slate-900">
             <a href="${tefasUrl}" target="_blank" rel="noopener noreferrer" class="text-purple-700 hover:text-purple-900 hover:underline flex items-center gap-1.5" title="TEFAS'ta İncele">
               <span>${code}</span>
               <span class="text-[10px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-sans font-semibold">↗ TEFAS</span>
+              ${liqBadge}
             </a>
+            ${descChipHtml(descInfo)}
           </td>
           <td class="py-3 px-4 text-center text-xs text-slate-500">${w.date || '-'}</td>
           <td class="py-3 px-4 text-right">${amount}</td>
           <td class="py-3 px-4 text-right text-slate-600">${formatTL(w.buyPrice)}</td>
-          <td class="py-3 px-4 text-right font-bold text-slate-900">${formatTL(curPrice)}</td>
-          <td class="py-3 px-4 text-right font-bold text-slate-900">${formatTL(curVal)}</td>
-          <td class="py-3 px-4 text-right font-bold ${pl >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${pl >= 0 ? '+' : ''}${formatTL(pl)}</td>
-          <td class="py-3 px-4 text-right font-bold ${plPct >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${plPct >= 0 ? '+' : ''}${plPct.toFixed(2)}%</td>
-          <td class="py-3 px-4 text-center">${trendArrow(itemDirection)}</td>
+          <td class="py-3 px-4 text-right font-bold text-slate-900">${liq ? dash : formatTL(curPrice)}</td>
+          <td class="py-3 px-4 text-right font-bold text-slate-900">${liq ? dash : formatTL(curVal)}</td>
+          <td class="py-3 px-4 text-right font-bold ${plCls}">${liq ? dash : ((pl >= 0 ? '+' : '') + formatTL(pl))}</td>
+          <td class="py-3 px-4 text-right font-bold ${plPctCls}">${liq ? dash : ((plPct >= 0 ? '+' : '') + plPct.toFixed(2) + '%')}</td>
+          <td class="py-3 px-4 text-center">${liq ? dash : trendArrow(itemDirection)}</td>
           <td class="py-3 px-4 text-center">
             <div class="flex items-center justify-center gap-1.5">
               <button onclick="openWatchModal('${w.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-1 rounded-lg transition-colors font-semibold">✏️</button>
@@ -2045,6 +2241,10 @@
     let activeWatchId = null;
     window.openWatchModal = function(id = null) {
       activeWatchId = id;
+      const wCb = document.getElementById('watchLiquidated');
+      const wHint = document.getElementById('watchLiqHint');
+      if (wCb) { wCb.checked = false; wCb.disabled = false; }
+      if (wHint) wHint.style.display = 'none';
       if (id) {
         const list = loadWatchlist();
         const item = list.find(w => w.id === id);
@@ -2054,6 +2254,11 @@
           document.getElementById('watchDate').value = item.date || '';
           document.getElementById('watchAmount').value = item.amount || 1;
           document.getElementById('watchBuyPrice').value = item.buyPrice || 0;
+          if (wCb) { wCb.checked = isWatchLiquidated(item); wCb.disabled = !!item.sheetLiq; }
+          if (wHint && item.sheetLiq) {
+            wHint.textContent = "Bu satır takip Sheet'inde TASFİYE olarak işaretli. Kaldırmak için Sheet'teki hücreyi boşaltın.";
+            wHint.style.display = 'block';
+          }
         }
       } else {
         document.getElementById('watchModalTitle').textContent = "Takip Etmek İçin Fon Ekle";
@@ -2062,6 +2267,7 @@
         document.getElementById('watchAmount').value = '1';
         document.getElementById('watchBuyPrice').value = '';
       }
+      initDescPicker('watch', 'w', id ? (loadWatchlist().find(w => w.id === id) || {}).code : null);
       document.getElementById('watchAssetModal').style.display = 'flex';
     };
 
@@ -2077,10 +2283,21 @@
       const date = document.getElementById('watchDate').value.trim();
       const amount = parseFloat(document.getElementById('watchAmount').value) || 1;
       const buyPrice = parseFloat(document.getElementById('watchBuyPrice').value) || 0;
+      const wCb = document.getElementById('watchLiquidated');
+      const wantLiq = !!(wCb && wCb.checked);
+      const liqLocked = !!(wCb && wCb.disabled);
 
       if (!code) {
         showToast("Lütfen fon kodu girin.", "error");
         return;
+      }
+
+      setDescription('w', code, document.getElementById('watchDesc').value, descPickerState.watch);
+
+      if (!liqLocked) {
+        const codes = loadWatchLiqCodesLocal().map(c => String(c).toUpperCase()).filter(c => c !== code);
+        if (wantLiq) codes.push(code);
+        saveWatchLiqCodesLocal(codes);
       }
 
       let list = loadWatchlist();
@@ -2092,7 +2309,7 @@
 
       saveWatchlist(list);
       document.getElementById('watchAssetModal').style.display = 'none';
-      renderWatchlistTable();
+      renderApp();
       showToast("Takip listesi güncellendi.", "success");
       updateLiveMarketData(true);
     }
@@ -2269,6 +2486,7 @@
         if (liqHint) liqHint.style.display = 'none';
       }
       updateEditBuyPriceTryHint();
+      initDescPicker('edit', 'p', assetId ? (loadUserData().portfolio || []).find(i => i.id === assetId)?.code : null);
       document.getElementById('editAssetModal').style.display = 'flex';
     };
 
@@ -2307,6 +2525,8 @@
         return;
       }
 
+      setDescription('p', code, document.getElementById('editDesc').value, descPickerState.edit);
+
       // Tasfiye işareti koda göre saklanır (Sheet yenilenince kaybolmaz).
       if (!liqLocked) {
         const codes = loadLiqCodesLocal().map(c => String(c).toUpperCase()).filter(c => c !== code);
@@ -2330,6 +2550,7 @@
       saveUserData(data);
       document.getElementById('editAssetModal').style.display = 'none';
       updateLiveMarketData(true).then(() => renderApp());
+      pushToFirebaseCloud();
       renderApp();
       showToast(wantLiq ? 'Kaydedildi — tasfiyede olarak işaretlendi.' : 'Varlık kaydedildi.', 'success');
     };
@@ -2835,6 +3056,13 @@
         showToast('Alarm ve e-posta bildirimi başarıyla kaydedildi.', 'success');
       };
 
+      document.getElementById('editDesc').addEventListener('input', () => onDescInput('edit'));
+      document.getElementById('watchDesc').addEventListener('input', () => onDescInput('watch'));
+      document.getElementById('watchLiqViewSelect').value = getWatchLiqViewMode();
+      document.getElementById('watchLiqViewSelect').onchange = (e) => {
+        setWatchLiqViewMode(e.target.value);
+        renderWatchlistTable();
+      };
       document.getElementById('btnOpenWatchModal').onclick = () => openWatchModal(null);
       document.getElementById('watchModalCloseX').onclick = () => document.getElementById('watchAssetModal').style.display = 'none';
       document.getElementById('watchCancelBtn').onclick = () => document.getElementById('watchAssetModal').style.display = 'none';
