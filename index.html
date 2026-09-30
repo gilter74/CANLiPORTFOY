@@ -216,6 +216,7 @@
         <div class="w-1 h-full bg-purple-500 absolute left-0 top-0"></div>
         <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Aktif Varlık Sayısı</div>
         <div class="text-2xl md:text-3xl font-bold font-mono text-slate-800 mt-2" id="sCount">0</div>
+        <div class="text-xs font-semibold text-amber-600 mt-1" id="sLiqNote"></div>
       </div>
     </section>
 
@@ -236,6 +237,10 @@
               <option value="date_new">Eklenme: Yeniden Eskiye</option>
               <option value="date_old">Eklenme: Eskiden Yeniye</option>
             </select>
+            <select id="liqViewSelect" title="Tasfiyedeki fonların görünümü" class="border border-amber-300 bg-amber-50 rounded-lg px-2.5 py-1.5 text-xs md:text-sm font-semibold text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
+              <option value="hide">⏳ Tasfiyedekiler: Gizle</option>
+              <option value="show">⏳ Tasfiyedekiler: Soluk Göster</option>
+            </select>
             <button class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-3.5 py-2 rounded-lg transition-colors shadow-sm" id="btnSyncNowHeader">🔄 Sheet'ten Çek</button>
             <button class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm px-3.5 py-2 rounded-lg transition-colors shadow-sm" onclick="openEditModal(null)">➕ Manuel Ekle</button>
           </div>
@@ -246,6 +251,7 @@
           <button data-cat="invest" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-indigo-100 text-indigo-900">🥇💵📈 Yatırımlarım (Altın+Döviz+Fon) (<span id="tabCountInvest">0</span>)</button>
           <button data-cat="eurobond" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-teal-100 text-teal-900">🏛️ Eurobond (<span id="tabCountEurobond">0</span>)</button>
           <button data-cat="deposit" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-emerald-100 text-emerald-900">🏦 Mevduat (<span id="tabCountDeposit">0</span>)</button>
+          <button data-cat="liquidation" class="cat-tab px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-amber-100 text-amber-900">⏳ Tasfiyede (<span id="tabCountLiq">0</span>)</button>
         </div>
       </div>
 
@@ -367,6 +373,9 @@
           <input id="inputSheetUrl" type="text" 
                  value="https://docs.google.com/spreadsheets/d/1B66p3v4jeXPZaHDBoL51uVSZKLFzuPbrMaAtdom6qMg/edit?gid=1411824524#gid=1411824524"
                  class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono font-bold text-slate-800">
+          <p class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-1.5 leading-relaxed">
+            ⏳ <strong>Tasfiye işareti:</strong> Ana portföy Sheet'inde <strong>M sütununa</strong> (L sütununun yanına) <strong>TASFİYE</strong> yazdığınız satırlar otomatik "Tasfiyede" sayılır ve kâr/zarar toplamlarına dahil edilmez. Kaldırmak için hücreyi boşaltın.
+          </p>
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Varlık Dışı Fon Takip Google Sheets Linki</label>
@@ -522,6 +531,13 @@
           </div>
         </div>
         <div id="editBuyPriceTryHint" class="text-[11px] text-slate-400 font-mono -mt-1" style="display:none"></div>
+        <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <label class="flex items-start gap-2 cursor-pointer">
+            <input id="editLiquidated" type="checkbox" class="mt-0.5 w-4 h-4 accent-amber-600">
+            <span class="text-xs font-semibold text-amber-900">⏳ Tasfiye sürecinde (kâr/zarar ve toplamlara dahil etme)</span>
+          </label>
+          <div id="editLiqHint" class="text-[11px] text-amber-700 mt-1.5" style="display:none"></div>
+        </div>
       </div>
       <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-2">
         <button id="editCancelBtn" class="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-200">İptal</button>
@@ -657,6 +673,33 @@
       else { el.textContent = '☁ Bağlantı hatası'; el.className = 'text-xs font-mono text-rose-500'; }
     }
 
+    // ── TASFİYE YÖNETİMİ ──────────────────────────────────────────────
+    // İki yolla işaretlenir: (1) Düzenle penceresindeki onay kutusu (koda göre saklanır,
+    // Sheet yenilense de kalır, buluta senkronlanır), (2) Sheet'te M sütununa "TASFİYE".
+    // Tasfiyedeki varlıklar toplam/K-Z/kategori/dağılım/AI özetine dahil edilmez.
+    // Görünüm: 'hide' (tabloda gizli, "Tasfiyede" sekmesinde görünür) veya 'show' (soluk).
+    function getLiqCodesKey() { return 'portfoy_liq_codes_' + getPortfolioCode(); }
+    function loadLiqCodesLocal() {
+      try { const raw = localStorage.getItem(getLiqCodesKey()); if (raw) { const p = JSON.parse(raw); if (Array.isArray(p)) return p; } } catch(e) {}
+      return [];
+    }
+    function saveLiqCodesLocal(list) {
+      try { localStorage.setItem(getLiqCodesKey(), JSON.stringify(list || [])); } catch(e) {}
+    }
+    function getLiqSet() { return new Set(loadLiqCodesLocal().map(c => String(c).toUpperCase())); }
+    function isLiquidated(item, liqSet) {
+      if (!item) return false;
+      if (item.sheetLiq) return true;
+      return (liqSet || getLiqSet()).has(String(item.code || '').toUpperCase());
+    }
+    function getLiqViewKey() { return 'portfoy_liq_view_' + getPortfolioCode(); }
+    function getLiqViewMode() {
+      try { return localStorage.getItem(getLiqViewKey()) === 'show' ? 'show' : 'hide'; } catch(e) { return 'hide'; }
+    }
+    function setLiqViewMode(mode) {
+      try { localStorage.setItem(getLiqViewKey(), mode === 'show' ? 'show' : 'hide'); } catch(e) {}
+    }
+
     async function pushToFirebaseCloud() {
       if (!fbDb) { updateFbSyncStatus('off'); return false; }
       try {
@@ -665,6 +708,7 @@
           alarms: loadAlarmsLocal(),
           watchlist: loadWatchlistLocal(),
           watchTrend: loadWatchTrendLocal(),
+          liqCodesStr: loadLiqCodesLocal().join(','),
           rates: liveRates,
           updatedAt: Date.now()
         };
@@ -685,6 +729,7 @@
           if (val.alarms) saveAlarmsLocal(val.alarms);
           if (val.watchlist) saveWatchlistLocal(val.watchlist);
           if (val.watchTrend) saveWatchTrendLocal(val.watchTrend);
+          if (typeof val.liqCodesStr === 'string') saveLiqCodesLocal(val.liqCodesStr.split(',').map(x => x.trim()).filter(Boolean));
           if (val.rates) { liveRates = { ...liveRates, ...val.rates }; saveLiveRatesToStorage(false); }
           return true;
         }
@@ -846,8 +891,10 @@
       const trend = loadPortfolioTrendLocal();
       const prevPerItem = trend.perItem || {};
       const newPerItem = {};
+      const liqSet = getLiqSet();
 
       portfolio.forEach(item => {
+        if (isLiquidated(item, liqSet)) return;
         const cost = (item.amount || 0) * getBuyPriceInTRY(item);
         const curVal = item.currentVal > 0 ? item.currentVal : ((item.amount || 0) * (item.currentPrice || getBuyPriceInTRY(item)));
         const pct = cost > 0 ? ((curVal - cost) / cost) * 100 : 0;
@@ -1559,6 +1606,10 @@
           const currencyRaw = normalizeTr(String(cols[11] || '').trim());
           const buyCurrency = ['USD', 'EUR'].includes(currencyRaw) ? currencyRaw : 'TRY';
 
+          // M sütunu (13. kolon, index 12): "TASFİYE" yazılan satırlar tasfiye sürecinde sayılır.
+          const statusRaw = normalizeTr(String(cols[12] || '').trim());
+          const sheetLiq = statusRaw.includes('TASFIYE');
+
           let buyPrice;
           if (buyCurrency !== 'TRY') {
             // Döviz bazlı satırlarda birim alış, girildiği para biriminde saklanır;
@@ -1582,6 +1633,7 @@
             amount,
             buyPrice,
             buyCurrency,
+            sheetLiq,
             currentPrice: currentPrice > 0 ? currentPrice : null,
             currentVal: currentVal > 0 ? currentVal : null,
             buyDate,
@@ -1633,6 +1685,8 @@
     function renderApp() {
       const data = loadUserData();
       const portfolio = data.portfolio || [];
+      const liqSet = getLiqSet();
+      let liqCount = 0;
 
       let totalCost = 0;
       let totalCurrentVal = 0;
@@ -1641,6 +1695,7 @@
       const catCounts = { gold: 0, fx: 0, fund: 0, deposit: 0, eurobond: 0 };
 
       portfolio.forEach(item => {
+        if (isLiquidated(item, liqSet)) { liqCount++; return; }
         const cost = (item.amount || 0) * getBuyPriceInTRY(item);
         let curVal = item.currentVal > 0 ? item.currentVal : ((item.amount || 0) * (item.currentPrice || getBuyPriceInTRY(item)));
         totalCost += cost;
@@ -1673,7 +1728,9 @@
       }
 
       const sCount = document.getElementById('sCount');
-      if (sCount) sCount.textContent = portfolio.length;
+      if (sCount) sCount.textContent = portfolio.length - liqCount;
+      const sLiqNote = document.getElementById('sLiqNote');
+      if (sLiqNote) sLiqNote.textContent = liqCount > 0 ? `⏳ +${liqCount} tasfiyede (hesaba katılmadı)` : '';
 
       renderCategoryPerformanceCards(catTotals, catCosts, catCounts, totalCurrentVal);
       renderPortfolioTable(portfolio);
@@ -1736,6 +1793,10 @@
       tbody.innerHTML = '';
       const searchQuery = (document.getElementById('tableSearch')?.value || '').toLowerCase();
       const trendMap = getPortfolioTrendMap();
+      const liqSet = getLiqSet();
+      const liqMode = getLiqViewMode();
+      const liqSelectEl = document.getElementById('liqViewSelect');
+      if (liqSelectEl && liqSelectEl.value !== liqMode) liqSelectEl.value = liqMode;
 
       // Varlıklar (altın/fon/döviz vb.) "Tümü" sekmesinde her zaman tek bir liste halinde
       // bir arada gösterilir; sıralama modu kâr/zarar veya eklenme sırasına göre uygulanır.
@@ -1744,33 +1805,43 @@
       if (sortSelectEl && sortSelectEl.value !== sortMode) sortSelectEl.value = sortMode;
 
       const withMeta = portfolio.map((item, addIndex) => {
+        const liq = isLiquidated(item, liqSet);
         const cost = (item.amount || 0) * getBuyPriceInTRY(item);
         const curVal = item.currentVal > 0 ? item.currentVal : ((item.amount || 0) * (item.currentPrice || getBuyPriceInTRY(item)));
-        const pl = curVal - cost;
-        return { item, addIndex, pl };
+        const pl = liq ? 0 : curVal - cost;
+        return { item, addIndex, pl, liq };
       });
 
-      let filtered = withMeta.filter(({ item }) => {
-        if (activeCategoryTab !== 'all' && getAssetGroup(item.type) !== activeCategoryTab) return false;
+      let filtered = withMeta.filter(({ item, liq }) => {
+        if (activeCategoryTab === 'liquidation') {
+          if (!liq) return false;
+        } else {
+          if (liq && liqMode === 'hide') return false;
+          if (activeCategoryTab !== 'all' && getAssetGroup(item.type) !== activeCategoryTab) return false;
+        }
         if (searchQuery && !item.code.toLowerCase().includes(searchQuery)) return false;
         return true;
       });
 
-      if (sortMode === 'pl_desc') filtered.sort((a, b) => b.pl - a.pl);
-      else if (sortMode === 'pl_asc') filtered.sort((a, b) => a.pl - b.pl);
-      else if (sortMode === 'date_new') filtered.sort((a, b) => b.addIndex - a.addIndex);
-      else if (sortMode === 'date_old') filtered.sort((a, b) => a.addIndex - b.addIndex);
+      // Tasfiyedekiler sıralamada her zaman en sona yerleşir.
+      const liqLast = (a, b) => (a.liq === b.liq) ? 0 : (a.liq ? 1 : -1);
+      if (sortMode === 'pl_desc') filtered.sort((a, b) => liqLast(a, b) || (b.pl - a.pl));
+      else if (sortMode === 'pl_asc') filtered.sort((a, b) => liqLast(a, b) || (a.pl - b.pl));
+      else if (sortMode === 'date_new') filtered.sort((a, b) => liqLast(a, b) || (b.addIndex - a.addIndex));
+      else if (sortMode === 'date_old') filtered.sort((a, b) => liqLast(a, b) || (a.addIndex - b.addIndex));
 
-      filtered = filtered.map(m => m.item);
-
+      // Sekme sayaçları: gizle modunda tasfiyedekiler sayıya dahil edilmez.
+      const visible = portfolio.filter(i => liqMode === 'show' || !isLiquidated(i, liqSet));
       const tabCountAll = document.getElementById('tabCountAll');
-      if (tabCountAll) tabCountAll.textContent = portfolio.length;
+      if (tabCountAll) tabCountAll.textContent = visible.length;
       const tabCountInvest = document.getElementById('tabCountInvest');
-      if (tabCountInvest) tabCountInvest.textContent = portfolio.filter(i => getAssetGroup(i.type) === 'invest').length;
+      if (tabCountInvest) tabCountInvest.textContent = visible.filter(i => getAssetGroup(i.type) === 'invest').length;
       const tabCountEurobond = document.getElementById('tabCountEurobond');
-      if (tabCountEurobond) tabCountEurobond.textContent = portfolio.filter(i => i.type === 'eurobond').length;
+      if (tabCountEurobond) tabCountEurobond.textContent = visible.filter(i => i.type === 'eurobond').length;
       const tabCountDeposit = document.getElementById('tabCountDeposit');
-      if (tabCountDeposit) tabCountDeposit.textContent = portfolio.filter(i => i.type === 'deposit').length;
+      if (tabCountDeposit) tabCountDeposit.textContent = visible.filter(i => i.type === 'deposit').length;
+      const tabCountLiq = document.getElementById('tabCountLiq');
+      if (tabCountLiq) tabCountLiq.textContent = portfolio.filter(i => isLiquidated(i, liqSet)).length;
 
       if (filtered.length === 0) {
         if (emptyState) emptyState.style.display = 'block';
@@ -1778,7 +1849,7 @@
       }
       if (emptyState) emptyState.style.display = 'none';
 
-      filtered.forEach(item => {
+      filtered.forEach(({ item, liq }) => {
         const cost = (item.amount || 0) * getBuyPriceInTRY(item);
         let curVal = item.currentVal > 0 ? item.currentVal : ((item.amount || 0) * (item.currentPrice || getBuyPriceInTRY(item)));
         const curPrice = item.amount > 0 ? curVal / item.amount : getBuyPriceInTRY(item);
@@ -1803,7 +1874,10 @@
         const downStreak = trendInfo?.downStreak || 0;
         let rowExtraClass = '';
         let trendBadge = '';
-        if (downStreak >= 4) {
+        if (liq) {
+          rowExtraClass = 'bg-slate-100/70 opacity-60';
+          trendBadge = `<span class="text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 rounded-full ml-1" title="Tasfiye sürecinde — K/Z hesabına dahil değil">⏳ Tasfiyede</span>`;
+        } else if (downStreak >= 4) {
           rowExtraClass = 'bg-rose-50/60';
           trendBadge = `<span class="text-[9px] font-bold bg-rose-100 text-rose-700 border border-rose-300 px-1.5 py-0.5 rounded-full ml-1" title="${downStreak} kontroldür düşüşte">⚠️ Sürekli Düşüşte</span>`;
         } else if (downStreak >= 2) {
@@ -1812,6 +1886,14 @@
         } else if (trendInfo?.direction === 'up') {
           trendBadge = `<span class="text-[9px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-300 px-1.5 py-0.5 rounded-full ml-1">▲</span>`;
         }
+
+        const dash = '<span class="text-slate-400">—</span>';
+        const curPriceCell = liq ? dash : formatTL(curPrice);
+        const curValCell = liq ? dash : formatTL(curVal);
+        const plCell = liq ? dash : `${pl >= 0 ? '+' : ''}${formatTL(pl)}`;
+        const plPctCell = liq ? dash : `${plPct >= 0 ? '+' : ''}${plPct.toFixed(2)}%`;
+        const plClass = liq ? 'text-slate-400' : (pl >= 0 ? 'text-emerald-600' : 'text-rose-600');
+        const plPctClass = liq ? 'text-slate-400' : (plPct >= 0 ? 'text-emerald-600' : 'text-rose-600');
 
         const tr = document.createElement('tr');
         tr.className = `hover:bg-slate-50 transition-colors border-b border-slate-100 ${rowExtraClass}`;
@@ -1833,10 +1915,10 @@
           <td class="py-3 px-4 text-right">${(item.amount || 0).toLocaleString('tr-TR', { maximumFractionDigits: 4 })}</td>
           <td class="py-3 px-4 text-right text-slate-600 font-mono">${buyPriceCell}</td>
           <td class="py-3 px-4 text-right text-slate-700">${formatTL(cost)}</td>
-          <td class="py-3 px-4 text-right font-bold text-slate-900">${formatTL(curPrice)}</td>
-          <td class="py-3 px-4 text-right font-bold text-slate-900">${formatTL(curVal)}</td>
-          <td class="py-3 px-4 text-right font-bold ${pl >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${pl >= 0 ? '+' : ''}${formatTL(pl)}</td>
-          <td class="py-3 px-4 text-right font-bold ${plPct >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${plPct >= 0 ? '+' : ''}${plPct.toFixed(2)}%</td>
+          <td class="py-3 px-4 text-right font-bold text-slate-900">${curPriceCell}</td>
+          <td class="py-3 px-4 text-right font-bold text-slate-900">${curValCell}</td>
+          <td class="py-3 px-4 text-right font-bold ${plClass}">${plCell}</td>
+          <td class="py-3 px-4 text-right font-bold ${plPctClass}">${plPctCell}</td>
           <td class="py-3 px-4 text-center">
             <div class="flex items-center justify-center gap-1.5">
               <button onclick="openChartModal('${item.id}')" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-2 py-1 rounded-lg transition-colors font-semibold" title="Grafik">📊</button>
@@ -2048,7 +2130,8 @@
 
     function buildPortfolioSummaryForAI() {
       const data = loadUserData();
-      const portfolio = data.portfolio || [];
+      const liqSet = getLiqSet();
+      const portfolio = (data.portfolio || []).filter(item => !isLiquidated(item, liqSet));
       const watchlist = loadWatchlist();
 
       let totalCost = 0, totalVal = 0;
@@ -2154,6 +2237,8 @@
       const data = loadUserData();
       activeEditAssetId = assetId;
       const titleEl = document.getElementById('editModalTitle');
+      const liqCb = document.getElementById('editLiquidated');
+      const liqHint = document.getElementById('editLiqHint');
 
       if (assetId) {
         const item = (data.portfolio || []).find(i => i.id === assetId);
@@ -2165,6 +2250,13 @@
         document.getElementById('editAmount').value = item.amount || 0;
         document.getElementById('editBuyPrice').value = item.buyPrice || 0;
         document.getElementById('editBuyCurrency').value = item.buyCurrency || 'TRY';
+        if (liqCb) { liqCb.checked = isLiquidated(item); liqCb.disabled = !!item.sheetLiq; }
+        if (liqHint) {
+          if (item.sheetLiq) {
+            liqHint.textContent = "Bu satır Sheet'te (M sütunu) TASFİYE olarak işaretli. Kaldırmak için Sheet'teki hücreyi boşaltın.";
+            liqHint.style.display = 'block';
+          } else liqHint.style.display = 'none';
+        }
       } else {
         if (titleEl) titleEl.textContent = 'Manuel Varlık Ekle';
         document.getElementById('editCode').value = '';
@@ -2173,6 +2265,8 @@
         document.getElementById('editAmount').value = '';
         document.getElementById('editBuyPrice').value = '';
         document.getElementById('editBuyCurrency').value = 'TRY';
+        if (liqCb) { liqCb.checked = false; liqCb.disabled = false; }
+        if (liqHint) liqHint.style.display = 'none';
       }
       updateEditBuyPriceTryHint();
       document.getElementById('editAssetModal').style.display = 'flex';
@@ -2204,10 +2298,20 @@
       const amount = parseFloat(document.getElementById('editAmount').value) || 0;
       const buyPrice = parseFloat(document.getElementById('editBuyPrice').value) || 0;
       const buyCurrency = document.getElementById('editBuyCurrency').value || 'TRY';
+      const liqCb = document.getElementById('editLiquidated');
+      const wantLiq = !!(liqCb && liqCb.checked);
+      const liqLocked = !!(liqCb && liqCb.disabled);
 
       if (!code || amount <= 0) {
         showToast('Kod ve miktar geçerli olmalı.', 'error');
         return;
+      }
+
+      // Tasfiye işareti koda göre saklanır (Sheet yenilenince kaybolmaz).
+      if (!liqLocked) {
+        const codes = loadLiqCodesLocal().map(c => String(c).toUpperCase()).filter(c => c !== code);
+        if (wantLiq) codes.push(code);
+        saveLiqCodesLocal(codes);
       }
 
       if (activeEditAssetId) {
@@ -2226,7 +2330,8 @@
       saveUserData(data);
       document.getElementById('editAssetModal').style.display = 'none';
       updateLiveMarketData(true).then(() => renderApp());
-      showToast('Varlık kaydedildi.', 'success');
+      renderApp();
+      showToast(wantLiq ? 'Kaydedildi — tasfiyede olarak işaretlendi.' : 'Varlık kaydedildi.', 'success');
     };
 
     window.deleteAsset = function(id) {
@@ -2470,18 +2575,19 @@
       const cost = (item.amount || 0) * buyPriceTRY;
       const netPL = curVal - cost;
       const netPLPct = cost > 0 ? (netPL / cost) * 100 : 0;
+      const isLiq = isLiquidated(item);
 
       const mBuyPriceEl = document.getElementById('mBuyPrice');
       mBuyPriceEl.textContent = buyCurrency === 'TRY'
         ? formatTL(buyPrice)
         : `${buyPrice.toLocaleString('tr-TR', { maximumFractionDigits: 4 })} ${buyCurrency} (${formatTL(buyPriceTRY)})`;
-      document.getElementById('mCurPrice').textContent = formatTL(curPrice);
+      document.getElementById('mCurPrice').textContent = isLiq ? '—' : formatTL(curPrice);
       const mNetPL = document.getElementById('mNetPL');
-      mNetPL.textContent = (netPL >= 0 ? '+' : '') + formatTL(netPL);
-      mNetPL.className = `font-bold text-sm mt-0.5 ${netPL >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+      mNetPL.textContent = isLiq ? '—' : ((netPL >= 0 ? '+' : '') + formatTL(netPL));
+      mNetPL.className = `font-bold text-sm mt-0.5 ${isLiq ? 'text-slate-400' : (netPL >= 0 ? 'text-emerald-600' : 'text-rose-600')}`;
       const mNetPLPct = document.getElementById('mNetPLPct');
-      mNetPLPct.textContent = `${netPLPct >= 0 ? '+' : ''}${netPLPct.toFixed(2)}%`;
-      mNetPLPct.className = `font-bold text-sm mt-0.5 ${netPLPct >= 0 ? 'text-emerald-600' : 'text-rose-600'}`;
+      mNetPLPct.textContent = isLiq ? '—' : `${netPLPct >= 0 ? '+' : ''}${netPLPct.toFixed(2)}%`;
+      mNetPLPct.className = `font-bold text-sm mt-0.5 ${isLiq ? 'text-slate-400' : (netPLPct >= 0 ? 'text-emerald-600' : 'text-rose-600')}`;
 
       const qualityNote = document.getElementById('chartDataQualityNote');
       let labels = [];
@@ -2513,6 +2619,10 @@
           : 'Alış fiyatınız ile güncel piyasa fiyatı arasındaki değişim grafiği.';
       } else {
         qualityNote.style.display = 'none';
+      }
+      if (isLiq) {
+        qualityNote.style.display = 'block';
+        qualityNote.textContent = '⏳ Bu varlık tasfiye sürecinde olarak işaretli; kâr/zarar hesabına ve toplamlara dahil edilmiyor.';
       }
 
       // Hızlı teknik analiz: kısa (7 nokta) ve uzun (20 nokta) hareketli ortalama ile
@@ -2743,6 +2853,12 @@
       document.getElementById('portfolioSortSelect').value = getPortfolioSortMode();
       document.getElementById('portfolioSortSelect').onchange = (e) => {
         setPortfolioSortMode(e.target.value);
+        renderApp();
+      };
+
+      document.getElementById('liqViewSelect').value = getLiqViewMode();
+      document.getElementById('liqViewSelect').onchange = (e) => {
+        setLiqViewMode(e.target.value);
         renderApp();
       };
 
