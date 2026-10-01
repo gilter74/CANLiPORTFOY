@@ -494,12 +494,12 @@
 
   <!-- MODALLAR -->
   <div id="sheetSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
-    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200">
-      <div class="bg-emerald-900 text-white p-4 px-6 flex items-center justify-between">
+    <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200 flex flex-col" style="max-height:92vh;display:flex;flex-direction:column">
+      <div class="bg-emerald-900 text-white p-4 px-6 flex items-center justify-between shrink-0">
         <h3 class="font-bold text-lg">Google Sheets Canlı Bağlantı Ayarları</h3>
         <button id="sheetSettingsCloseX" class="text-emerald-200 hover:text-white text-xl">✕</button>
       </div>
-      <div class="p-5 md:p-6 space-y-4 text-xs md:text-sm">
+      <div class="p-5 md:p-6 space-y-4 text-xs md:text-sm overflow-y-auto" style="min-height:0;flex:1 1 auto">
         <div>
           <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Google Sheets Paylaşım / CSV Linki (Ana Portföy)</label>
           <input id="inputSheetUrl" type="text" 
@@ -541,13 +541,21 @@
           <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">TEFAS Fon Analiz Script URL (opsiyonel, önerilir)</label>
           <input id="inputTefasAnalyzeScriptUrl" type="text" placeholder="https://script.google.com/macros/s/.../exec"
                  class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono font-bold text-teal-800">
+          <div class="mt-2 flex items-center gap-2">
+            <button id="btnTestTefasScript" type="button" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white">🧪 Bağlantıyı Test Et</button>
+            <span class="text-[11px] text-slate-400">URL'yi kaydeder, TEFAS ve BIST 100 verisini dener, sorun varsa nedenini yazar.</span>
+          </div>
+          <div id="tefasTestResult" class="mt-2 text-[11px] leading-relaxed space-y-1" style="display:none"></div>
           <p class="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
             Fon detay penceresindeki "Fon Türü / Kategori / Varlık Dağılımı" bilgisi, genel CORS proxy'leri TEFAS'ın API'sini çoğu zaman engellediği için güvenilir çalışmıyor. Bunun yerine kendi Google Apps Script'inizi kullanmanız çok daha sağlam çalışır:
             <br>1) <a href="https://script.google.com" target="_blank" rel="noopener noreferrer" class="text-teal-700 underline font-semibold">script.google.com</a>'da yeni bir proje açın.
             <br>2) Aşağıdaki kodu yapıştırıp kaydedin, sonra Deploy → New deployment → Web app → "Execute as: Me", "Who has access: Anyone" seçip Deploy'a basın.
             <br>3) Verilen URL'yi buraya yapıştırın. (Daha önce dağıttıysanız: kodu bununla değiştirip Deploy → Manage deployments → Edit → New version ile yeniden dağıtın; BIST 100 kıyası için bu güncel kod gerekir.)
           </p>
-          <pre class="mt-2 bg-slate-900 text-emerald-300 text-[10px] p-3 rounded-lg overflow-x-auto">function out(o) {
+          <details class="mt-2">
+            <summary class="cursor-pointer text-xs font-bold text-teal-700">📋 Apps Script kodunu göster / kopyala</summary>
+            <button id="btnCopyTefasCode" type="button" class="mt-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-white">Kodu Kopyala</button>
+          <pre id="tefasScriptCode" class="mt-2 bg-slate-900 text-emerald-300 text-[10px] p-3 rounded-lg overflow-auto" style="max-height:240px">function out(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 }
 function doGet(e) {
@@ -583,9 +591,10 @@ function doGet(e) {
     return out({ ok: false, error: String(err) });
   }
 }</pre>
+          </details>
         </div>
       </div>
-      <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-2">
+      <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-end gap-2 shrink-0">
         <button id="btnForceSyncNow" class="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white">🔄 Şimdi Senkronize Et</button>
         <button id="sheetSettingsCloseBtn" class="px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 text-white">Kapat</button>
       </div>
@@ -1051,7 +1060,7 @@ function doGet(e) {
       renderApp();
       if (!quiet || (aborted && ok === 0 && fail > 0)) {
         showToast(aborted && ok === 0
-          ? "TEFAS fon bilgileri alınamadı. Ayarlardaki Apps Script adresini kontrol edin."
+          ? ("TEFAS fon bilgileri alınamadı. " + (getSavedTefasAnalyzeScriptUrl() ? 'Neden: ' + ((lastFundAnalyzeDebug || [])[0] || 'bilinmiyor') + ' — Ayarlar > "Bağlantıyı Test Et" ile ayrıntıyı görün.' : 'Ayarlar\'da TEFAS Script URL kutusu boş; Apps Script kurup adresini yapıştırın.'))
           : `Fon bilgileri güncellendi (${ok} başarılı${fail ? ', ' + fail + ' alınamadı' : ''}).`, ok > 0 ? 'success' : 'error');
       }
     }
@@ -2413,6 +2422,47 @@ function doGet(e) {
     }
     function setSavedSheetUrl(url) {
       try { localStorage.setItem('portfoy_sheet_url', url); } catch(e) {}
+    }
+
+    // Apps Script bağlantı tanısı: nedenini kullanıcıya açık yazar.
+    async function testTefasScript() {
+      const box = document.getElementById('tefasTestResult');
+      const url = document.getElementById('inputTefasAnalyzeScriptUrl').value.trim();
+      const line = (ok, txt) => `<div class="${ok ? 'text-emerald-700' : 'text-rose-600'}">${ok ? '✅' : '❌'} ${txt}</div>`;
+      box.style.display = 'block';
+      if (!url) { box.innerHTML = line(false, 'URL kutusu boş. Aşağıdaki kodla Apps Script dağıtıp <b>/exec</b> ile biten adresi buraya yapıştırın.'); return; }
+      if (!/^https:\/\/script\.google\.com\/macros\/s\/[^/]+\/exec/.test(url)) {
+        box.innerHTML = line(false, 'Adres <b>https://script.google.com/macros/s/.../exec</b> biçiminde olmalı (sonu /dev değil /exec). Editördeki adresi değil, Deploy sonrası verilen "Web app" adresini kullanın.'); return;
+      }
+      setSavedTefasAnalyzeScriptUrl(url);
+      box.innerHTML = '<div class="text-slate-500">⏳ Test ediliyor...</div>';
+      const out = [];
+      const call = async (qs) => {
+        let res;
+        try { res = await fetchWithTimeout(url + qs, { cache: 'no-store' }, 20000); }
+        catch (e) { return { err: 'ağ/CORS hatası: ' + (e.message || e) }; }
+        if (!res) return { err: 'yanıt gelmedi (zaman aşımı veya erişim engeli). Dağıtımda "Who has access" = <b>Anyone</b> olmalı.' };
+        const txt = await res.text();
+        let j; try { j = JSON.parse(txt); } catch (e) { return { err: 'JSON yerine sayfa döndü (HTTP ' + res.status + '). Genelde dağıtım "Anyone" erişimine açık değil veya yeni sürüm yayınlanmadı. Başlangıç: ' + escHtml(txt.slice(0, 80).replace(/\s+/g, ' ')) }; }
+        return { j };
+      };
+      const a = await call('?code=TGE');
+      if (a.err) out.push(line(false, 'TEFAS testi: ' + a.err));
+      else if (!a.j.ok) out.push(line(false, 'TEFAS testi: script şu hatayı döndürdü: <b>' + escHtml(String(a.j.error || 'bilinmiyor')) + '</b>' + (/code veya symbol|id|gid/i.test(String(a.j.error)) ? ' — Bu, <b>eski kod</b> yayında demek: kodu aşağıdaki güncel kodla değiştirip Deploy → Manage deployments → Edit → <b>New version</b> yapın.' : '') + (/HTTP 403|HTTP 4\d\d|HTTP 5\d\d/.test(String(a.j.error)) ? ' TEFAS, Google sunucularından gelen isteği reddediyor olabilir.' : '')));
+      else {
+        const p = parseTefasAnalyzeJson(a.j.data, 'TGE');
+        if (!p) out.push(line(false, 'TEFAS testi: yanıt geldi ama içinde fon bilgisi yok (TEFAS yanıt biçimi değişmiş veya istek engellenmiş olabilir). Yanıt anahtarları: ' + escHtml(Object.keys(a.j.data || {}).join(', ') || 'boş')));
+        else {
+          const h = p.history || [];
+          const first = h.length ? new Date(h[0].date).toLocaleDateString('tr-TR') : '-';
+          out.push(line(true, `TEFAS çalışıyor: ${escHtml(p.name)} · ${h.length} günlük fiyat geçmişi (en eski: ${first}). ` + (h.length && h[0].date > new Date(new Date().getFullYear() - 1, 0, 6).getTime() ? '<span class="text-amber-600">Geçmiş geçen yıl başına uzanmıyor; 2025 sütunları "—" kalacak.</span>' : 'Geçen yıl karşılaştırması için yeterli.')));
+        }
+      }
+      const b = await call('?symbol=XU100.IS&range=1mo');
+      if (b.err) out.push(line(false, 'BIST 100 testi: ' + b.err));
+      else if (!b.j.ok) out.push(line(false, 'BIST 100 testi: ' + escHtml(String(b.j.error || 'hata')) + ' (eski kod olabilir)'));
+      else out.push(line(true, 'BIST 100 verisi çalışıyor (' + (b.j.series || []).length + ' gün).'));
+      box.innerHTML = out.join('');
     }
     function getSavedTefasAnalyzeScriptUrl() {
       try { return localStorage.getItem('portfoy_tefas_analyze_script_url') || ''; } catch(e) { return ''; }
@@ -3985,6 +4035,12 @@ function doGet(e) {
       };
       document.getElementById('sheetSettingsCloseX').onclick = () => document.getElementById('sheetSettingsModal').style.display = 'none';
       document.getElementById('sheetSettingsCloseBtn').onclick = () => document.getElementById('sheetSettingsModal').style.display = 'none';
+      document.getElementById('btnTestTefasScript').onclick = () => testTefasScript();
+      document.getElementById('btnCopyTefasCode').onclick = async (ev) => {
+        const code = document.getElementById('tefasScriptCode').textContent;
+        try { await navigator.clipboard.writeText(code); ev.target.textContent = 'Kopyalandı ✅'; }
+        catch(e) { const r = document.createRange(); r.selectNodeContents(document.getElementById('tefasScriptCode')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); ev.target.textContent = 'Kod seçildi, Ctrl+C ile kopyalayın'; }
+      };
       document.getElementById('btnForceSyncNow').onclick = () => {
         setSavedSheetUrl(document.getElementById('inputSheetUrl').value.trim());
         setSavedWatchSheetUrl(document.getElementById('inputWatchSheetUrl').value.trim());
