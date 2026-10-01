@@ -328,6 +328,7 @@
               <option value="pl_asc">K/Z: Azdan Çoğa</option>
               <option value="date_new">Eklenme: Yeniden Eskiye</option>
               <option value="date_old">Eklenme: Eskiden Yeniye</option>
+              <option value="color_group">🎨 Renk Grubu → grup içinde K/Z çoktan aza</option>
             </select>
             <select id="liqViewSelect" title="Tasfiyedeki fonların görünümü" class="border border-amber-300 bg-amber-50 rounded-lg px-2.5 py-1.5 text-xs md:text-sm font-semibold text-amber-900 focus:outline-none focus:ring-2 focus:ring-amber-500">
               <option value="hide">⏳ Tasfiyedekiler: Gizle</option>
@@ -457,6 +458,19 @@
 
   </div>
 
+    <!-- GERÇEK VARLIK DAĞILIMI (FONLARIN İÇİ) -->
+    <section id="realAllocSection" class="bg-white p-4 md:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">🔬 Gerçek Varlık Dağılımı (Fonların İçi Dahil)</h2>
+          <p class="text-xs text-slate-500">Fonlarınızın TEFAS'taki portföy dağılımı, güncel değerlerinizle ağırlıklandırılarak toplanır. Tasfiyedeki varlıklar hariçtir.</p>
+        </div>
+        <button id="btnRefreshFundInfo" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs md:text-sm px-3.5 py-2 rounded-xl transition-colors shadow-sm">🔬 Fon Bilgilerini Yenile</button>
+      </div>
+      <div id="realAllocSummary" class="text-xs text-slate-500"></div>
+      <div id="realAllocBars" class="space-y-2"></div>
+    </section>
+
   <!-- MODALLAR -->
   <div id="sheetSettingsModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-4 modal-backdrop" style="display:none">
     <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden border border-slate-200">
@@ -488,6 +502,20 @@
           <div>Çekilen Satır Sayısı: <strong id="sheetRowCount">0 Satır</strong></div>
           <div>Durum: <strong id="sheetStatusText" class="text-emerald-600">Hazır</strong></div>
         </div>
+        <div class="border-t border-slate-200 pt-4 space-y-2">
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider">Kıyaslama Ayarları (Mevduat & Enflasyon)</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <div class="text-[11px] text-slate-500 mb-1">Mevduat yıllık net faiz oranı (%)</div>
+              <input id="inputBenchDepositRate" type="number" step="any" placeholder="Örn: 45" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-mono font-bold">
+            </div>
+            <div>
+              <div class="text-[11px] text-slate-500 mb-1">Aylık TÜFE değişimleri (her satıra bir ay: <span class="font-mono">2026-08 3.2</span>)</div>
+              <textarea id="inputBenchCpi" rows="4" placeholder="2026-06 1.4&#10;2026-07 2.1&#10;2026-08 3.2" class="w-full bg-slate-50 border border-slate-300 rounded-xl p-2.5 text-xs font-mono"></textarea>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-500 leading-relaxed">Bu değerleri siz girersiniz, uygulama internetten çekmez. Doğru rakamları TÜİK/TCMB'den almanız gerekir. Eksik aylar %0 sayılır ve kıyas panelinde uyarı çıkar.</p>
+        </div>
         <div class="border-t border-slate-200 pt-4">
           <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">TEFAS Fon Analiz Script URL (opsiyonel, önerilir)</label>
           <input id="inputTefasAnalyzeScriptUrl" type="text" placeholder="https://script.google.com/macros/s/.../exec"
@@ -496,25 +524,42 @@
             Fon detay penceresindeki "Fon Türü / Kategori / Varlık Dağılımı" bilgisi, genel CORS proxy'leri TEFAS'ın API'sini çoğu zaman engellediği için güvenilir çalışmıyor. Bunun yerine kendi Google Apps Script'inizi kullanmanız çok daha sağlam çalışır:
             <br>1) <a href="https://script.google.com" target="_blank" rel="noopener noreferrer" class="text-teal-700 underline font-semibold">script.google.com</a>'da yeni bir proje açın.
             <br>2) Aşağıdaki kodu yapıştırıp kaydedin, sonra Deploy → New deployment → Web app → "Execute as: Me", "Who has access: Anyone" seçip Deploy'a basın.
-            <br>3) Verilen URL'yi buraya yapıştırın.
+            <br>3) Verilen URL'yi buraya yapıştırın. (Daha önce dağıttıysanız: kodu bununla değiştirip Deploy → Manage deployments → Edit → New version ile yeniden dağıtın; BIST 100 kıyası için bu güncel kod gerekir.)
           </p>
-          <pre class="mt-2 bg-slate-900 text-emerald-300 text-[10px] p-3 rounded-lg overflow-x-auto">function doGet(e) {
+          <pre class="mt-2 bg-slate-900 text-emerald-300 text-[10px] p-3 rounded-lg overflow-x-auto">function out(o) {
+  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+function doGet(e) {
   try {
-    var code = (e.parameter.code || '').toString().trim().toUpperCase();
-    if (!code) return ContentService.createTextOutput(JSON.stringify({ok:false,error:'code parametresi gerekli'})).setMimeType(ContentService.MimeType.JSON);
+    var p = e.parameter || {};
+    // BIST 100 (ve diger Yahoo sembolleri) icin: ?symbol=XU100.IS&amp;range=6mo
+    if (p.symbol) {
+      var range = (p.range || '6mo').toString();
+      var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(p.symbol) + '?range=' + range + '&amp;interval=1d';
+      var r = UrlFetchApp.fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, muteHttpExceptions: true });
+      if (r.getResponseCode() !== 200) return out({ ok: false, error: 'Yahoo HTTP ' + r.getResponseCode() });
+      var res = JSON.parse(r.getContentText()).chart.result[0];
+      var ts = res.timestamp, cl = res.indicators.quote[0].close, arr = [];
+      for (var i = 0; ts.length > i; i++) {
+        if (cl[i] != null) arr.push({ t: ts[i] * 1000, c: cl[i] });
+      }
+      return out({ ok: true, series: arr });
+    }
+    // TEFAS fon analizi icin: ?code=TGE
+    var code = (p.code || '').toString().trim().toUpperCase();
+    if (!code) return out({ ok: false, error: 'code veya symbol parametresi gerekli' });
     var resp = UrlFetchApp.fetch('https://www.tefas.gov.tr/api/DB/GetAllFundAnalyzeData', {
       method: 'post',
       contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
       headers: { 'X-Requested-With': 'XMLHttpRequest', 'Referer': 'https://www.tefas.gov.tr/FonAnaliz.aspx', 'User-Agent': 'Mozilla/5.0' },
-      payload: 'dil=TR&fonkod=' + encodeURIComponent(code),
+      payload: 'dil=TR&amp;fonkod=' + encodeURIComponent(code),
       muteHttpExceptions: true
     });
     var status = resp.getResponseCode();
-    if (status !== 200) return ContentService.createTextOutput(JSON.stringify({ok:false,error:'TEFAS HTTP '+status})).setMimeType(ContentService.MimeType.JSON);
-    var json = JSON.parse(resp.getContentText('UTF-8'));
-    return ContentService.createTextOutput(JSON.stringify({ok:true,data:json})).setMimeType(ContentService.MimeType.JSON);
-  } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({ok:false,error:String(err)})).setMimeType(ContentService.MimeType.JSON);
+    if (status !== 200) return out({ ok: false, error: 'TEFAS HTTP ' + status });
+    return out({ ok: true, data: JSON.parse(resp.getContentText('UTF-8')) });
+  } catch (err) {
+    return out({ ok: false, error: String(err) });
   }
 }</pre>
         </div>
@@ -656,6 +701,7 @@
           <input id="editDesc" type="text" list="descDatalist" maxlength="60" placeholder="Örn: Ziraat mevduattan gelen" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm">
           <div class="text-[11px] text-slate-500 mt-2 mb-1">Renk grubu <span id="editDescColorHint" class="text-emerald-600 font-semibold"></span></div>
           <div id="editDescColors" class="flex flex-wrap gap-1.5"></div>
+          <div class="text-[11px] text-slate-400 mt-1.5 leading-relaxed">∅ = renksiz, yalnızca açıklama yazılır. <strong>Altın</strong> varlıklarında açıklama ve renk o alım satırına özeldir; farklı satırlara farklı açıklama verebilirsiniz. Diğer varlıklarda fon koduna bağlıdır.</div>
         </div>
       </div>
       <div class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-end gap-2">
@@ -706,12 +752,23 @@
               <div><div class="text-[10px] uppercase font-semibold text-slate-400">Risk Değeri</div><div id="fiRisk" class="font-bold text-slate-800 mt-0.5">-</div></div>
               <div><div class="text-[10px] uppercase font-semibold text-slate-400">Yatırımcı Sayısı</div><div id="fiYatirimci" class="font-bold text-slate-800 mt-0.5">-</div></div>
             </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
+              <div><div class="text-[10px] uppercase font-semibold text-slate-400">Dönem Getirisi</div><div id="fsRet" class="font-bold text-slate-800 mt-0.5">-</div></div>
+              <div><div class="text-[10px] uppercase font-semibold text-slate-400" title="Günlük getirilerin standart sapması, yıllığa çevrilmiş (yaklaşık)">Oynaklık (yıllık)</div><div id="fsVol" class="font-bold text-slate-800 mt-0.5">-</div></div>
+              <div><div class="text-[10px] uppercase font-semibold text-slate-400" title="Dönem içinde zirveden gördüğü en büyük düşüş">Maks. Düşüş</div><div id="fsMdd" class="font-bold text-slate-800 mt-0.5">-</div></div>
+              <div><div class="text-[10px] uppercase font-semibold text-slate-400">Hisse Payı</div><div id="fsEq" class="font-bold text-slate-800 mt-0.5">-</div></div>
+            </div>
+            <div id="fiRiskNote" class="text-xs rounded-lg p-2.5 border" style="display:none"></div>
             <div>
               <div class="text-[10px] uppercase font-semibold text-slate-400 mb-1.5">Varlık Dağılımı (Fon Neye Yatırım Yapıyor?)</div>
               <div id="fiAllocationList" class="space-y-1.5"></div>
             </div>
           </div>
           <div id="fundInfoError" class="text-xs text-slate-400" style="display:none">Fon detay verisi şu an TEFAS'tan alınamadı. Aşağıdaki "TEFAS'ta İncele" linkinden bakabilirsiniz.</div>
+        </div>
+        <div id="benchmarkPanel" style="display:none" class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+          <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 flex items-center gap-1.5"><span>⚖️</span> Kıyaslama (Benchmark) Kontrolü <span id="benchPeriodLabel" class="normal-case font-semibold text-slate-400"></span></h4>
+          <div id="benchmarkBody" class="text-xs text-slate-500">Fon verisi bekleniyor...</div>
         </div>
       </div>
       <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex items-center justify-between">
@@ -726,13 +783,13 @@
       <div class="bg-slate-900 text-white p-4 px-6 flex items-center justify-between">
         <div>
           <h3 class="font-bold text-lg">🆚 Varlık Karşılaştırma</h3>
-          <p class="text-xs text-slate-400">TEFAS fon kodları, USD/EUR/GBP döviz — normalize edilmiş (%) getiri karşılaştırması</p>
+          <p class="text-xs text-slate-400">TEFAS fonları, döviz, mevduat, enflasyon ve BIST 100 — normalize edilmiş (%) getiri karşılaştırması</p>
         </div>
         <button id="compareModalCloseX" class="text-slate-400 hover:text-white text-xl">✕</button>
       </div>
       <div class="p-4 md:p-6 space-y-4 max-h-[85vh] overflow-y-auto">
         <div class="flex flex-wrap items-center gap-2">
-          <input id="compareCodeInput" type="text" placeholder="Fon kodu veya USD/EUR/GBP (Enter'a basın)"
+          <input id="compareCodeInput" type="text" placeholder="Fon kodu, USD/EUR/GBP, MEVDUAT, ENFLASYON, BIST100 (Enter)"
                  class="uppercase flex-1 min-w-[180px] bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm font-mono font-bold focus:outline-none focus:ring-2 focus:ring-teal-500">
           <button id="btnCompareAddCode" class="bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm px-3 py-2 rounded-lg transition-colors">➕ Ekle</button>
           <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl" id="comparePeriodTabs">
@@ -741,9 +798,17 @@
             <button data-days="180" class="compare-period-btn px-2.5 py-1 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">6 Ay</button>
           </div>
         </div>
+        <div class="flex flex-wrap items-center gap-1.5 text-xs">
+          <span class="font-semibold text-slate-500">Kıyas ekle:</span>
+          <button type="button" data-add="MEVDUAT" class="compare-quick px-2.5 py-1 rounded-full border border-emerald-300 bg-emerald-50 text-emerald-700 font-bold">＋ Mevduat</button>
+          <button type="button" data-add="ENFLASYON" class="compare-quick px-2.5 py-1 rounded-full border border-rose-300 bg-rose-50 text-rose-700 font-bold">＋ Enflasyon</button>
+          <button type="button" data-add="BIST100" class="compare-quick px-2.5 py-1 rounded-full border border-sky-300 bg-sky-50 text-sky-700 font-bold">＋ BIST 100</button>
+          <button type="button" data-add="USD" class="compare-quick px-2.5 py-1 rounded-full border border-slate-300 bg-slate-100 text-slate-700 font-bold">＋ USD</button>
+          <button type="button" id="btnCompareBenchSettings" class="ml-auto px-2.5 py-1 rounded-full border border-amber-300 bg-amber-50 text-amber-800 font-bold">⚙️ Kıyas ayarları</button>
+        </div>
         <div id="compareChipsContainer" class="flex flex-wrap gap-2"></div>
         <div id="compareNote" class="text-xs bg-amber-50 border border-amber-200 text-amber-800 p-2.5 rounded-lg">
-          Not: Altın ve mevduat için henüz geçmiş fiyat kaynağı yok, bu yüzden karşılaştırmaya yalnızca TEFAS fonları ve USD/EUR/GBP döviz eklenebiliyor. TEFAS verileri genel bir CORS proxy üzerinden çekildiği için ara sıra erişilemeyebilir.
+          Not: <strong>Mevduat</strong> için yıllık faiz oranını, <strong>Enflasyon</strong> için aylık TÜFE değerlerini "Kıyas ayarları"ndan girmeniz gerekir. <strong>BIST 100</strong> için ayarlardaki Apps Script adresinin güncel kodla dağıtılmış olması gerekir. Altın için geçmiş fiyat kaynağı yok. TEFAS verileri ara sıra erişilemeyebilir.
         </div>
         <div class="relative w-full h-72 md:h-80 bg-slate-50 border border-slate-200 rounded-2xl p-3">
           <canvas id="compareChart"></canvas>
@@ -844,6 +909,309 @@
       try { localStorage.setItem(getWatchLiqViewKey(), mode === 'show' ? 'show' : 'hide'); } catch(e) {}
     }
 
+    // ── FON BİLGİ ÖNBELLEĞİ (dağılım, risk, oynaklık) ──────────────────
+    // TEFAS'tan çekilen fon bilgileri kod bazında 24 saat saklanır; tabloda ve "Gerçek Varlık Dağılımı"
+    // bölümünde her seferinde yeniden istenmez. Başarısız denemeler 30 dk tekrar denenmez.
+    const FUND_INFO_KEY = 'portfoy_fund_info_cache';
+    const FUND_INFO_TTL = 24 * 3600 * 1000;
+    const FUND_INFO_FAIL_TTL = 30 * 60 * 1000;
+    let _fundInfoMem = null;
+    function loadFundInfoCache() {
+      if (_fundInfoMem) return _fundInfoMem;
+      try { const r = localStorage.getItem(FUND_INFO_KEY); if (r) { const o = JSON.parse(r); if (o && typeof o === 'object') { _fundInfoMem = o; return o; } } } catch(e) {}
+      _fundInfoMem = {};
+      return _fundInfoMem;
+    }
+    function saveFundInfoCache() { try { localStorage.setItem(FUND_INFO_KEY, JSON.stringify(_fundInfoMem || {})); } catch(e) {} }
+    function getFundInfoCached(code) {
+      const e = loadFundInfoCache()[String(code || '').toUpperCase()];
+      return (e && !e.failedAt) ? e : null;
+    }
+    // Günlük fiyat geçmişinden: dönem getirisi, yıllıklandırılmış oynaklık, maksimum düşüş.
+    function computeHistoryStats(hist) {
+      const pts = (hist || []).filter(h => h && h.price > 0);
+      if (pts.length < 3) return null;
+      const rets = [];
+      for (let i = 1; i < pts.length; i++) rets.push(pts[i].price / pts[i - 1].price - 1);
+      const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
+      const variance = rets.reduce((a, b) => a + (b - mean) * (b - mean), 0) / Math.max(1, rets.length - 1);
+      const vol = Math.sqrt(variance) * Math.sqrt(252) * 100;
+      let peak = pts[0].price, mdd = 0;
+      pts.forEach(h => { if (h.price > peak) peak = h.price; const dd = h.price / peak - 1; if (dd < mdd) mdd = dd; });
+      return { ret: (pts[pts.length - 1].price / pts[0].price - 1) * 100, vol, mdd: mdd * 100, n: pts.length };
+    }
+    function assetGroupForTefasCode(code) {
+      const c = String(code || '').trim().toUpperCase();
+      if (c === 'HS') return 'Hisse Senedi';
+      if (c === 'DT' || c === 'TB') return 'Devlet Tahvili / Bonosu';
+      if (['ÖST', 'OST', 'FB', 'BB', 'ÖSKS', 'DÖT'].includes(c)) return 'Özel Sektör / Banka Borçlanma';
+      if (c === 'TPP') return 'Ters Repo';
+      if (['VM', 'VDM', 'TPY', 'TR'].includes(c)) return 'Mevduat';
+      if (c === 'KM') return 'Kıymetli Madenler';
+      if (c === 'KH' || c === 'KKS') return 'Kira Sertifikası';
+      if (c === 'YV') return 'Yabancı Menkul Kıymet';
+      if (c === 'EUT') return 'Eurobond';
+      if (c === 'FKB') return 'Fon Katılma Belgesi';
+      return 'Diğer';
+    }
+    function cacheFundInfoFromAnalyze(a) {
+      if (!a || !a.code) return null;
+      const stats = computeHistoryStats(a.history);
+      const entry = {
+        code: a.code, name: a.name || a.code, fundType: a.fundType || '', category: a.category || '',
+        riskValue: a.riskValue ? Number(a.riskValue) : null,
+        allocation: (a.allocation || []).map(x => ({ code: x.code, label: x.label, pct: x.pct })),
+        vol: stats ? stats.vol : null, mdd: stats ? stats.mdd : null, ret6m: stats ? stats.ret : null,
+        fetchedAt: Date.now()
+      };
+      loadFundInfoCache()[String(a.code).toUpperCase()] = entry;
+      saveFundInfoCache();
+      return entry;
+    }
+    function fundEquityShare(info) {
+      if (!info || !info.allocation) return null;
+      return info.allocation.filter(a => String(a.code).toUpperCase() === 'HS').reduce((t, a) => t + a.pct, 0);
+    }
+    async function ensureFundInfo(code, force) {
+      const key = String(code || '').toUpperCase();
+      const cache = loadFundInfoCache();
+      const cur = cache[key];
+      if (!force && cur) {
+        if (!cur.failedAt && Date.now() - cur.fetchedAt < FUND_INFO_TTL) return cur;
+        if (cur.failedAt && Date.now() - cur.failedAt < FUND_INFO_FAIL_TTL) return null;
+      }
+      const a = await fetchTefasFundAnalyze(key);
+      if (a) return cacheFundInfoFromAnalyze(a);
+      cache[key] = { code: key, failedAt: Date.now() };
+      saveFundInfoCache();
+      return null;
+    }
+    let fundInfoRefreshing = false;
+    async function refreshAllFundInfo(force, quiet) {
+      if (fundInfoRefreshing) return;
+      const liqSet = getLiqSet();
+      const codes = [...new Set((loadUserData().portfolio || [])
+        .filter(i => i.type === 'fund' && !isLiquidated(i, liqSet))
+        .map(i => String(i.code).toUpperCase()))];
+      const todo = codes.filter(c => {
+        if (force) return true;
+        const cur = loadFundInfoCache()[c];
+        if (!cur) return true;
+        if (cur.failedAt) return Date.now() - cur.failedAt >= FUND_INFO_FAIL_TTL;
+        return Date.now() - cur.fetchedAt >= FUND_INFO_TTL;
+      });
+      if (todo.length === 0) { if (!quiet) showToast('Fon bilgileri güncel.', 'info'); return; }
+      fundInfoRefreshing = true;
+      const btn = document.getElementById('btnRefreshFundInfo');
+      const btnHtml = btn ? btn.innerHTML : '';
+      let ok = 0, fail = 0, consecutiveFail = 0, idx = 0, aborted = false;
+      const worker = async () => {
+        while (idx < todo.length && !aborted) {
+          const code = todo[idx++];
+          if (btn) btn.innerHTML = `⏳ ${Math.min(idx, todo.length)}/${todo.length}`;
+          const r = await ensureFundInfo(code, force);
+          if (r) { ok++; consecutiveFail = 0; } else { fail++; consecutiveFail++; if (consecutiveFail >= 4 && ok === 0) aborted = true; }
+        }
+      };
+      try { await Promise.all([worker(), worker(), worker()]); } catch(e) {}
+      fundInfoRefreshing = false;
+      if (btn) btn.innerHTML = btnHtml;
+      renderApp();
+      if (!quiet || (aborted && ok === 0 && fail > 0)) {
+        showToast(aborted && ok === 0
+          ? "TEFAS fon bilgileri alınamadı. Ayarlardaki Apps Script adresini kontrol edin."
+          : `Fon bilgileri güncellendi (${ok} başarılı${fail ? ', ' + fail + ' alınamadı' : ''}).`, ok > 0 ? 'success' : 'error');
+      }
+    }
+    function riskColor(r) { return r >= 6 ? '#e11d48' : (r >= 4 ? '#d97706' : '#059669'); }
+    function fundInfoChipsHtml(item) {
+      if (!item || item.type !== 'fund') return '';
+      const info = getFundInfoCached(item.code);
+      if (!info) return '';
+      const parts = [];
+      if (info.riskValue) {
+        const c = riskColor(info.riskValue);
+        parts.push(`<span class="inline-block text-[10px] font-bold font-sans px-1.5 py-0.5 rounded border" style="color:${c};border-color:${c}66;background:${c}18" title="TEFAS risk değeri (1 düşük - 7 yüksek)">Risk ${info.riskValue}/7</span>`);
+      }
+      const top = (info.allocation || []).slice(0, 2).map(a => `%${a.pct.toFixed(0)} ${escHtml(assetGroupForTefasCode(a.code))}`).join(' · ');
+      if (top) parts.push(`<span class="text-[10px] font-sans text-slate-500">${top}</span>`);
+      return parts.length ? `<div class="mt-1 flex flex-wrap items-center gap-1.5">${parts.join('')}</div>` : '';
+    }
+
+    // ── GERÇEK VARLIK DAĞILIMI (fonların içi dahil) ──────────────────
+    const ALLOC_GROUP_COLORS = {
+      'Hisse Senedi': '#6366f1', 'Devlet Tahvili / Bonosu': '#0ea5e9', 'Özel Sektör / Banka Borçlanma': '#14b8a6',
+      'Ters Repo': '#84cc16', 'Mevduat': '#10b981', 'Kıymetli Madenler': '#f59e0b', 'Döviz': '#3b82f6',
+      'Eurobond': '#a855f7', 'Kira Sertifikası': '#ec4899', 'Yabancı Menkul Kıymet': '#f97316',
+      'Fon Katılma Belgesi': '#64748b', 'Diğer': '#94a3b8', 'Veri yok (fon)': '#cbd5e1'
+    };
+    function renderRealAllocation() {
+      const barsEl = document.getElementById('realAllocBars');
+      const sumEl = document.getElementById('realAllocSummary');
+      if (!barsEl || !sumEl) return;
+      const liqSet = getLiqSet();
+      const groups = {};
+      let total = 0, fundCount = 0, fundWithData = 0, riskWeighted = 0, riskValueSum = 0;
+      (loadUserData().portfolio || []).forEach(item => {
+        if (isLiquidated(item, liqSet)) return;
+        const cost = (item.amount || 0) * getBuyPriceInTRY(item);
+        const val = item.currentVal > 0 ? item.currentVal : ((item.amount || 0) * (item.currentPrice || getBuyPriceInTRY(item)));
+        if (!(val > 0)) return;
+        total += val;
+        const add = (g, v) => { groups[g] = (groups[g] || 0) + v; };
+        if (item.type === 'fund') {
+          fundCount++;
+          const info = getFundInfoCached(item.code);
+          if (info && info.allocation && info.allocation.length) {
+            fundWithData++;
+            let used = 0;
+            info.allocation.forEach(a => { const v = val * a.pct / 100; used += a.pct; add(assetGroupForTefasCode(a.code), v); });
+            if (used < 99.5) add('Diğer', val * (100 - Math.min(100, used)) / 100);
+            if (info.riskValue) { riskWeighted += val * info.riskValue; riskValueSum += val; }
+          } else add('Veri yok (fon)', val);
+        } else if (item.type === 'gold') add('Kıymetli Madenler', val);
+        else if (item.type === 'fx') add('Döviz', val);
+        else if (item.type === 'eurobond') add('Eurobond', val);
+        else add('Mevduat', val);
+      });
+      if (total <= 0) { sumEl.textContent = 'Portföyde hesaplanacak varlık yok.'; barsEl.innerHTML = ''; return; }
+      const rows = Object.entries(groups).sort((a, b) => b[1] - a[1]);
+      let summary = `Toplam ${formatTL(total)} · ${fundCount} fondan ${fundWithData} tanesi için dağılım verisi var.`;
+      if (riskValueSum > 0) summary += ` Ağırlıklı ortalama fon riski: <strong>${(riskWeighted / riskValueSum).toFixed(1)}/7</strong>.`;
+      if (fundCount > 0 && fundWithData < fundCount) summary += ` <span class="text-amber-600 font-semibold">Eksik fonlar için "Fon Bilgilerini Yenile"ye basın; alınamazsa ayarlardaki Apps Script adresini kontrol edin.</span>`;
+      sumEl.innerHTML = summary;
+      barsEl.innerHTML = rows.map(([label, v]) => {
+        const pct = v / total * 100;
+        const col = ALLOC_GROUP_COLORS[label] || '#94a3b8';
+        return `<div class="flex items-center gap-2 text-xs">
+          <div class="w-40 md:w-56 truncate font-semibold text-slate-600" title="${escHtml(label)}">${escHtml(label)}</div>
+          <div class="flex-1 bg-slate-200 rounded-full h-3 overflow-hidden"><div class="h-full rounded-full" style="width:${Math.min(100, pct).toFixed(1)}%;background:${col}"></div></div>
+          <div class="w-14 text-right font-mono font-bold text-slate-700">%${pct.toFixed(1)}</div>
+          <div class="w-28 hidden sm:block text-right font-mono text-slate-500">${formatTL(v)}</div>
+        </div>`;
+      }).join('');
+    }
+
+    // ── KIYAS AYARLARI (mevduat faizi, aylık TÜFE) ────────────────────
+    function loadBenchSettings() {
+      try { const r = localStorage.getItem('portfoy_bench_settings'); if (r) { const o = JSON.parse(r); if (o && typeof o === 'object') return { depositRate: Number(o.depositRate) || 0, cpi: o.cpi && typeof o.cpi === 'object' ? o.cpi : {} }; } } catch(e) {}
+      return { depositRate: 0, cpi: {} };
+    }
+    function saveBenchSettings(b, push) {
+      try { localStorage.setItem('portfoy_bench_settings', JSON.stringify(b)); } catch(e) {}
+      if (push) pushToFirebaseCloud();
+    }
+    function parseCpiText(text) {
+      const cpi = {};
+      String(text || '').split(/\r?\n/).forEach(line => {
+        const m = line.match(/(\d{4})\s*[-\/.]\s*(\d{1,2})\D+(-?\d+(?:[.,]\d+)?)/);
+        if (m) {
+          const mo = parseInt(m[2], 10);
+          if (mo >= 1 && mo <= 12) cpi[m[1] + '-' + String(mo).padStart(2, '0')] = parseFloat(m[3].replace(',', '.'));
+        }
+      });
+      return cpi;
+    }
+    function cpiToText(cpi) {
+      return Object.keys(cpi || {}).sort().map(k => k + ' ' + cpi[k]).join('\n');
+    }
+    function loadBenchInputs() {
+      const b = loadBenchSettings();
+      const dr = document.getElementById('inputBenchDepositRate');
+      const ct = document.getElementById('inputBenchCpi');
+      if (dr) dr.value = b.depositRate || '';
+      if (ct) ct.value = cpiToText(b.cpi);
+    }
+    // Yalnızca değiştirilen alan kaydedilir; diğeri mevcut değerini korur.
+    function saveBenchFromInputs(which) {
+      const b = loadBenchSettings();
+      if (which === 'rate') b.depositRate = parseFloat(document.getElementById('inputBenchDepositRate').value) || 0;
+      if (which === 'cpi') b.cpi = parseCpiText(document.getElementById('inputBenchCpi').value);
+      saveBenchSettings(b, true);
+    }
+    // t0'dan t1'e mevduat büyümesi (bileşik, yıllık net faizden).
+    function depositGrowth(t0, t1) {
+      const r = loadBenchSettings().depositRate;
+      if (!(r > 0)) return null;
+      return Math.pow(1 + r / 100, Math.max(0, t1 - t0) / (365 * 86400000));
+    }
+    // Aylık TÜFE'den endeks (ay içinde günlük geometrik dağıtılır). Dönem içi eksik ay sayısı da döner.
+    function cpiIndexAt(cpi, t) {
+      const d = new Date(t);
+      const ym = d.getFullYear() * 12 + d.getMonth();
+      const dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      let idx = 1;
+      Object.keys(cpi).sort().forEach(k => {
+        const [y, m] = k.split('-').map(Number);
+        const kv = y * 12 + (m - 1);
+        const r = cpi[k] / 100;
+        if (kv < ym) idx *= (1 + r);
+        else if (kv === ym) idx *= Math.pow(1 + r, (d.getDate() - 1) / dim);
+      });
+      return idx;
+    }
+    function cpiGrowth(t0, t1) {
+      const cpi = loadBenchSettings().cpi;
+      if (!cpi || Object.keys(cpi).length === 0) return null;
+      const a = new Date(t0), b = new Date(t1);
+      let present = 0, total = 0;
+      for (let y = a.getFullYear(), m = a.getMonth(); y * 12 + m <= b.getFullYear() * 12 + b.getMonth(); ) {
+        total++;
+        if (cpi[y + '-' + String(m + 1).padStart(2, '0')] !== undefined) present++;
+        m++; if (m > 11) { m = 0; y++; }
+      }
+      if (present === 0) return { growth: null, present, total };
+      return { growth: cpiIndexAt(cpi, t1) / cpiIndexAt(cpi, t0), present, total };
+    }
+
+    // ── BIST 100 (Apps Script veya CORS proxy üzerinden Yahoo) ─────────
+    const benchMemCache = {};
+    function yahooRangeForDays(days) { return days <= 30 ? '1mo' : (days <= 90 ? '3mo' : (days <= 180 ? '6mo' : '1y')); }
+    async function fetchBistSeries(days) {
+      const range = yahooRangeForDays(days);
+      const cached = benchMemCache['bist_' + range];
+      if (cached && Date.now() - cached.at < 30 * 60 * 1000) return cached.pts;
+      let pts = null;
+      const script = getSavedTefasAnalyzeScriptUrl();
+      if (script) {
+        try {
+          const res = await fetchWithTimeout(`${script}?symbol=${encodeURIComponent('XU100.IS')}&range=${range}`, { cache: 'no-store' }, 12000);
+          if (res && res.ok) {
+            const j = await res.json();
+            if (j && j.ok && Array.isArray(j.series) && j.series.length > 2) pts = j.series.map(x => ({ t: x.t, price: x.c }));
+          }
+        } catch(e) {}
+      }
+      if (!pts) {
+        try {
+          const y = `https://query1.finance.yahoo.com/v8/finance/chart/XU100.IS?range=${range}&interval=1d`;
+          const res = await fetchWithTimeout(`https://corsproxy.io/?url=${encodeURIComponent(y)}`, { cache: 'no-store' }, 9000);
+          if (res && res.ok) {
+            const j = await res.json();
+            const r0 = j.chart.result[0];
+            const cl = r0.indicators.quote[0].close;
+            const arr = [];
+            r0.timestamp.forEach((ts, i) => { if (cl[i] != null) arr.push({ t: ts * 1000, price: cl[i] }); });
+            if (arr.length > 2) pts = arr;
+          }
+        } catch(e) {}
+      }
+      if (pts) benchMemCache['bist_' + range] = { at: Date.now(), pts };
+      return pts;
+    }
+    function pointAt(pts, t) {
+      if (!pts || !pts.length) return null;
+      let v = pts[0].price;
+      for (let i = 0; i < pts.length; i++) { if (pts[i].t <= t) v = pts[i].price; else break; }
+      return v;
+    }
+    function retBetween(pts, t0, t1) {
+      const a = pointAt(pts, t0), b = pointAt(pts, t1);
+      return (a > 0 && b > 0) ? (b / a - 1) * 100 : null;
+    }
+    const fmtPct = (v) => (v >= 0 ? '+' : '') + v.toFixed(2) + '%';
+    const pctCls = (v) => v >= 0 ? 'text-emerald-600' : 'text-rose-600';
+
     // ── GÜNDÜZ / GECE MODU ───────────────────────────────────────────
     // Tercih cihaza özeldir (tarayıcıda saklanır): 'light' | 'dark' | 'auto' (sistem ayarını izler).
     function getThemePref() {
@@ -890,22 +1258,52 @@
       return {};
     }
     function saveDescColors(map) { try { localStorage.setItem('portfoy_desc_colors_' + getPortfolioCode(), JSON.stringify(map || {})); } catch(e) {} }
-    function getDescInfo(kind, code) {
-      const desc = loadDescMap(kind)[String(code || '').toUpperCase()];
-      if (!desc) return null;
-      return { desc, color: loadDescColors()[normDesc(desc)] || null };
+    // "Renksiz" işareti: rengi başka bir fonda tanımlı olan bir açıklamayı, bu kayıtta renksiz kullanmak için.
+    function loadDescNone(kind) {
+      try { const r = localStorage.getItem('portfoy_descnone_' + kind + '_' + getPortfolioCode()); if (r) { const o = JSON.parse(r); if (o && typeof o === 'object') return o; } } catch(e) {}
+      return {};
     }
-    function setDescription(kind, code, desc, color) {
-      const c = String(code || '').toUpperCase();
+    function saveDescNone(kind, map) { try { localStorage.setItem('portfoy_descnone_' + kind + '_' + getPortfolioCode(), JSON.stringify(map || {})); } catch(e) {} }
+    // Altın varlıklarında aynı kodlu farklı alım satırları ayrı açıklama alabilsin diye anahtar alım satırına özeldir
+    // (kod + tarih + miktar + birim fiyat). Diğer varlıklarda ve takip listesinde anahtar fon kodudur.
+    function lotKeyFor(item) {
+      return ('G|' + (item.code || '') + '|' + (item.buyDate || '') + '|' + (item.amount || 0) + '|' + (item.buyPrice || 0)).toUpperCase();
+    }
+    function descKeysFor(kind, target) {
+      if (target && typeof target === 'object') {
+        const codeKey = String(target.code || '').toUpperCase();
+        return (kind === 'p' && target.type === 'gold') ? [lotKeyFor(target), codeKey] : [codeKey];
+      }
+      return [String(target || '').toUpperCase()];
+    }
+    function getDescInfo(kind, target) {
       const map = loadDescMap(kind);
+      let foundKey = null, desc = null;
+      for (const k of descKeysFor(kind, target)) {
+        if (Object.prototype.hasOwnProperty.call(map, k)) { foundKey = k; desc = map[k]; break; }
+      }
+      if (!desc) return null;
+      const none = !!loadDescNone(kind)[foundKey];
+      return { desc, key: foundKey, color: none ? null : (loadDescColors()[normDesc(desc)] || null) };
+    }
+    function setDescription(kind, key, desc, color) {
+      const k = String(key || '').toUpperCase();
+      const map = loadDescMap(kind);
+      const none = loadDescNone(kind);
       const d = String(desc || '').trim();
-      if (d) map[c] = d; else delete map[c];
+      if (d) map[k] = d;
+      else if (k.startsWith('G|')) map[k] = '';   // altın satırında bilinçli boş: koda ait eski açıklama geri gelmesin
+      else delete map[k];
       saveDescMap(kind, map);
+      const colors = loadDescColors();
       if (d && color) {
-        const colors = loadDescColors();
         colors[normDesc(d)] = color;
         saveDescColors(colors);
-      }
+        delete none[k];
+      } else if (d && colors[normDesc(d)]) {
+        none[k] = true;      // açıklamanın rengi var ama bu kayıt için bilinçli olarak renksiz seçildi
+      } else delete none[k];
+      saveDescNone(kind, none);
     }
     function escHtml(t) { return String(t).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
     function descChipHtml(info) {
@@ -935,7 +1333,7 @@
       box.innerHTML = '';
       const none = document.createElement('button');
       none.type = 'button';
-      none.title = 'Renksiz';
+      none.title = 'Renksiz (yalnızca açıklama)';
       none.className = 'w-6 h-6 rounded-full border-2 text-[10px] text-slate-400 leading-none ' + (!sel ? 'border-slate-900' : 'border-slate-300');
       none.textContent = '∅';
       none.onclick = () => { descPickerState[which] = null; renderDescSwatches(which); };
@@ -960,8 +1358,8 @@
       } else if (hint) hint.textContent = '';
       renderDescSwatches(which);
     }
-    function initDescPicker(which, kind, code) {
-      const info = code ? getDescInfo(kind, code) : null;
+    function initDescPicker(which, kind, target) {
+      const info = target ? getDescInfo(kind, target) : null;
       document.getElementById(which + 'Desc').value = info ? info.desc : '';
       descPickerState[which] = info ? info.color : null;
       const hint = document.getElementById(which + 'DescColorHint');
@@ -979,9 +1377,11 @@
           watchlist: loadWatchlistLocal(),
           watchTrend: loadWatchTrendLocal(),
           liqCodesStr: loadLiqCodesLocal().join(','),
+          benchStr: JSON.stringify(loadBenchSettings()),
           descPStr: JSON.stringify(loadDescMap('p')),
           descWStr: JSON.stringify(loadDescMap('w')),
           descColorsStr: JSON.stringify(loadDescColors()),
+          descNoneStr: JSON.stringify({ p: loadDescNone('p'), w: loadDescNone('w') }),
           watchLiqCodesStr: loadWatchLiqCodesLocal().join(','),
           rates: liveRates,
           updatedAt: Date.now()
@@ -1003,11 +1403,13 @@
           if (val.alarms) saveAlarmsLocal(val.alarms);
           if (val.watchlist) saveWatchlistLocal(val.watchlist);
           if (val.watchTrend) saveWatchTrendLocal(val.watchTrend);
+          try { if (typeof val.benchStr === 'string') saveBenchSettings(JSON.parse(val.benchStr), false); } catch(e) {}
           if (typeof val.watchLiqCodesStr === 'string') saveWatchLiqCodesLocal(val.watchLiqCodesStr.split(',').map(x => x.trim()).filter(Boolean));
           try {
             if (typeof val.descPStr === 'string') saveDescMap('p', JSON.parse(val.descPStr));
             if (typeof val.descWStr === 'string') saveDescMap('w', JSON.parse(val.descWStr));
             if (typeof val.descColorsStr === 'string') saveDescColors(JSON.parse(val.descColorsStr));
+            if (typeof val.descNoneStr === 'string') { const dn = JSON.parse(val.descNoneStr); saveDescNone('p', dn.p || {}); saveDescNone('w', dn.w || {}); }
           } catch(e) {}
           if (typeof val.liqCodesStr === 'string') saveLiqCodesLocal(val.liqCodesStr.split(',').map(x => x.trim()).filter(Boolean));
           if (val.rates) { liveRates = { ...liveRates, ...val.rates }; saveLiveRatesToStorage(false); }
@@ -2023,6 +2425,7 @@
       renderPortfolioTable(portfolio);
       renderWatchlistTable();
       renderAllocationChart(catTotals);
+      renderRealAllocation();
 
       const lastUpdated = document.getElementById('lastUpdated');
       if (lastUpdated) lastUpdated.textContent = 'Son Güncelleme: ' + new Date().toLocaleTimeString('tr-TR');
@@ -2073,6 +2476,35 @@
       try { localStorage.setItem(getPortfolioSortStorageKey(), mode); } catch(e) {}
     }
 
+    // Renk grubu sıralaması: aynı renkteki varlıklar bir arada; her grubun içi K/Z'ya göre çoktan aza.
+    // Gruplar toplam K/Z'ya göre sıralanır; renk/açıklaması olmayanlar en sonda; tasfiyedekiler hepsinden sonra.
+    function buildColorGroupedList(list) {
+      const active = list.filter(e => !e.liq);
+      const liqRows = list.filter(e => e.liq);
+      const groups = new Map();
+      active.forEach(e => {
+        const key = !e.info ? 'none' : (e.info.color ? 'c:' + e.info.color : 'd:' + normDesc(e.info.desc));
+        if (!groups.has(key)) groups.set(key, { key, color: e.info && e.info.color || null, descs: new Set(), items: [] });
+        const g = groups.get(key);
+        if (e.info) g.descs.add(e.info.desc);
+        g.items.push(e);
+      });
+      const arr = [...groups.values()];
+      arr.forEach(g => {
+        g.items.sort((a, b) => b.pl - a.pl);
+        g.cost = g.items.reduce((t, e) => t + e.cost, 0);
+        g.val = g.items.reduce((t, e) => t + e.curVal, 0);
+        g.pl = g.val - g.cost;
+      });
+      arr.sort((a, b) => ((a.key === 'none') - (b.key === 'none')) || (b.pl - a.pl));
+      const out = [];
+      arr.forEach(g => {
+        out.push({ header: { color: g.color, label: g.key === 'none' ? 'Açıklamasız' : [...g.descs].join(' · '), count: g.items.length, cost: g.cost, val: g.val, pl: g.pl } });
+        g.items.forEach(e => out.push(e));
+      });
+      return out.concat(liqRows);
+    }
+
     function renderPortfolioTable(portfolio) {
       const tbody = document.getElementById('portfolioBody');
       const emptyState = document.getElementById('emptyState');
@@ -2096,7 +2528,7 @@
         const cost = (item.amount || 0) * getBuyPriceInTRY(item);
         const curVal = item.currentVal > 0 ? item.currentVal : ((item.amount || 0) * (item.currentPrice || getBuyPriceInTRY(item)));
         const pl = liq ? 0 : curVal - cost;
-        return { item, addIndex, pl, liq };
+        return { item, addIndex, pl, liq, cost, curVal, info: getDescInfo('p', item) };
       });
 
       let filtered = withMeta.filter(({ item, liq }) => {
@@ -2116,6 +2548,7 @@
       else if (sortMode === 'pl_asc') filtered.sort((a, b) => liqLast(a, b) || (a.pl - b.pl));
       else if (sortMode === 'date_new') filtered.sort((a, b) => liqLast(a, b) || (b.addIndex - a.addIndex));
       else if (sortMode === 'date_old') filtered.sort((a, b) => liqLast(a, b) || (a.addIndex - b.addIndex));
+      else if (sortMode === 'color_group') filtered = buildColorGroupedList(filtered);
 
       // Sekme sayaçları: gizle modunda tasfiyedekiler sayıya dahil edilmez.
       const visible = portfolio.filter(i => liqMode === 'show' || !isLiquidated(i, liqSet));
@@ -2136,7 +2569,26 @@
       }
       if (emptyState) emptyState.style.display = 'none';
 
-      filtered.forEach(({ item, liq }) => {
+      filtered.forEach((entry) => {
+        if (entry.header) {
+          const h = entry.header;
+          const col = h.color || '#94a3b8';
+          const hp = h.cost > 0 ? (h.pl / h.cost) * 100 : 0;
+          const htr = document.createElement('tr');
+          htr.className = 'border-b border-slate-200';
+          htr.style.backgroundColor = col + '22';
+          htr.style.boxShadow = `inset 4px 0 0 ${col}`;
+          htr.innerHTML = `<td colspan="10" class="py-2 px-4"><div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-sans">
+            <span class="font-bold" style="color:${col}">🎨 ${escHtml(h.label)}</span>
+            <span class="text-slate-500">${h.count} varlık</span>
+            <span class="font-mono text-slate-600">Maliyet ${formatTL(h.cost)}</span>
+            <span class="font-mono text-slate-600">Değer ${formatTL(h.val)}</span>
+            <span class="font-mono font-bold ${h.pl >= 0 ? 'text-emerald-600' : 'text-rose-600'}">K/Z ${h.pl >= 0 ? '+' : ''}${formatTL(h.pl)} (${hp >= 0 ? '+' : ''}${hp.toFixed(2)}%)</span>
+          </div></td>`;
+          tbody.appendChild(htr);
+          return;
+        }
+        const { item, liq } = entry;
         const cost = (item.amount || 0) * getBuyPriceInTRY(item);
         let curVal = item.currentVal > 0 ? item.currentVal : ((item.amount || 0) * (item.currentPrice || getBuyPriceInTRY(item)));
         const curPrice = item.amount > 0 ? curVal / item.amount : getBuyPriceInTRY(item);
@@ -2159,11 +2611,16 @@
         // göre hesaplanır (bkz. updatePortfolioTrendSnapshot).
         const trendInfo = trendMap[item.id];
         const downStreak = trendInfo?.downStreak || 0;
+        const finfo = item.type === 'fund' ? getFundInfoCached(item.code) : null;
+        const hiRisk = !!(finfo && Number(finfo.riskValue) >= 6);
         let rowExtraClass = '';
         let trendBadge = '';
         if (liq) {
           rowExtraClass = 'bg-slate-100/70 opacity-60';
           trendBadge = `<span class="text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300 px-1.5 py-0.5 rounded-full ml-1" title="Tasfiye sürecinde — K/Z hesabına dahil değil">⏳ Tasfiyede</span>`;
+        } else if (downStreak >= 2 && hiRisk) {
+          // Riski 6-7 olan fonlarda kısa vadeli düşüş olağandır: alarm yerine sakin bir rozet.
+          trendBadge = `<span class="text-[9px] font-bold bg-slate-100 text-slate-600 border border-slate-300 px-1.5 py-0.5 rounded-full ml-1" title="Risk ${finfo.riskValue}/7: yüksek oynaklıklı fonda ${downStreak} kontroldür düşüş olağan sayılır">〰️ Dalgalanma (Risk ${finfo.riskValue}/7)</span>`;
         } else if (downStreak >= 4) {
           rowExtraClass = 'bg-rose-50/60';
           trendBadge = `<span class="text-[9px] font-bold bg-rose-100 text-rose-700 border border-rose-300 px-1.5 py-0.5 rounded-full ml-1" title="${downStreak} kontroldür düşüşte">⚠️ Sürekli Düşüşte</span>`;
@@ -2184,7 +2641,7 @@
 
         const tr = document.createElement('tr');
         tr.className = `hover:bg-slate-50 transition-colors border-b border-slate-100 ${rowExtraClass}`;
-        const descInfo = getDescInfo('p', item.code);
+        const descInfo = getDescInfo('p', item);
         applyDescRowStyle(tr, descInfo);
         tr.innerHTML = `
           <td class="py-3 px-4 font-bold text-slate-900">
@@ -2200,6 +2657,7 @@
               ${trendBadge}
             </div>
             ${descChipHtml(descInfo)}
+            ${fundInfoChipsHtml(item)}
           </td>
           <td class="py-3 px-4 text-center text-xs text-slate-500">${item.buyDate || '-'}</td>
           <td class="py-3 px-4 text-right">${(item.amount || 0).toLocaleString('tr-TR', { maximumFractionDigits: 4 })}</td>
@@ -2607,7 +3065,7 @@
         if (liqHint) liqHint.style.display = 'none';
       }
       updateEditBuyPriceTryHint();
-      initDescPicker('edit', 'p', assetId ? (loadUserData().portfolio || []).find(i => i.id === assetId)?.code : null);
+      initDescPicker('edit', 'p', assetId ? (loadUserData().portfolio || []).find(i => i.id === assetId) : null);
       document.getElementById('editAssetModal').style.display = 'flex';
     };
 
@@ -2646,7 +3104,19 @@
         return;
       }
 
-      setDescription('p', code, document.getElementById('editDesc').value, descPickerState.edit);
+      {
+        // Altında anahtar alım satırına özeldir; tarih/miktar/fiyat değiştiyse eski satırın kaydı yeni anahtara taşınır.
+        const newKey = type === 'gold' ? lotKeyFor({ code, buyDate, amount, buyPrice }) : code;
+        const oldItem = activeEditAssetId ? data.portfolio.find(i => i.id === activeEditAssetId) : null;
+        if (oldItem && oldItem.type === 'gold') {
+          const oldKey = lotKeyFor(oldItem);
+          if (oldKey !== newKey) {
+            const dm = loadDescMap('p'); delete dm[oldKey]; saveDescMap('p', dm);
+            const dn = loadDescNone('p'); delete dn[oldKey]; saveDescNone('p', dn);
+          }
+        }
+        setDescription('p', newKey, document.getElementById('editDesc').value, descPickerState.edit);
+      }
 
       // Tasfiye işareti koda göre saklanır (Sheet yenilenince kaybolmaz).
       if (!liqLocked) {
@@ -2702,6 +3172,7 @@
         if (!json || !json.rates) return null;
         const dates = Object.keys(json.rates).sort();
         return dates.map(d => ({
+          t: new Date(d).getTime(),
           label: new Date(d).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }),
           price: json.rates[d]['TRY']
         }));
@@ -2737,28 +3208,43 @@
       });
     }
 
-    window.addCompareCode = function() {
+    function normalizeCompareCode(raw) {
+      const c = String(raw || '').trim().toUpperCase().replace(/\s+/g, '');
+      if (['BIST', 'BIST100', 'BIST-100', 'XU100'].includes(c)) return 'BIST100';
+      if (['ENFLASYON', 'TUFE', 'TÜFE', 'ENFLASYON(TÜFE)'].includes(c)) return 'ENFLASYON';
+      if (['MEVDUAT', 'FAIZ', 'FAİZ'].includes(c)) return 'MEVDUAT';
+      return c;
+    }
+    window.addCompareCode = function(codeArg) {
       const input = document.getElementById('compareCodeInput');
-      const code = (input.value || '').trim().toUpperCase();
+      const code = normalizeCompareCode(typeof codeArg === 'string' ? codeArg : input.value);
       if (!code) return;
       if (!compareList.includes(code)) compareList.push(code);
-      input.value = '';
+      if (typeof codeArg !== 'string') input.value = '';
       renderCompareChips();
       renderCompareChart();
     };
 
+    // Dönüş: { kind:'points', pts:[{t,price}] } | { kind:'deposit' } | { kind:'cpi' } | { error:'mesaj' }
     async function fetchCompareSeries(code) {
+      if (code === 'MEVDUAT') return loadBenchSettings().depositRate > 0 ? { kind: 'deposit' } : { error: 'Ayarlardan mevduat faiz oranı girin' };
+      if (code === 'ENFLASYON') return Object.keys(loadBenchSettings().cpi).length ? { kind: 'cpi' } : { error: 'Ayarlardan aylık TÜFE girin' };
+      if (code === 'BIST100') {
+        const pts = await fetchBistSeries(compareChartDays + 5);
+        return pts ? { kind: 'points', pts: pts.filter(p => p.t >= Date.now() - (compareChartDays + 3) * 86400000) } : { error: 'BIST 100 verisi alınamadı (Apps Script güncel mi?)' };
+      }
       if (['USD', 'EUR', 'GBP'].includes(code)) {
         const hist = await fetchFxHistoryReal(code, compareChartDays);
-        return hist ? hist.map(h => ({ label: h.label, price: h.price })) : null;
+        return hist && hist.length > 1 ? { kind: 'points', pts: hist.map(h => ({ t: h.t, price: h.price })) } : { error: 'veri alınamadı' };
       }
       // Diğer her şeyi TEFAS fon kodu olarak dene.
       const analyze = await fetchTefasFundAnalyze(code);
-      if (!analyze || !analyze.history || analyze.history.length < 2) return null;
+      if (!analyze || !analyze.history || analyze.history.length < 2) return { error: 'TEFAS verisi alınamadı' };
+      cacheFundInfoFromAnalyze(analyze);
       const cutoff = Date.now() - compareChartDays * 86400000;
       const hist = analyze.history.filter(h => h.date >= cutoff);
       const usable = hist.length > 1 ? hist : analyze.history;
-      return usable.map(h => ({ label: new Date(h.date).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }), price: h.price }));
+      return { kind: 'points', pts: usable.map(h => ({ t: h.date, price: h.price })) };
     }
 
     async function renderCompareChart() {
@@ -2767,37 +3253,39 @@
       if (!canvas) return;
       if (compareList.length === 0) {
         if (compareChartInstance) { compareChartInstance.destroy(); compareChartInstance = null; }
-        if (statusEl) statusEl.textContent = 'Karşılaştırmak istediğiniz fon kodlarını veya USD/EUR/GBP\'yi yukarıdan ekleyin.';
+        if (statusEl) statusEl.textContent = 'Karşılaştırmak istediğiniz fon kodlarını, USD/EUR/GBP\'yi veya MEVDUAT / ENFLASYON / BIST100 kıyaslarını ekleyin.';
         return;
       }
       if (statusEl) statusEl.textContent = 'Veriler çekiliyor...';
 
-      const results = await Promise.all(compareList.map(async code => ({ code, series: await fetchCompareSeries(code) })));
-      const valid = results.filter(r => r.series && r.series.length > 1);
-      const failed = results.filter(r => !r.series || r.series.length < 2).map(r => r.code);
+      const results = await Promise.all(compareList.map(async code => ({ code, res: await fetchCompareSeries(code) })));
+      const ok = results.filter(r => r.res && !r.res.error);
+      const failed = results.filter(r => !r.res || r.res.error);
+      if (statusEl) statusEl.textContent = failed.length > 0
+        ? '⚠️ ' + failed.map(f => `${f.code}: ${f.res && f.res.error ? f.res.error : 'veri alınamadı'}`).join(' • ')
+        : '';
+      if (ok.length === 0) return;
 
-      if (statusEl) {
-        statusEl.textContent = failed.length > 0
-          ? `⚠️ Şu kodlar için veri alınamadı: ${failed.join(', ')}`
-          : '';
-      }
-      if (valid.length === 0) return;
-
-      // Ortak (en kısa) uzunluğa göre hizala ve ilk değeri 100 kabul ederek normalize et.
-      const minLen = Math.min(...valid.map(v => v.series.length));
-      const labels = valid[0].series.slice(-minLen).map(p => p.label);
-      const datasets = valid.map((v, idx) => {
-        const trimmed = v.series.slice(-minLen);
-        const base = trimmed[0].price;
-        const normalized = trimmed.map(p => base > 0 ? (p.price / base) * 100 : 100);
+      // Ortak zaman ekseni: piyasa serilerinin hepsinde veri bulunan ilk andan başlar; her seri o anda 100 kabul edilir.
+      const pointSeries = ok.filter(r => r.res.kind === 'points' && r.res.pts.length > 1);
+      const now = Date.now();
+      const t0 = pointSeries.length ? Math.max(...pointSeries.map(r => r.res.pts[0].t)) : now - compareChartDays * 86400000;
+      const t1 = pointSeries.length ? Math.max(...pointSeries.map(r => r.res.pts[r.res.pts.length - 1].t)) : now;
+      if (!(t1 > t0)) { if (statusEl) statusEl.textContent = '⚠️ Seçili seriler için ortak bir tarih aralığı bulunamadı.'; return; }
+      const N = 60;
+      const ts = Array.from({ length: N }, (_, i) => t0 + (t1 - t0) * i / (N - 1));
+      const labels = ts.map(t => new Date(t).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }));
+      const cpiSet = loadBenchSettings().cpi;
+      const datasets = ok.map(r => {
+        let data;
+        if (r.res.kind === 'points') { const base = pointAt(r.res.pts, t0); data = ts.map(t => base > 0 ? pointAt(r.res.pts, t) / base * 100 : 100); }
+        else if (r.res.kind === 'deposit') data = ts.map(t => (depositGrowth(t0, t) || 1) * 100);
+        else { const b = cpiIndexAt(cpiSet, t0); data = ts.map(t => cpiIndexAt(cpiSet, t) / b * 100); }
         return {
-          label: v.code,
-          data: normalized,
-          borderColor: COMPARE_COLORS[compareList.indexOf(v.code) % COMPARE_COLORS.length],
-          backgroundColor: 'transparent',
-          borderWidth: 2,
-          pointRadius: 0,
-          tension: 0.2
+          label: r.code, data,
+          borderColor: COMPARE_COLORS[compareList.indexOf(r.code) % COMPARE_COLORS.length],
+          backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0.2,
+          borderDash: r.res.kind === 'points' ? [] : [6, 4]
         };
       });
 
@@ -2841,12 +3329,15 @@
         tefasBtn.href = getTefasUrl(item.code);
         tefasBtn.style.display = 'inline-flex';
         fundInfoPanel.style.display = 'block';
+        document.getElementById('benchmarkPanel').style.display = 'block';
+        document.getElementById('benchmarkBody').textContent = 'Fon verisi bekleniyor...';
         fundInfoLoading.style.display = 'block';
         fundInfoContent.style.display = 'none';
         fundInfoError.style.display = 'none';
       } else {
         tefasBtn.style.display = 'none';
         fundInfoPanel.style.display = 'none';
+        document.getElementById('benchmarkPanel').style.display = 'none';
       }
 
       document.getElementById('chartDetailModal').style.display = 'flex';
@@ -2854,6 +3345,7 @@
 
       if (item.type === 'fund') {
         activeFundAnalyzeData = await fetchTefasFundAnalyze(item.code);
+        if (activeFundAnalyzeData) { cacheFundInfoFromAnalyze(activeFundAnalyzeData); renderApp(); }
         if (activeChartAssetId === assetId) {
           renderFundInfoPanel();
           renderChartModalContent();
@@ -2882,6 +3374,7 @@
       document.getElementById('fiKategori').textContent = activeFundAnalyzeData.category || '-';
       document.getElementById('fiRisk').textContent = activeFundAnalyzeData.riskValue ? `${activeFundAnalyzeData.riskValue} / 7` : '-';
       document.getElementById('fiYatirimci').textContent = activeFundAnalyzeData.investorCount ? Math.round(activeFundAnalyzeData.investorCount).toLocaleString('tr-TR') : '-';
+      renderFundStats();
 
       const allocList = document.getElementById('fiAllocationList');
       allocList.innerHTML = '';
@@ -2904,6 +3397,110 @@
       });
     }
 
+    // Fon detayında dönem getirisi / oynaklık / maks. düşüş / hisse payı ve risk uyarı notu.
+    function currentFundPeriodHistory() {
+      const h = (activeFundAnalyzeData && activeFundAnalyzeData.history) || [];
+      const cutoff = Date.now() - activeChartDays * 86400000;
+      const f = h.filter(x => x.date >= cutoff);
+      return f.length > 2 ? f : h;
+    }
+    function renderFundStats() {
+      const a = activeFundAnalyzeData;
+      if (!a) return;
+      const stats = computeHistoryStats(currentFundPeriodHistory());
+      const set = (id, html, cls) => { const el = document.getElementById(id); if (el) { el.innerHTML = html; if (cls) el.className = 'font-bold mt-0.5 ' + cls; } };
+      if (stats) {
+        set('fsRet', fmtPct(stats.ret), pctCls(stats.ret));
+        const volLabel = stats.vol < 5 ? 'düşük' : (stats.vol < 15 ? 'orta' : 'yüksek');
+        set('fsVol', `%${stats.vol.toFixed(1)} <span class="text-[10px] font-sans font-semibold text-slate-400">(${volLabel})</span>`, 'text-slate-800');
+        set('fsMdd', `%${stats.mdd.toFixed(1)}`, stats.mdd < -5 ? 'text-rose-600' : 'text-slate-800');
+      } else { set('fsRet', '-', 'text-slate-800'); set('fsVol', '-', 'text-slate-800'); set('fsMdd', '-', 'text-slate-800'); }
+      const eq = fundEquityShare({ allocation: a.allocation });
+      set('fsEq', eq === null ? '-' : `%${eq.toFixed(1)}`, 'text-slate-800');
+
+      const noteEl = document.getElementById('fiRiskNote');
+      if (noteEl) {
+        const risk = Number(a.riskValue) || 0;
+        if (risk >= 6) {
+          noteEl.style.display = 'block';
+          noteEl.className = 'text-xs rounded-lg p-2.5 border bg-rose-50 border-rose-200 text-rose-800';
+          noteEl.textContent = `⚠️ Risk değeri ${risk}/7: bu tür fonlar yüksek oynaklığa sahiptir; kısa vadeli düşüşler bu fonlarda olağan kabul edilir. Değerlendirmeyi uzun vadeli getiri ve kendi vadenizle yapın.`;
+        } else if (risk > 0) {
+          noteEl.style.display = 'block';
+          noteEl.className = 'text-xs rounded-lg p-2.5 border bg-slate-100 border-slate-200 text-slate-600';
+          noteEl.textContent = `Risk değeri ${risk}/7` + (risk >= 4 ? ': orta düzey oynaklık.' : ': düşük oynaklıklı fon grubu.');
+        } else noteEl.style.display = 'none';
+      }
+    }
+
+    // Fonun getirisini mevduat/enflasyon/BIST 100/USD ile aynı dönemde kıyaslar ve kural tabanlı yorum üretir.
+    let benchRenderToken = 0;
+    async function renderBenchmarkPanel() {
+      const body = document.getElementById('benchmarkBody');
+      const lbl = document.getElementById('benchPeriodLabel');
+      if (!body) return;
+      const a = activeFundAnalyzeData;
+      if (!a || !a.history || a.history.length < 3) { body.textContent = 'Fon fiyat geçmişi alınınca kıyaslama burada görünür.'; return; }
+      const token = ++benchRenderToken;
+      const hist = currentFundPeriodHistory();
+      const t0 = hist[0].date, t1 = hist[hist.length - 1].date;
+      const fundRet = (hist[hist.length - 1].price / hist[0].price - 1) * 100;
+      const days = Math.max(1, Math.round((t1 - t0) / 86400000));
+      if (lbl) lbl.textContent = `· ${new Date(t0).toLocaleDateString('tr-TR')} – ${new Date(t1).toLocaleDateString('tr-TR')} (${days} gün)`;
+      body.innerHTML = '<span class="text-slate-400">Kıyas verileri çekiliyor...</span>';
+
+      const rows = []; // {name, ret, note}
+      const depG = depositGrowth(t0, t1);
+      rows.push({ key: 'dep', name: 'Mevduat', ret: depG ? (depG - 1) * 100 : null, note: depG ? '' : 'Ayarlardan faiz oranı girin' });
+      const cg = cpiGrowth(t0, t1);
+      let cpiNote = '';
+      if (!cg) cpiNote = 'Ayarlardan aylık TÜFE girin';
+      else if (cg.growth === null) cpiNote = 'Bu dönem için TÜFE girilmemiş';
+      else if (cg.present < cg.total) cpiNote = `${cg.total - cg.present} ay eksik (%0 sayıldı)`;
+      rows.push({ key: 'cpi', name: 'Enflasyon (TÜFE)', ret: cg && cg.growth ? (cg.growth - 1) * 100 : null, note: cpiNote });
+      const [bist, usd] = await Promise.all([fetchBistSeries(days + 5), fetchFxHistoryReal('USD', days + 5)]);
+      if (token !== benchRenderToken) return;
+      rows.push({ key: 'bist', name: 'BIST 100', ret: bist ? retBetween(bist, t0, t1) : null, note: bist ? '' : 'Veri alınamadı (Apps Script güncel mi?)' });
+      const usdPts = usd ? usd.map(x => ({ t: x.t, price: x.price })) : null;
+      rows.push({ key: 'usd', name: 'USD/TRY', ret: usdPts ? retBetween(usdPts, t0, t1) : null, note: usdPts ? '' : 'Veri alınamadı' });
+
+      const eq = fundEquityShare({ allocation: a.allocation });
+      const risk = Number(a.riskValue) || 0;
+      const get = k => rows.find(r => r.key === k);
+      const comments = [];
+      const equityFund = eq !== null && eq >= 50;
+      const bistRet = get('bist').ret, depRet = get('dep').ret;
+      if (equityFund) {
+        if (bistRet === null) comments.push('Fon ağırlıklı hisse taşıyor ama BIST 100 verisi alınamadığı için piyasa karşılaştırması yapılamadı.');
+        else {
+          const d = fundRet - bistRet;
+          if (fundRet < 0 && bistRet < 0 && Math.abs(d) <= 2) comments.push(`Fon ${fmtPct(fundRet)}, BIST 100 ${fmtPct(bistRet)}: düşüş büyük ölçüde genel piyasayla paralel görünüyor.`);
+          else if (fundRet < 0 && bistRet < 0 && d < -2) comments.push(`Piyasa da düşmüş (${fmtPct(bistRet)}) ama fon ${Math.abs(d).toFixed(1)} puan daha fazla düşmüş: bu, fona özgü bir zayıflığa (hisse seçimi/yönetim) işaret edebilir.`);
+          else if (fundRet < 0 && bistRet < 0 && d > 2) comments.push(`Piyasa ${fmtPct(bistRet)} düşerken fon daha az düşmüş (${fmtPct(fundRet)}).`);
+          else if (fundRet < 0 && bistRet >= 0) comments.push(`BIST 100 ${fmtPct(bistRet)} iken fon ${fmtPct(fundRet)}: düşüş genel piyasadan değil, fona özgü görünüyor.`);
+          else comments.push(`Fon ${fmtPct(fundRet)}, BIST 100 ${fmtPct(bistRet)}: fon piyasanın ${d >= 0 ? d.toFixed(1) + ' puan üzerinde' : Math.abs(d).toFixed(1) + ' puan gerisinde'}.`);
+        }
+      } else {
+        if (depRet !== null) comments.push(`Hisse ağırlığı ${eq === null ? 'bilinmiyor' : 'düşük (%' + eq.toFixed(0) + ')'}: uygun kıyas mevduat. Fon ${fmtPct(fundRet)}, mevduat ${fmtPct(depRet)}: fon mevduatın ${fundRet - depRet >= 0 ? (fundRet - depRet).toFixed(1) + ' puan üzerinde' : Math.abs(fundRet - depRet).toFixed(1) + ' puan gerisinde'}.`);
+        else comments.push('Hisse ağırlığı düşük olduğu için uygun kıyas mevduattır; ayarlardan faiz oranı girerseniz karşılaştırılır.');
+        if (fundRet < 0) comments.push('Hisse ağırlığı düşük bir fonda değer kaybı, faiz/tahvil fiyat dalgalanmasından ya da yönetimden kaynaklanabilir; varlık dağılımına bakın.');
+      }
+      const inf = get('cpi').ret;
+      if (inf !== null) {
+        const real = ((1 + fundRet / 100) / (1 + inf / 100) - 1) * 100;
+        comments.push(`Enflasyondan arındırılmış (reel) getiri: <strong class="${pctCls(real)}">${fmtPct(real)}</strong>.`);
+      }
+      if (risk >= 6 && fundRet < 0) comments.push(`Risk değeri ${risk}/7 olduğundan kısa vadeli düşüşler bu fonda olağandır.`);
+
+      const tbl = `<table class="w-full text-xs font-mono"><thead><tr class="text-[10px] uppercase text-slate-400 text-left"><th class="py-1">Ölçüt</th><th class="py-1 text-right">Getiri</th><th class="py-1 text-right">Fon farkı</th><th class="py-1 pl-3 font-sans normal-case"></th></tr></thead><tbody>
+        <tr class="border-t border-slate-200"><td class="py-1.5 font-bold text-slate-800">Bu fon</td><td class="py-1.5 text-right font-bold ${pctCls(fundRet)}">${fmtPct(fundRet)}</td><td></td><td></td></tr>
+        ${rows.map(r => `<tr class="border-t border-slate-200"><td class="py-1.5 text-slate-700">${r.name}</td><td class="py-1.5 text-right ${r.ret === null ? 'text-slate-400' : 'font-bold ' + pctCls(r.ret)}">${r.ret === null ? '—' : fmtPct(r.ret)}</td><td class="py-1.5 text-right ${r.ret === null ? 'text-slate-400' : pctCls(fundRet - r.ret)}">${r.ret === null ? '' : (fundRet - r.ret >= 0 ? '+' : '') + (fundRet - r.ret).toFixed(2) + ' puan'}</td><td class="py-1.5 pl-3 font-sans text-[10px] text-amber-600">${r.note}</td></tr>`).join('')}
+      </tbody></table>`;
+      body.innerHTML = tbl +
+        `<div class="mt-2 space-y-1 font-sans text-slate-600">${comments.map(c => `<div>• ${c}</div>`).join('')}</div>` +
+        `<div class="mt-2 text-[10px] text-slate-400 font-sans">Bu yorum yalnızca sayıların kural tabanlı karşılaştırmasıdır, yatırım tavsiyesi değildir.</div>`;
+    }
+
     async function renderChartModalContent() {
       const data = loadUserData();
       const item = (data.portfolio || []).find(i => i.id === activeChartAssetId);
@@ -2918,6 +3515,7 @@
       const netPL = curVal - cost;
       const netPLPct = cost > 0 ? (netPL / cost) * 100 : 0;
       const isLiq = isLiquidated(item);
+      if (item.type === 'fund' && activeFundAnalyzeData) { renderFundStats(); renderBenchmarkPanel(); }
 
       const mBuyPriceEl = document.getElementById('mBuyPrice');
       mBuyPriceEl.textContent = buyCurrency === 'TRY'
@@ -3087,6 +3685,7 @@
         calculateCurrencyConversion();
         await Promise.all([syncGoogleSheetData(true), syncWatchlistFromSheet(true), updateLiveMarketData(true)]);
         renderApp();
+        refreshAllFundInfo(false, true);
       });
 
       if (autoUpdateIntervalId) clearInterval(autoUpdateIntervalId);
@@ -3099,6 +3698,11 @@
         renderApp();
       }, 60000);
 
+      document.getElementById('btnRefreshFundInfo').onclick = () => refreshAllFundInfo(true, false);
+      document.getElementById('inputBenchDepositRate').addEventListener('input', () => saveBenchFromInputs('rate'));
+      document.getElementById('inputBenchCpi').addEventListener('input', () => saveBenchFromInputs('cpi'));
+      document.querySelectorAll('.compare-quick').forEach(b => b.onclick = () => window.addCompareCode(b.getAttribute('data-add')));
+      document.getElementById('btnCompareBenchSettings').onclick = () => document.getElementById('btnOpenSheetSettings').click();
       document.getElementById('btnRequestNotif').onclick = () => {
         if (!("Notification" in window)) {
           showToast("Tarayıcınız bildirimleri desteklemiyor.", "error");
@@ -3150,6 +3754,7 @@
         document.getElementById('inputSheetUrl').value = getSavedSheetUrl();
         document.getElementById('inputWatchSheetUrl').value = getSavedWatchSheetUrl();
         document.getElementById('inputTefasAnalyzeScriptUrl').value = getSavedTefasAnalyzeScriptUrl();
+        loadBenchInputs();
         document.getElementById('sheetSettingsModal').style.display = 'flex';
       };
       document.getElementById('sheetSettingsCloseX').onclick = () => document.getElementById('sheetSettingsModal').style.display = 'none';
