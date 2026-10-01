@@ -290,7 +290,7 @@
     <section id="colorGroupSection" class="bg-white rounded-2xl p-4 md:p-6 border border-slate-200 shadow-sm space-y-3" style="display:none">
       <div>
         <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2"><span>🎨</span> Renk Grupları Performansı</h2>
-        <p class="text-xs text-slate-500">Aynı renkteki açıklamaların kâr/zarar özeti (TL ve %) ve 1-3-6-9-12 aylık fiyat getirileri. Tasfiyedekiler hariçtir.</p>
+        <p class="text-xs text-slate-500">Aynı renkteki açıklamaların kâr/zarar özeti (TL ve %), 1-3-6-9-12 aylık ve yıl başından bugüne (geçen yılın aynı dönemiyle kıyaslı) fiyat getirileri. Tasfiyedekiler hariçtir.</p>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs font-mono text-slate-700">
@@ -299,6 +299,7 @@
               <th class="py-2 px-3">Grup</th><th class="py-2 px-3 text-center">Varlık</th><th class="py-2 px-3 text-right">Maliyet</th><th class="py-2 px-3 text-right">Değer</th>
               <th class="py-2 px-3 text-right">K/Z (TL)</th><th class="py-2 px-3 text-right">K/Z (%)</th>
               <th class="py-2 px-2 text-right">1 Ay</th><th class="py-2 px-2 text-right">3 Ay</th><th class="py-2 px-2 text-right">6 Ay</th><th class="py-2 px-2 text-right">9 Ay</th><th class="py-2 px-2 text-right">12 Ay</th>
+              <th id="cgYtd" class="py-2 px-2 text-right border-l border-slate-300"></th><th id="cgPrevSame" class="py-2 px-2 text-right"></th><th id="cgPrevFull" class="py-2 px-2 text-right"></th>
             </tr>
           </thead>
           <tbody id="colorGroupBody"></tbody>
@@ -983,7 +984,7 @@ function doGet(e) {
         allocation: (a.allocation || []).map(x => ({ code: x.code, label: x.label, pct: x.pct })),
         vol: stats ? stats.vol : null, mdd: stats ? stats.mdd : null, ret6m: stats ? stats.ret : null,
         rets: periodReturns((a.history || []).map(h => ({ t: h.date, price: h.price }))),
-        v: 2, fetchedAt: Date.now()
+        v: 3, fetchedAt: Date.now()
       };
       loadFundInfoCache()[String(a.code).toUpperCase()] = entry;
       saveFundInfoCache();
@@ -998,7 +999,7 @@ function doGet(e) {
       const cache = loadFundInfoCache();
       const cur = cache[key];
       if (!force && cur) {
-        if (!cur.failedAt && Date.now() - cur.fetchedAt < FUND_INFO_TTL && cur.v >= 2) return cur;
+        if (!cur.failedAt && Date.now() - cur.fetchedAt < FUND_INFO_TTL && cur.v >= 3) return cur;
         if (cur.failedAt && Date.now() - cur.failedAt < FUND_INFO_FAIL_TTL) return null;
       }
       const a = await fetchTefasFundAnalyze(key);
@@ -1019,7 +1020,7 @@ function doGet(e) {
         const cur = loadFundInfoCache()[c];
         if (!cur) return true;
         if (cur.failedAt) return Date.now() - cur.failedAt >= FUND_INFO_FAIL_TTL;
-        return Date.now() - cur.fetchedAt >= FUND_INFO_TTL || !(cur.v >= 2);
+        return Date.now() - cur.fetchedAt >= FUND_INFO_TTL || !(cur.v >= 3);
       });
       const fxCodes = [...new Set((loadUserData().portfolio || [])
         .filter(i => i.type === 'fx' && !isLiquidated(i, liqSet) && ['USD', 'EUR', 'GBP'].includes(String(i.code).toUpperCase()))
@@ -1028,7 +1029,7 @@ function doGet(e) {
         const cur = loadFundInfoCache()['FX:' + c];
         if (!cur) return true;
         if (cur.failedAt) return Date.now() - cur.failedAt >= FUND_INFO_FAIL_TTL;
-        return Date.now() - cur.fetchedAt >= FUND_INFO_TTL || !(cur.v >= 2);
+        return Date.now() - cur.fetchedAt >= FUND_INFO_TTL || !(cur.v >= 3);
       });
       if (todo.length === 0 && fxCodes.length === 0) { if (!quiet) showToast('Fon bilgileri güncel.', 'info'); return; }
       fundInfoRefreshing = true;
@@ -1073,10 +1074,31 @@ function doGet(e) {
     // Varlığın fiyat getirisidir (alış tarihinizden bağımsız). Fonlar TEFAS fiyat geçmişinden, USD/EUR/GBP döviz
     // geçmişinden, mevduat Kıyas Ayarları'ndaki yıllık faizden hesaplanır. Geçmiş yetmiyorsa o dönem boş (—) kalır.
     const PERIOD_MONTHS = [1, 3, 6, 9, 12];
+    const YEAR_KEYS = ['ytd', 'prevSame', 'prevFull'];   // bu yıl başından bugüne / geçen yılın aynı dönemi / geçen yılın tamamı
+    const ALL_PERIOD_KEYS = [...PERIOD_MONTHS, ...YEAR_KEYS];
+    const yearEnd = (y) => new Date(y, 11, 31, 23, 59, 59).getTime();
+    // Takvim yılı getirileri: yıl başı = önceki yılın son işlem günü kapanışı.
+    function yearReturns(pts, refT) {
+      const out = { ytd: null, prevSame: null, prevFull: null };
+      if (!pts || pts.length < 2) return out;
+      const last = pts[pts.length - 1];
+      const ref = new Date(refT || last.t);
+      const Y = ref.getFullYear();
+      const cover = (t) => pts[0].t <= t + 6 * 86400000;
+      const calc = (t0, t1) => {
+        if (!cover(t0)) return null;
+        const a = pointAt(pts, t0), b = pointAt(pts, t1);
+        return (a > 0 && b > 0) ? (b / a - 1) * 100 : null;
+      };
+      out.ytd = calc(yearEnd(Y - 1), last.t);
+      out.prevSame = calc(yearEnd(Y - 2), new Date(Y - 1, ref.getMonth(), ref.getDate(), 23, 59, 59).getTime());
+      out.prevFull = calc(yearEnd(Y - 2), yearEnd(Y - 1));
+      return out;
+    }
     function periodReturns(pts) {
       const out = {};
       PERIOD_MONTHS.forEach(m => { out[m] = null; });
-      if (!pts || pts.length < 2) return out;
+      if (!pts || pts.length < 2) return Object.assign(out, { ytd: null, prevSame: null, prevFull: null });
       const last = pts[pts.length - 1];
       PERIOD_MONTHS.forEach(m => {
         const target = last.t - m * 30.4375 * 86400000;
@@ -1084,19 +1106,29 @@ function doGet(e) {
         const base = pointAt(pts, target);
         if (base > 0 && last.price > 0) out[m] = (last.price / base - 1) * 100;
       });
-      return out;
+      return Object.assign(out, yearReturns(pts));
+    }
+    // Mevduat: Kıyas Ayarları'ndaki tek yıllık faizle (bileşik) hesaplanır.
+    function depositRets(r) {
+      const o = {};
+      PERIOD_MONTHS.forEach(m => { o[m] = (Math.pow(1 + r / 100, m / 12) - 1) * 100; });
+      const now = new Date(), Y = now.getFullYear();
+      const days = Math.round((now - new Date(Y - 1, 11, 31)) / 86400000);
+      o.ytd = (Math.pow(1 + r / 100, days / 365) - 1) * 100;
+      o.prevSame = o.ytd; o.prevFull = r;
+      return o;
     }
     async function ensureFxInfo(code, force) {
       const key = 'FX:' + code;
       const cache = loadFundInfoCache();
       const cur = cache[key];
       if (!force && cur) {
-        if (!cur.failedAt && Date.now() - cur.fetchedAt < FUND_INFO_TTL && cur.v >= 2) return cur;
+        if (!cur.failedAt && Date.now() - cur.fetchedAt < FUND_INFO_TTL && cur.v >= 3) return cur;
         if (cur.failedAt && Date.now() - cur.failedAt < FUND_INFO_FAIL_TTL) return null;
       }
-      const hist = await fetchFxHistoryReal(code, 420);
+      const hist = await fetchFxHistoryReal(code, 700);
       if (!hist || hist.length < 10) { cache[key] = { code: key, failedAt: Date.now() }; saveFundInfoCache(); return null; }
-      cache[key] = { code: key, kind: 'fx', rets: periodReturns(hist.map(h => ({ t: h.t, price: h.price }))), v: 2, fetchedAt: Date.now() };
+      cache[key] = { code: key, kind: 'fx', rets: periodReturns(hist.map(h => ({ t: h.t, price: h.price }))), v: 3, fetchedAt: Date.now() };
       saveFundInfoCache();
       return cache[key];
     }
@@ -1109,14 +1141,14 @@ function doGet(e) {
       }
       if (item.type === 'deposit') {
         const r = loadBenchSettings().depositRate;
-        if (r > 0) { const o = {}; PERIOD_MONTHS.forEach(m => { o[m] = (Math.pow(1 + r / 100, m / 12) - 1) * 100; }); return o; }
+        if (r > 0) return depositRets(r);
       }
       return null;
     }
     // Grubun dönemsel getirisi: üyelerin güncel değerleriyle ağırlıklı; verisi olmayan üyeler hariç tutulur (cov = kapsam oranı).
     function groupPeriodReturns(members) {
       const res = {};
-      PERIOD_MONTHS.forEach(m => {
+      ALL_PERIOD_KEYS.forEach(m => {
         let nowSum = 0, thenSum = 0, cov = 0, tot = 0;
         members.forEach(e => {
           tot += e.curVal;
@@ -1134,8 +1166,11 @@ function doGet(e) {
       const star = (cov !== undefined && cov < 0.999) ? `<sup class="text-amber-600" title="Grubun değer bazında %${Math.round(cov * 100)}'i için veri var">*</sup>` : '';
       return `<span class="${pctCls(v)} font-bold">${fmtPct(v)}</span>${star}`;
     }
+    const yrLabels = () => { const Y = new Date().getFullYear(); return { ytd: Y + ' YTD', prevSame: (Y - 1) + ' aynı dönem', prevFull: (Y - 1) + ' tam yıl' }; };
     function periodSpansHtml(gr) {
-      return `<span class="font-mono text-slate-500">${PERIOD_MONTHS.map(m => `${m}A ${gr && gr[m] ? retCellHtml(gr[m].ret, gr[m].cov) : '<span class="text-slate-400">—</span>'}`).join(' · ')}</span>`;
+      const L = yrLabels();
+      const cell = (k, lab) => `${lab} ${gr && gr[k] ? retCellHtml(gr[k].ret, gr[k].cov) : '<span class="text-slate-400">—</span>'}`;
+      return `<span class="font-mono text-slate-500">${PERIOD_MONTHS.map(m => cell(m, m + 'A')).join(' · ')} · <span class="text-slate-700">${cell('ytd', L.ytd)} · ${cell('prevSame', L.prevSame)}</span></span>`;
     }
     // Varlıkları renk/açıklama grubuna böler: aynı renk = aynı grup; rengi olmayan açıklamalar kendi grubu; açıklamasızlar en sonda.
     function groupEntries(entries) {
@@ -1174,11 +1209,13 @@ function doGet(e) {
       const arr = groupEntries(entries);
       if (!arr.some(g => g.key !== 'none')) { sec.style.display = 'none'; return; }
       sec.style.display = '';
+      const L0 = yrLabels();
+      [['cgYtd', L0.ytd], ['cgPrevSame', L0.prevSame], ['cgPrevFull', L0.prevFull]].forEach(([id, t]) => { const el = document.getElementById(id); if (el) el.textContent = t; });
       const plCell = (pl, cost) => {
         const pct = cost > 0 ? pl / cost * 100 : 0;
         return `<td class="py-2 px-3 text-right font-bold ${pctCls(pl)}">${pl >= 0 ? '+' : ''}${formatTL(pl)}</td><td class="py-2 px-3 text-right font-bold ${pctCls(pct)}">${fmtPct(pct)}</td>`;
       };
-      const periodTds = (gr) => PERIOD_MONTHS.map(m => `<td class="py-2 px-2 text-right">${gr && gr[m] ? retCellHtml(gr[m].ret, gr[m].cov) : '<span class="text-slate-400">—</span>'}</td>`).join('');
+      const periodTds = (gr) => ALL_PERIOD_KEYS.map(m => `<td class="py-2 px-2 text-right">${gr && gr[m] ? retCellHtml(gr[m].ret, gr[m].cov) : '<span class="text-slate-400">—</span>'}</td>`).join('');
       let html = arr.map(g => {
         const col = g.color || '#94a3b8';
         return `<tr class="border-b border-slate-100" style="box-shadow:inset 4px 0 0 ${col};background:${col}12">
@@ -1208,29 +1245,34 @@ function doGet(e) {
       if (!body || !a) return;
       const holder = document.createElement('div');
       holder.className = 'mt-3 text-xs text-slate-400';
-      holder.textContent = 'Dönemsel (1-3-6-9-12 ay) getiriler hesaplanıyor...';
+      holder.textContent = 'Dönemsel (1-3-6-9-12 ay ve yıl) getiriler hesaplanıyor...';
       body.appendChild(holder);
-      const [bist, usd] = await Promise.all([fetchBistSeries(370), fetchFxHistoryReal('USD', 420)]);
+      const [bist, usd] = await Promise.all([fetchBistSeries(700), fetchFxHistoryReal('USD', 700)]);
       if (token !== benchRenderToken || !holder.isConnected) return;
       const fundR = periodReturns((a.history || []).map(h => ({ t: h.date, price: h.price })));
       const rate = loadBenchSettings().depositRate;
-      const depR = rate > 0 ? Object.fromEntries(PERIOD_MONTHS.map(m => [m, (Math.pow(1 + rate / 100, m / 12) - 1) * 100])) : null;
+      const depR = rate > 0 ? depositRets(rate) : null;
       const nowT = Date.now();
       const cpiR = {};
       PERIOD_MONTHS.forEach(m => { const g = cpiGrowth(nowT - m * 30.4375 * 86400000, nowT); cpiR[m] = g && g.growth ? (g.growth - 1) * 100 : null; });
+      { const nd = new Date(nowT), Y = nd.getFullYear();
+        const cg = (t0, t1) => { const g = cpiGrowth(t0, t1); return g && g.growth ? (g.growth - 1) * 100 : null; };
+        cpiR.ytd = cg(yearEnd(Y - 1), nowT);
+        cpiR.prevSame = cg(yearEnd(Y - 2), new Date(Y - 1, nd.getMonth(), nd.getDate(), 23, 59, 59).getTime());
+        cpiR.prevFull = cg(yearEnd(Y - 2), yearEnd(Y - 1)); }
       const rows = [
         ['Bu fon', fundR, true],
         ['Mevduat', depR],
-        ['Enflasyon (TÜFE)', PERIOD_MONTHS.some(m => cpiR[m] !== null) ? cpiR : null],
+        ['Enflasyon (TÜFE)', ALL_PERIOD_KEYS.some(m => cpiR[m] !== null && cpiR[m] !== undefined) ? cpiR : null],
         ['BIST 100', bist ? periodReturns(bist) : null],
         ['USD/TRY', usd ? periodReturns(usd.map(x => ({ t: x.t, price: x.price }))) : null]
       ];
       holder.className = 'mt-3';
       holder.innerHTML = `<div class="text-[10px] uppercase font-semibold text-slate-400 mb-1">Dönemsel getiri karşılaştırması</div>
-        <table class="w-full text-xs font-mono"><thead><tr class="text-[10px] uppercase text-slate-400 text-right"><th class="py-1 text-left">Ölçüt</th>${PERIOD_MONTHS.map(m => `<th class="py-1">${m} ay</th>`).join('')}</tr></thead><tbody>
-        ${rows.map(([name, r, bold]) => `<tr class="border-t border-slate-200"><td class="py-1.5 text-left ${bold ? 'font-bold text-slate-800' : 'text-slate-700'}">${name}</td>${PERIOD_MONTHS.map(m => `<td class="py-1.5 text-right">${r && r[m] !== null && r[m] !== undefined ? retCellHtml(r[m]) : '<span class="text-slate-400">—</span>'}</td>`).join('')}</tr>`).join('')}
+        <table class="w-full text-xs font-mono"><thead><tr class="text-[10px] uppercase text-slate-400 text-right"><th class="py-1 text-left">Ölçüt</th>${PERIOD_MONTHS.map(m => `<th class="py-1">${m} ay</th>`).join('')}${YEAR_KEYS.map(k => `<th class="py-1 ${k === 'ytd' ? 'border-l border-slate-300 pl-2' : ''}">${yrLabels()[k]}</th>`).join('')}</tr></thead><tbody>
+        ${rows.map(([name, r, bold]) => `<tr class="border-t border-slate-200"><td class="py-1.5 text-left ${bold ? 'font-bold text-slate-800' : 'text-slate-700'}">${name}</td>${ALL_PERIOD_KEYS.map(m => `<td class="py-1.5 text-right ${m === 'ytd' ? 'border-l border-slate-300' : ''}">${r && r[m] !== null && r[m] !== undefined ? retCellHtml(r[m]) : '<span class="text-slate-400">—</span>'}</td>`).join('')}</tr>`).join('')}
         </tbody></table>
-        <div class="mt-1 text-[10px] text-slate-400 font-sans">— : o dönem için veri/ayar yok. Fon geçmişinin uzunluğu TEFAS'ın verdiği veriye bağlıdır.</div>`;
+        <div class="mt-1 text-[10px] text-slate-400 font-sans">— : o dönem için veri/ayar yok. Yıl sütunları takvim yılı bazlıdır (yıl başı = önceki yılın son işlem günü); geçen yıl sütunları için fon geçmişinin 2024 sonuna uzanması gerekir, bu TEFAS'ın verdiği veriye bağlıdır. Mevduat satırı güncel faizle hesaplanır.</div>`;
     }
 
     // ── GERÇEK VARLIK DAĞILIMI (fonların içi dahil) ──────────────────
@@ -1361,7 +1403,7 @@ function doGet(e) {
 
     // ── BIST 100 (Apps Script veya CORS proxy üzerinden Yahoo) ─────────
     const benchMemCache = {};
-    function yahooRangeForDays(days) { return days <= 30 ? '1mo' : (days <= 90 ? '3mo' : (days <= 180 ? '6mo' : '1y')); }
+    function yahooRangeForDays(days) { return days <= 30 ? '1mo' : (days <= 90 ? '3mo' : (days <= 180 ? '6mo' : (days <= 370 ? '1y' : '2y'))); }
     async function fetchBistSeries(days) {
       const range = yahooRangeForDays(days);
       const cached = benchMemCache['bist_' + range];
