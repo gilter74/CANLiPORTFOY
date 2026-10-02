@@ -555,13 +555,53 @@
           <details class="mt-2">
             <summary class="cursor-pointer text-xs font-bold text-teal-700">📋 Apps Script kodunu göster / kopyala</summary>
             <button id="btnCopyTefasCode" type="button" class="mt-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-white">Kodu Kopyala</button>
-          <pre id="tefasScriptCode" class="mt-2 bg-slate-900 text-emerald-300 text-[10px] p-3 rounded-lg overflow-auto" style="max-height:240px">function out(o) {
+          <pre id="tefasScriptCode" class="mt-2 bg-slate-900 text-emerald-300 text-[10px] p-3 rounded-lg overflow-auto" style="max-height:240px">// Portfoy Takip - TEFAS (yeni API, Nisan 2026 sonrasi) + BIST 100
+var BASE = 'https://www.tefas.gov.tr/api/funds/';
+function out(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
+}
+function ymd(d) { return Utilities.formatDate(d, 'GMT+3', 'yyyyMMdd'); }
+function post(path, body) {
+  var r = UrlFetchApp.fetch(BASE + path, {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { 'Accept': '*/*', 'Origin': 'https://www.tefas.gov.tr', 'Referer': 'https://www.tefas.gov.tr/tr/fon-verileri', 'User-Agent': 'Mozilla/5.0' },
+    payload: JSON.stringify(body)
+  });
+  if (r.getResponseCode() !== 200) throw new Error(path + ' HTTP ' + r.getResponseCode());
+  return JSON.parse(r.getContentText('UTF-8'));
+}
+function listOf(j) { return (j &amp;&amp; j.resultList) || (Array.isArray(j) ? j : []); }
+function reqBody(kind, code, a, b) {
+  return { fonTipi: kind, basTarih: ymd(a), bitTarih: ymd(b), basSira: 1, bitSira: 1000, dil: 'TR', fonKodu: code, aramaMetni: '', fonTurKod: '' };
+}
+function toMs(v) {
+  if (typeof v === 'number') return v &lt; 1e11 ? v * 1000 : v;
+  var s = String(v), m;
+  if ((m = s.match(/^(\d{4})-(\d{2})-(\d{2})/))) return new Date(+m[1], m[2] - 1, +m[3], 12).getTime();
+  if ((m = s.match(/^(\d{2})[.\/](\d{2})[.\/](\d{4})/))) return new Date(+m[3], m[2] - 1, +m[1], 12).getTime();
+  if ((m = s.match(/^(\d{4})(\d{2})(\d{2})$/))) return new Date(+m[1], m[2] - 1, +m[3], 12).getTime();
+  var t = Date.parse(s); return isNaN(t) ? null : t;
+}
+function priceHistory(kind, code, days) {
+  var now = new Date(), rows = [], step = [days, 180, 90];
+  for (var k = 0; k &lt; step.length &amp;&amp; rows.length &lt; 20; k++) {
+    rows = [];
+    try {
+      var from = new Date(now.getTime() - days * 86400000);
+      var cur = from;
+      while (cur &lt; now) {
+        var end = new Date(Math.min(now.getTime(), cur.getTime() + step[k] * 86400000));
+        rows = rows.concat(listOf(post('fonGnlBlgSiraliGetir', reqBody(kind, code, cur, end))));
+        cur = new Date(end.getTime() + 86400000);
+      }
+    } catch (e) { rows = []; }
+  }
+  return rows;
 }
 function doGet(e) {
   try {
     var p = e.parameter || {};
-    // BIST 100 (ve diger Yahoo sembolleri) icin: ?symbol=XU100.IS&amp;range=6mo
+    // BIST 100 (ve diger Yahoo sembolleri): ?symbol=XU100.IS&amp;range=6mo
     if (p.symbol) {
       var range = (p.range || '6mo').toString();
       var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(p.symbol) + '?range=' + range + '&amp;interval=1d';
@@ -569,24 +609,54 @@ function doGet(e) {
       if (r.getResponseCode() !== 200) return out({ ok: false, error: 'Yahoo HTTP ' + r.getResponseCode() });
       var res = JSON.parse(r.getContentText()).chart.result[0];
       var ts = res.timestamp, cl = res.indicators.quote[0].close, arr = [];
-      for (var i = 0; ts.length > i; i++) {
-        if (cl[i] != null) arr.push({ t: ts[i] * 1000, c: cl[i] });
-      }
+      for (var i = 0; ts.length &gt; i; i++) { if (cl[i] != null) arr.push({ t: ts[i] * 1000, c: cl[i] }); }
       return out({ ok: true, series: arr });
     }
-    // TEFAS fon analizi icin: ?code=TGE
+    // TEFAS fon: ?code=TGE
     var code = (p.code || '').toString().trim().toUpperCase();
     if (!code) return out({ ok: false, error: 'code veya symbol parametresi gerekli' });
-    var resp = UrlFetchApp.fetch('https://www.tefas.gov.tr/api/DB/GetAllFundAnalyzeData', {
-      method: 'post',
-      contentType: 'application/x-www-form-urlencoded; charset=UTF-8',
-      headers: { 'X-Requested-With': 'XMLHttpRequest', 'Referer': 'https://www.tefas.gov.tr/FonAnaliz.aspx', 'User-Agent': 'Mozilla/5.0' },
-      payload: 'dil=TR&amp;fonkod=' + encodeURIComponent(code),
-      muteHttpExceptions: true
+    var kinds = ['YAT', 'EMK', 'BYF', 'GYF', 'GSYF'], kind = '', rows = [], dbg = {};
+    for (var q = 0; q &lt; kinds.length &amp;&amp; rows.length === 0; q++) {
+      kind = kinds[q];
+      rows = priceHistory(kind, code, 700);
+    }
+    if (!rows.length) return out({ ok: false, error: 'TEFAS fiyat verisi bos dondu (fon kodu ' + code + '). Kod dogru mu?' });
+    var hist = [];
+    rows.forEach(function (x) {
+      var t = toMs(x.tarih), f = parseFloat(x.fiyat);
+      if (t &amp;&amp; f &gt; 0) hist.push({ TARIH: t, FIYAT: f });
     });
-    var status = resp.getResponseCode();
-    if (status !== 200) return out({ ok: false, error: 'TEFAS HTTP ' + status });
-    return out({ ok: true, data: JSON.parse(resp.getContentText('UTF-8')) });
+    hist.sort(function (a, b) { return a.TARIH - b.TARIH; });
+    var last = rows[rows.length - 1];
+    dbg.fiyatSatir = rows.length; dbg.fiyatAlanlari = Object.keys(last).join(',');
+    // Varlik dagilimi (en son is gunu)
+    var alloc = [];
+    try {
+      var d = new Date(); var tries = 0;
+      while (tries &lt; 6 &amp;&amp; !alloc.length) {
+        var dd = new Date(d.getTime() - tries * 86400000);
+        var al = listOf(post('dagilimSiraliGetirT', reqBody(kind, code, dd, dd)));
+        if (al.length) {
+          var row = al[0]; dbg.dagilimAlanlari = Object.keys(row).join(',');
+          Object.keys(row).forEach(function (k) {
+            var v = parseFloat(row[k]);
+            if (!isNaN(v) &amp;&amp; v &gt; 0 &amp;&amp; v &lt;= 100.5 &amp;&amp; !/tarih|kod|unvan|fiyat|sayi|buyukluk|sira|tur|id$/i.test(k)) alloc.push({ KIYMETTIP: k, PORTFOYORANI: v });
+          });
+        }
+        tries++;
+      }
+    } catch (ae) { dbg.dagilimHata = String(ae); }
+    // Risk degeri / profil (parametreler dogrulanamadi; denenir)
+    var risk = null;
+    try {
+      var pj = post('fonProfilBilgiGetir', { fonKodu: code, dil: 'TR' });
+      var pr = listOf(pj)[0] || pj; dbg.profilAlanlari = Object.keys(pr || {}).join(',');
+      Object.keys(pr || {}).forEach(function (k) { if (/risk/i.test(k) &amp;&amp; parseFloat(pr[k]) &gt;= 1 &amp;&amp; parseFloat(pr[k]) &lt;= 7) risk = parseFloat(pr[k]); });
+    } catch (pe) { dbg.profilHata = String(pe); }
+    return out({ ok: true, data: {
+      fundInfo: [{ FONUNVAN: last.fonUnvan || code, FONTUR: kind, FONKATEGORI: '', RISKDEGERI: risk, PORTBUYUKLUK: last.portfoyBuyukluk, YATIRIMCISAYI: last.kisiSayisi }],
+      fundPrices: hist, fundAllocation: alloc, _debug: dbg
+    } });
   } catch (err) {
     return out({ ok: false, error: String(err) });
   }
@@ -972,6 +1042,21 @@ function doGet(e) {
     }
     function assetGroupForTefasCode(code) {
       const c = String(code || '').trim().toUpperCase();
+      if (c.length > 4) {   // yeni TEFAS API: açıklayıcı alan adları (hisseSenedi, devletTahvili...)
+        const n = c.toLowerCase().replace(/ı/g, 'i').replace(/ş/g, 's').replace(/ğ/g, 'g').replace(/ü/g, 'u').replace(/ö/g, 'o').replace(/ç/g, 'c').replace(/i̇/g, 'i');
+        if (/ters.?repo|^repo|tpp/.test(n)) return 'Ters Repo';
+        if (/hisse/.test(n)) return 'Hisse Senedi';
+        if (/devlet|tahvil|bono|hazine/.test(n) && !/ozel|ozsektor/.test(n)) return 'Devlet Tahvili / Bonosu';
+        if (/ozel|finansman|banka|borclanma/.test(n)) return 'Özel Sektör / Banka Borçlanma';
+        if (/mevduat|katilim.?hesab/.test(n)) return 'Mevduat';
+        if (/altin|kiymetli|maden/.test(n)) return 'Kıymetli Madenler';
+        if (/kira|sukuk|sertifika/.test(n)) return 'Kira Sertifikası';
+        if (/eurobond|dis.?borc/.test(n)) return 'Eurobond';
+        if (/yabanci|ypmk|yurt.?disi/.test(n)) return 'Yabancı Menkul Kıymet';
+        if (/fon|katilma/.test(n)) return 'Fon Katılma Belgesi';
+        if (/doviz/.test(n)) return 'Yabancı Menkul Kıymet';
+        return 'Diğer';
+      }
       if (c === 'HS') return 'Hisse Senedi';
       if (c === 'DT' || c === 'TB') return 'Devlet Tahvili / Bonosu';
       if (['ÖST', 'OST', 'FB', 'BB', 'ÖSKS', 'DÖT'].includes(c)) return 'Özel Sektör / Banka Borçlanma';
@@ -1510,15 +1595,15 @@ function doGet(e) {
       return {};
     }
     function saveDescNone(kind, map) { try { localStorage.setItem('portfoy_descnone_' + kind + '_' + getPortfolioCode(), JSON.stringify(map || {})); } catch(e) {} }
-    // Altın varlıklarında aynı kodlu farklı alım satırları ayrı açıklama alabilsin diye anahtar alım satırına özeldir
-    // (kod + tarih + miktar + birim fiyat). Diğer varlıklarda ve takip listesinde anahtar fon kodudur.
+    // Portföyde aynı kodlu farklı alım satırları (farklı tarih/miktar/fiyat) ayrı açıklama ve renk alabilsin diye anahtar
+    // alım satırına özeldir (kod + tarih + miktar + birim fiyat). Takip listesinde anahtar fon kodudur.
     function lotKeyFor(item) {
       return ('G|' + (item.code || '') + '|' + (item.buyDate || '') + '|' + (item.amount || 0) + '|' + (item.buyPrice || 0)).toUpperCase();
     }
     function descKeysFor(kind, target) {
       if (target && typeof target === 'object') {
         const codeKey = String(target.code || '').toUpperCase();
-        return (kind === 'p' && target.type === 'gold') ? [lotKeyFor(target), codeKey] : [codeKey];
+        return kind === 'p' ? [lotKeyFor(target), codeKey] : [codeKey];   // portföyde her alım satırı (kod+tarih+miktar+fiyat) kendi açıklamasını taşır; eski kod bazlı kayıt yedek olarak kalır
       }
       return [String(target || '').toUpperCase()];
     }
@@ -2454,8 +2539,9 @@ function doGet(e) {
         if (!p) out.push(line(false, 'TEFAS testi: yanıt geldi ama içinde fon bilgisi yok (TEFAS yanıt biçimi değişmiş veya istek engellenmiş olabilir). Yanıt anahtarları: ' + escHtml(Object.keys(a.j.data || {}).join(', ') || 'boş')));
         else {
           const h = p.history || [];
+          const dbgT = a.j.data && a.j.data._debug ? '<div class="text-slate-400 break-all">Teknik bilgi: ' + escHtml(JSON.stringify(a.j.data._debug)) + (p.allocation && p.allocation.length ? '' : ' · <span class="text-amber-600">varlık dağılımı alınamadı</span>') + (p.riskValue ? '' : ' · <span class="text-amber-600">risk değeri alınamadı</span>') + '</div>' : '';
           const first = h.length ? new Date(h[0].date).toLocaleDateString('tr-TR') : '-';
-          out.push(line(true, `TEFAS çalışıyor: ${escHtml(p.name)} · ${h.length} günlük fiyat geçmişi (en eski: ${first}). ` + (h.length && h[0].date > new Date(new Date().getFullYear() - 1, 0, 6).getTime() ? '<span class="text-amber-600">Geçmiş geçen yıl başına uzanmıyor; 2025 sütunları "—" kalacak.</span>' : 'Geçen yıl karşılaştırması için yeterli.')));
+          out.push(line(true, `TEFAS çalışıyor: ${escHtml(p.name)} · ${h.length} günlük fiyat geçmişi (en eski: ${first}). ` + (h.length && h[0].date > new Date(new Date().getFullYear() - 1, 0, 6).getTime() ? '<span class="text-amber-600">Geçmiş geçen yıl başına uzanmıyor; 2025 sütunları "—" kalacak.</span>' : 'Geçen yıl karşılaştırması için yeterli.') + dbgT));
         }
       }
       const b = await call('?symbol=XU100.IS&range=1mo');
@@ -3380,14 +3466,28 @@ function doGet(e) {
       }
 
       {
-        // Altında anahtar alım satırına özeldir; tarih/miktar/fiyat değiştiyse eski satırın kaydı yeni anahtara taşınır.
-        const newKey = type === 'gold' ? lotKeyFor({ code, buyDate, amount, buyPrice }) : code;
+        // Anahtar alım satırına özeldir; tarih/miktar/fiyat değiştiyse eski satırın kaydı yeni anahtara taşınır.
+        const newKey = lotKeyFor({ code, buyDate, amount, buyPrice });
         const oldItem = activeEditAssetId ? data.portfolio.find(i => i.id === activeEditAssetId) : null;
-        if (oldItem && oldItem.type === 'gold') {
+        if (oldItem) {
           const oldKey = lotKeyFor(oldItem);
           if (oldKey !== newKey) {
             const dm = loadDescMap('p'); delete dm[oldKey]; saveDescMap('p', dm);
             const dn = loadDescNone('p'); delete dn[oldKey]; saveDescNone('p', dn);
+          }
+        }
+        // Eski sürümde açıklama koda bağlıydı: aynı kodlu diğer satırlar şimdiki açıklamalarını kendi satırlarına kopyalayıp
+        // bağımsız hale gelir, böylece biri değişince diğeri etkilenmez.
+        {
+          const dm = loadDescMap('p'), dn = loadDescNone('p');
+          if (dm[code]) {
+            let changed = false;
+            data.portfolio.forEach(it => {
+              if (String(it.code || '').toUpperCase() !== code || it.id === activeEditAssetId) return;
+              const lk = lotKeyFor(it);
+              if (!Object.prototype.hasOwnProperty.call(dm, lk)) { dm[lk] = dm[code]; if (dn[code]) dn[lk] = true; changed = true; }
+            });
+            if (changed) { saveDescMap('p', dm); saveDescNone('p', dn); }
           }
         }
         setDescription('p', newKey, document.getElementById('editDesc').value, descPickerState.edit);
