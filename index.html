@@ -2268,40 +2268,93 @@ function doGet(e) {
     }
 
     async function updateLiveMarketData(quiet = false) {
-      try {
-        const res = await fetchWithTimeout('https://open.er-api.com/v6/latest/USD', {}, 6000);
-        if (res && res.ok) {
-          const data = await res.json();
-          if (data && data.rates && data.rates.TRY) {
-            const usdTry = data.rates.TRY;
-            if (liveRates['USD']) liveRates['USD'].price = parseFloat(usdTry.toFixed(2));
-            if (data.rates.EUR && liveRates['EUR']) liveRates['EUR'].price = parseFloat((usdTry / data.rates.EUR).toFixed(2));
-          }
-        }
-      } catch(e) {}
+      const refreshBtn = document.getElementById('btnRefreshLiveRates');
+      const refreshBtnHtml = refreshBtn ? refreshBtn.innerHTML : '';
+      if (refreshBtn) {
+        refreshBtn.disabled = true;
+        refreshBtn.innerHTML = '<span>⏳</span> Güncelleniyor...';
+        refreshBtn.classList.add('opacity-60', 'cursor-not-allowed');
+      }
 
-      try {
-        const resGold = await fetchWithTimeout('https://api.gold-api.com/price/XAU', {}, 6000);
-        if (resGold && resGold.ok) {
-          const g = await resGold.json();
-          if (g && g.price && liveRates['USD']) {
-            const onsTRY = g.price * liveRates['USD'].price;
-            const gram = onsTRY / 31.1034768;
-            if (liveRates['GRAM']) liveRates['GRAM'].price = parseFloat(gram.toFixed(2));
-            if (liveRates['CEYREK']) liveRates['CEYREK'].price = parseFloat((gram * 1.635).toFixed(2));
-          }
-        }
-      } catch(e) {}
+      let currencyUpdated = false;
+      let goldUpdated = false;
+      let fundUpdatedCount = 0;
+      const errors = [];
 
+      // Kur verisini yenile. Başarısız olursa kayıtlı son fiyat korunur.
+      try {
+        const res = await fetchWithTimeout('https://open.er-api.com/v6/latest/USD', { cache: 'no-store' }, 9000);
+        if (!res || !res.ok) throw new Error('Döviz servisi HTTP ' + (res ? res.status : 'yanıt yok'));
+        const data = await res.json();
+        const usdTry = Number(data?.rates?.TRY);
+        const eurRate = Number(data?.rates?.EUR);
+        if (!(usdTry > 0) || !(eurRate > 0)) throw new Error('Döviz servisinden geçerli kur alınamadı.');
+
+        const setRate = (key, price) => {
+          const previous = Number(liveRates[key]?.price) || 0;
+          const change = previous > 0 ? Number((((price - previous) / previous) * 100).toFixed(2)) : 0;
+          liveRates[key] = { ...(liveRates[key] || {}), price: Number(price.toFixed(2)), change };
+        };
+        setRate('USD', usdTry);
+        setRate('EUR', usdTry / eurRate);
+        currencyUpdated = true;
+      } catch (e) {
+        errors.push('Döviz: ' + (e?.message || 'bağlantı kurulamadı'));
+      }
+
+      // Ons altını USD/TRY ile TL/gram'a çevir. 1 troy ons = 31.1034768 gram.
+      try {
+        const resGold = await fetchWithTimeout('https://api.gold-api.com/price/XAU', { cache: 'no-store' }, 9000);
+        if (!resGold || !resGold.ok) throw new Error('Altın servisi HTTP ' + (resGold ? resGold.status : 'yanıt yok'));
+        const goldData = await resGold.json();
+        const ounceUsd = Number(goldData?.price);
+        const usdTry = Number(liveRates['USD']?.price);
+        if (!currencyUpdated) throw new Error('Güncel USD/TRY kuru alınamadığı için TL/gram hesaplanmadı.');
+        if (!(ounceUsd > 0) || !(usdTry > 0)) throw new Error('Geçerli ons altın veya dolar kuru alınamadı.');
+
+        const gramTry = (ounceUsd * usdTry) / 31.1034768;
+        const updateMetalRate = (key, price) => {
+          const previous = Number(liveRates[key]?.price) || 0;
+          const change = previous > 0 ? Number((((price - previous) / previous) * 100).toFixed(2)) : 0;
+          liveRates[key] = { ...(liveRates[key] || {}), price: Number(price.toFixed(2)), change };
+        };
+        updateMetalRate('GRAM', gramTry);
+        updateMetalRate('CEYREK', gramTry * 1.635);
+        goldUpdated = true;
+
+        // XAUUSD portföy kayıtları gram miktarıdır: yalnızca güncel fiyat/değer yenilenir.
+        // Alış fiyatı, alış tarihi ve miktara kesinlikle dokunulmaz.
+        const userData = loadUserData();
+        const assets = userData.portfolio || [];
+        let portfolioChanged = false;
+        assets.forEach(asset => {
+          if (String(asset.code || '').trim().toUpperCase() !== 'XAUUSD') return;
+          const amount = Number(asset.amount) || 0;
+          if (!(amount > 0)) return;
+          const nextValue = Number((amount * gramTry).toFixed(2));
+          const nextPrice = Number(gramTry.toFixed(2));
+          if (Number(asset.currentPrice) !== nextPrice || Number(asset.currentVal) !== nextValue) {
+            asset.currentPrice = nextPrice;
+            asset.currentVal = nextValue;
+            portfolioChanged = true;
+          }
+        });
+        if (portfolioChanged) saveUserData(userData);
+      } catch (e) {
+        errors.push('Altın: ' + (e?.message || 'bağlantı kurulamadı'));
+      }
+
+      // Takip listesindeki TEFAS fonlarını yenile.
       const watchlist = loadWatchlist();
       for (const w of watchlist) {
-        const code = w.code.toUpperCase();
-        if (['USD', 'EUR', 'GRAM', 'CEYREK'].includes(code)) continue;
-        const p = await fetchTefasFundPriceProxy(code);
-        if (p && p > 0) {
-          const prevPrice = liveRates[code]?.price || 0;
-          const change = prevPrice > 0 ? parseFloat((((p - prevPrice) / prevPrice) * 100).toFixed(2)) : 0;
-          liveRates[code] = { name: code + ' Fonu', price: p, change, category: 'fund' };
+        const code = String(w.code || '').toUpperCase();
+        if (['USD', 'EUR', 'GRAM', 'CEYREK', 'XAUUSD'].includes(code)) continue;
+        const price = await fetchTefasFundPriceProxy(code);
+        if (price && price > 0) {
+          const previous = Number(liveRates[code]?.price) || 0;
+          const change = previous > 0 ? Number((((price - previous) / previous) * 100).toFixed(2)) : 0;
+          liveRates[code] = { name: code + ' Fonu', price, change, category: 'fund' };
+          fundUpdatedCount++;
         }
       }
 
@@ -2312,7 +2365,25 @@ function doGet(e) {
       renderWatchlistTable();
       calculateCurrencyConversion();
       checkPriceAlarms();
-      if (!quiet) showToast("Piyasalar ve fiyatlar güncellendi.", "success");
+      // XAUUSD satırları, toplam portföy, kategori kartları ve grafikler aynı veriyle yenilensin.
+      renderApp();
+
+      if (!quiet) {
+        if (currencyUpdated && goldUpdated) {
+          showToast('Döviz ve altın fiyatları güncellendi. XAUUSD portföyü yeniden hesaplandı.', 'success');
+        } else if (currencyUpdated || goldUpdated) {
+          showToast('Kısmi güncelleme yapıldı. ' + errors.join(' | '), 'warning');
+        } else {
+          showToast('Fiyatlar güncellenemedi. Son kayıtlı fiyatlar korundu. ' + errors.join(' | '), 'error');
+        }
+      }
+
+      if (refreshBtn) {
+        refreshBtn.disabled = false;
+        refreshBtn.innerHTML = refreshBtnHtml || '<span>🔄</span> Fiyatları Güncelle';
+        refreshBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+      }
+      return { currencyUpdated, goldUpdated, fundUpdatedCount, errors };
     }
 
     function updateWatchTrendSnapshot(watchlist) {
