@@ -932,12 +932,29 @@ function doGet(e) {
       appId: "1:621684856167:web:4697f3c4f0599d45d9cbc2"
     };
     let fbDb = null;
+    let fbInitError = null;
+    let fbSocketConnected = null;
     try {
-      if (typeof firebase !== 'undefined') {
+      if (typeof firebase === 'undefined') {
+        fbInitError = 'Firebase SDK yüklenemedi. İnternet/CDN bağlantısını kontrol edin.';
+      } else {
         if (!firebase.apps || !firebase.apps.length) firebase.initializeApp(firebaseConfig);
         fbDb = firebase.database();
+        // Gerçek Realtime Database bağlantısını izle. Bu, tek başına izin kontrolü değildir.
+        fbDb.ref('.info/connected').on('value', snap => {
+          fbSocketConnected = snap.val() === true;
+          const el = document.getElementById('fbSyncStatus');
+          if (el && !el.textContent.includes('Senkron') && !el.textContent.includes('hatası')) {
+            updateFbSyncStatus(fbSocketConnected ? 'connected' : 'disconnected');
+          }
+        }, err => {
+          fbInitError = err && (err.message || err.code) || 'Firebase bağlantı durumu okunamadı.';
+          updateFbSyncStatus('error', err);
+        });
       }
-    } catch(e) {}
+    } catch(e) {
+      fbInitError = e && (e.message || e.code) || String(e);
+    }
 
     function sanitizeCode(code) {
       return (code || 'default-user').trim().toLowerCase().replace(/[.#$\[\]\/]/g, '_') || 'default-user';
@@ -948,14 +965,37 @@ function doGet(e) {
     function getFirebasePath() {
       return 'portfoyler2/' + getPortfolioCode();
     }
-    function updateFbSyncStatus(state) {
+    function updateFbSyncStatus(state, err) {
       const el = document.getElementById('fbSyncStatus');
       if (!el) return;
       const now = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-      if (state === 'ok') { el.textContent = `☁ Senkron (${now})`; el.className = 'text-xs font-mono text-emerald-600 font-semibold'; }
-      else if (state === 'pulling') { el.textContent = '☁ Yükleniyor...'; el.className = 'text-xs font-mono text-sky-600 font-semibold'; }
-      else if (state === 'off') { el.textContent = '☁ Firebase bağlı değil'; el.className = 'text-xs font-mono text-slate-400'; }
-      else { el.textContent = '☁ Bağlantı hatası'; el.className = 'text-xs font-mono text-rose-500'; }
+      const code = err && (err.code || err.message) ? String(err.code || err.message) : '';
+      if (state === 'ok') {
+        el.textContent = `☁ Bulut senkron (${now})`;
+        el.title = 'Firebase okuma/yazma işlemi başarılı.';
+        el.className = 'text-xs font-mono text-emerald-600 font-semibold';
+      } else if (state === 'pulling') {
+        el.textContent = '☁ Bulut kontrol ediliyor...';
+        el.title = 'Firebase bağlantısı ve veri erişimi kontrol ediliyor.';
+        el.className = 'text-xs font-mono text-sky-600 font-semibold';
+      } else if (state === 'connected') {
+        el.textContent = '☁ Sunucuya bağlı';
+        el.title = 'Firebase sunucusuna ağ bağlantısı var; veri izinleri henüz doğrulanmadı.';
+        el.className = 'text-xs font-mono text-sky-600 font-semibold';
+      } else if (state === 'disconnected') {
+        el.textContent = '☁ Sunucu bağlantısı kesik';
+        el.title = 'Firebase Realtime Database sunucusuna erişilemiyor.';
+        el.className = 'text-xs font-mono text-amber-600 font-semibold';
+      } else if (state === 'off') {
+        el.textContent = '☁ Firebase başlatılamadı';
+        el.title = fbInitError || 'Firebase SDK veya yapılandırması yüklenemedi.';
+        el.className = 'text-xs font-mono text-rose-500 font-semibold';
+      } else {
+        const detail = code || fbInitError || 'Bilinmeyen Firebase hatası';
+        el.textContent = `☁ Bulut hatası: ${detail}`;
+        el.title = `Firebase ayrıntısı: ${detail}`;
+        el.className = 'text-xs font-mono text-rose-500 font-semibold';
+      }
     }
 
     // ── TASFİYE YÖNETİMİ ──────────────────────────────────────────────
@@ -1720,7 +1760,7 @@ function doGet(e) {
         await fbDb.ref(getFirebasePath()).set(payload);
         updateFbSyncStatus('ok');
         return true;
-      } catch(e) { updateFbSyncStatus('error'); return false; }
+      } catch(e) { console.error('[Firebase buluta yazma hatası]', e); updateFbSyncStatus('error', e); return false; }
     }
 
     async function pullFromFirebaseCloud() {
@@ -1747,7 +1787,7 @@ function doGet(e) {
           return true;
         }
         return false;
-      } catch(e) { updateFbSyncStatus('error'); return false; }
+      } catch(e) { console.error('[Firebase buluttan okuma hatası]', e); updateFbSyncStatus('error', e); return false; }
     }
 
     const DEFAULT_SHEET_URL = "https://docs.google.com/spreadsheets/d/1B66p3v4jeXPZaHDBoL51uVSZKLFzuPbrMaAtdom6qMg/edit?gid=1411824524#gid=1411824524";
