@@ -879,6 +879,10 @@ function doGet(e) {
               <div class="text-[10px] uppercase font-semibold text-slate-400 mb-1.5">Varlık Dağılımı (Fon Neye Yatırım Yapıyor?)</div>
               <div id="fiAllocationList" class="space-y-1.5"></div>
             </div>
+            <div class="pt-2 border-t border-slate-200 space-y-2">
+              <button id="btnLoad700DayHistory" type="button" onclick="load700DayFundHistory()" class="px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-700 disabled:opacity-50">📈 700 Günlük Geçmişi Yükle</button>
+              <div id="fund700DayResult" class="text-xs text-slate-500">Uzun dönem getiri, yıllık oynaklık ve maksimum düşüş analizini isteğe bağlı yükleyin. Sonuçlar 24 saat önbellekte tutulur.</div>
+            </div>
           </div>
           <div id="fundInfoError" class="text-xs text-slate-400" style="display:none">Fon detay verisi şu an TEFAS'tan alınamadı. Aşağıdaki "TEFAS'ta İncele" linkinden bakabilirsiniz.</div>
         </div>
@@ -1228,10 +1232,11 @@ function doGet(e) {
           const code = todo[idx++];
           if (btn) btn.innerHTML = `⏳ ${Math.min(idx, todo.length)}/${todo.length}`;
           const r = await ensureFundInfo(code, force);
+          if (idx < todo.length && !aborted) await new Promise(resolve => setTimeout(resolve, 1800));
           if (r) { ok++; consecutiveFail = 0; } else { fail++; consecutiveFail++; if (consecutiveFail >= 4 && ok === 0) aborted = true; }
         }
       };
-      try { await Promise.all([worker(), worker(), worker()]); } catch(e) {}
+      try { await worker(); } catch(e) {}
       for (const c of fxCodes) { try { await ensureFxInfo(c, force); } catch(e) {} }
       fundInfoRefreshing = false;
       if (btn) btn.innerHTML = btnHtml;
@@ -2167,7 +2172,68 @@ function doGet(e) {
       };
     }
 
-    async function fetchTefasFundAnalyze(fundCode) {
+    const FUND_LONG_HISTORY_KEY = 'portfoy_fund_long_history_v1';
+    function loadFundLongHistoryCache() {
+      try {
+        const value = JSON.parse(localStorage.getItem(FUND_LONG_HISTORY_KEY) || '{}');
+        return value && typeof value === 'object' ? value : {};
+      } catch (e) { return {}; }
+    }
+    function saveFundLongHistoryCache(value) {
+      try { localStorage.setItem(FUND_LONG_HISTORY_KEY, JSON.stringify(value || {})); } catch (e) {}
+    }
+    window.load700DayFundHistory = async function() {
+      const item = (loadUserData().portfolio || []).find(i => i.id === activeChartAssetId);
+      if (!item || item.type !== 'fund') return;
+      const button = document.getElementById('btnLoad700DayHistory');
+      const result = document.getElementById('fund700DayResult');
+      if (button) { button.disabled = true; button.textContent = '⏳ 700 günlük geçmiş yükleniyor...'; }
+      if (result) result.textContent = 'TEFAS geçmişi kontrollü olarak sorgulanıyor. Bu işlem fon başına biraz zaman alabilir.';
+      try {
+        const cache = loadFundLongHistoryCache();
+        const cached = cache[item.code];
+        let analysis = null;
+        if (cached && cached.savedAt && Date.now() - cached.savedAt < 24 * 3600 * 1000 && Array.isArray(cached.history) && cached.history.length > 20) {
+          analysis = cached;
+        } else {
+          const response = await fetchTefasFundAnalyze(item.code, 700);
+          if (!response || !response.history || response.history.length < 3) {
+            throw new Error((lastFundAnalyzeDebug || []).join(' • ') || '700 günlük fiyat geçmişi alınamadı.');
+          }
+          const stats = computeHistoryStats(response.history);
+          analysis = {
+            history: response.history,
+            stats: stats,
+            savedAt: Date.now()
+          };
+          cache[item.code] = analysis;
+          saveFundLongHistoryCache(cache);
+        }
+        const history = analysis.history || [];
+        const stats = analysis.stats || computeHistoryStats(history);
+        const first = history[0], last = history[history.length - 1];
+        const fmt = n => Number(n).toLocaleString('tr-TR', { maximumFractionDigits: 2 });
+        if (result) {
+          result.innerHTML = `
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div><div class="text-[10px] text-slate-400 uppercase">Kapsanan süre</div><div class="font-bold">${history.length} fiyat kaydı</div></div>
+              <div><div class="text-[10px] text-slate-400 uppercase">700 günlük getiri</div><div class="font-bold ${stats.ret >= 0 ? 'text-emerald-600' : 'text-rose-600'}">${stats.ret >= 0 ? '+' : ''}%${fmt(stats.ret)}</div></div>
+              <div><div class="text-[10px] text-slate-400 uppercase">Yıllık oynaklık</div><div class="font-bold">%${fmt(stats.vol)}</div></div>
+              <div><div class="text-[10px] text-slate-400 uppercase">Maksimum düşüş</div><div class="font-bold text-rose-600">%${fmt(stats.mdd)}</div></div>
+            </div>
+            <div class="text-[10px] text-slate-400 mt-2">Veri aralığı: ${new Date(first.date).toLocaleDateString('tr-TR')} – ${new Date(last.date).toLocaleDateString('tr-TR')} · Son güncelleme: ${new Date(analysis.savedAt).toLocaleString('tr-TR')}</div>
+          `;
+        }
+        if (button) button.textContent = '✓ 700 günlük geçmiş yüklendi';
+      } catch (error) {
+        if (result) result.textContent = '700 günlük geçmiş alınamadı: ' + (error.message || error);
+        if (button) button.textContent = '↻ Yeniden dene';
+      } finally {
+        if (button) button.disabled = false;
+      }
+    };
+
+    async function fetchTefasFundAnalyze(fundCode, requestedDays = 90) {
       lastFundAnalyzeDebug = [];
       if (!fundCode) return null;
       const cleanCode = fundCode.toUpperCase().trim();
@@ -2178,7 +2244,7 @@ function doGet(e) {
       const scriptUrl = getSavedTefasAnalyzeScriptUrl();
       if (scriptUrl) {
         try {
-          const wrapped = await fetchAppsScriptJsonp(scriptUrl, { code: cleanCode, days: 90, details: 1 }, 60000);
+          const wrapped = await fetchAppsScriptJsonp(scriptUrl, { code: cleanCode, days: Math.max(30, Math.min(700, Number(requestedDays) || 90)), details: 1 }, 120000);
           if (!wrapped || !wrapped.ok) {
             lastFundAnalyzeDebug.push(`Apps Script JSONP: ${(wrapped && wrapped.error) || 'boş veya geçersiz yanıt'}`);
           } else {
