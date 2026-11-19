@@ -2141,7 +2141,7 @@ function doGet(e) {
 
       const allocRaw = json?.fundAllocation || [];
       const allocation = allocRaw
-        .map(a => ({ code: a.KIYMETTIP, label: labelForAssetTypeCode(a.KIYMETTIP), pct: parseFloat(a.PORTFOYORANI) || 0 }))
+        .map(a => ({ code: a.KIYMETTIP, label: a.label || labelForAssetTypeCode(a.KIYMETTIP), pct: parseFloat(a.PORTFOYORANI) || 0 }))
         .filter(a => a.pct > 0.01)
         .sort((a, b) => b.pct - a.pct);
 
