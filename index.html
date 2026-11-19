@@ -539,26 +539,31 @@
           <p class="text-[11px] text-slate-500 leading-relaxed">Bu değerleri siz girersiniz, uygulama internetten çekmez. Doğru rakamları TÜİK/TCMB'den almanız gerekir. Eksik aylar %0 sayılır ve kıyas panelinde uyarı çıkar.</p>
         </div>
         <div class="border-t border-slate-200 pt-4">
-          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">TEFAS Fon Analiz Script URL (opsiyonel, önerilir)</label>
+          <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">TEFAS Fon Analiz Script URL (önerilir)</label>
           <input id="inputTefasAnalyzeScriptUrl" type="text" placeholder="https://script.google.com/macros/s/.../exec"
                  class="w-full bg-slate-50 border border-slate-300 rounded-xl p-3 text-xs font-mono font-bold text-teal-800">
           <div class="mt-2 flex items-center gap-2">
             <button id="btnTestTefasScript" type="button" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white">🧪 Bağlantıyı Test Et</button>
-            <span class="text-[11px] text-slate-400">URL'yi kaydeder, TEFAS ve BIST 100 verisini dener, sorun varsa nedenini yazar.</span>
+            <span class="text-[11px] text-slate-400">URL'yi kaydeder; JSONP üzerinden TEFAS ve BIST 100 bağlantısını test eder.</span>
           </div>
           <div id="tefasTestResult" class="mt-2 text-[11px] leading-relaxed space-y-1" style="display:none"></div>
           <p class="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
             Fon detay penceresindeki "Fon Türü / Kategori / Varlık Dağılımı" bilgisi, genel CORS proxy'leri TEFAS'ın API'sini çoğu zaman engellediği için güvenilir çalışmıyor. Bunun yerine kendi Google Apps Script'inizi kullanmanız çok daha sağlam çalışır:
             <br>1) <a href="https://script.google.com" target="_blank" rel="noopener noreferrer" class="text-teal-700 underline font-semibold">script.google.com</a>'da yeni bir proje açın.
             <br>2) Aşağıdaki kodu yapıştırıp kaydedin, sonra Deploy → New deployment → Web app → "Execute as: Me", "Who has access: Anyone" seçip Deploy'a basın.
-            <br>3) Verilen URL'yi buraya yapıştırın. (Daha önce dağıttıysanız: kodu bununla değiştirip Deploy → Manage deployments → Edit → New version ile yeniden dağıtın; BIST 100 kıyası için bu güncel kod gerekir.)
+            <br>3) Verilen URL'yi buraya yapıştırın. (Daha önce dağıttıysanız: kodu bununla değiştirip Deploy → Manage deployments → Edit → New version ile yeniden dağıtın. Yeni sürüm JSONP bağlantısını da destekler.)
           </p>
           <details class="mt-2">
             <summary class="cursor-pointer text-xs font-bold text-teal-700">📋 Apps Script kodunu göster / kopyala</summary>
             <button id="btnCopyTefasCode" type="button" class="mt-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-800 text-white">Kodu Kopyala</button>
           <pre id="tefasScriptCode" class="mt-2 bg-slate-900 text-emerald-300 text-[10px] p-3 rounded-lg overflow-auto" style="max-height:240px">// Portfoy Takip - TEFAS (yeni API, Nisan 2026 sonrasi) + BIST 100
 var BASE = 'https://www.tefas.gov.tr/api/funds/';
-function out(o) {
+function out(o, e) {
+  var cb = e &amp;&amp; e.parameter &amp;&amp; e.parameter.callback;
+  if (cb &amp;&amp; /^[A-Za-z_$][\w$]*$/.test(cb)) {
+    return ContentService.createTextOutput(cb + '(' + JSON.stringify(o) + ');')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
 }
 function ymd(d) { return Utilities.formatDate(d, 'GMT+3', 'yyyyMMdd'); }
@@ -607,21 +612,21 @@ function doGet(e) {
       var range = (p.range || '6mo').toString();
       var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + encodeURIComponent(p.symbol) + '?range=' + range + '&amp;interval=1d';
       var r = UrlFetchApp.fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, muteHttpExceptions: true });
-      if (r.getResponseCode() !== 200) return out({ ok: false, error: 'Yahoo HTTP ' + r.getResponseCode() });
+      if (r.getResponseCode() !== 200) return out({ ok: false, error: 'Yahoo HTTP ' + r.getResponseCode() }, e);
       var res = JSON.parse(r.getContentText()).chart.result[0];
       var ts = res.timestamp, cl = res.indicators.quote[0].close, arr = [];
       for (var i = 0; ts.length &gt; i; i++) { if (cl[i] != null) arr.push({ t: ts[i] * 1000, c: cl[i] }); }
-      return out({ ok: true, series: arr });
+      return out({ ok: true, series: arr }, e);
     }
     // TEFAS fon: ?code=TGE
     var code = (p.code || '').toString().trim().toUpperCase();
-    if (!code) return out({ ok: false, error: 'code veya symbol parametresi gerekli' });
+    if (!code) return out({ ok: false, error: 'code veya symbol parametresi gerekli' }, e);
     var kinds = ['YAT', 'EMK', 'BYF', 'GYF', 'GSYF'], kind = '', rows = [], dbg = {};
     for (var q = 0; q &lt; kinds.length &amp;&amp; rows.length === 0; q++) {
       kind = kinds[q];
       rows = priceHistory(kind, code, 700);
     }
-    if (!rows.length) return out({ ok: false, error: 'TEFAS fiyat verisi bos dondu (fon kodu ' + code + '). Kod dogru mu?' });
+    if (!rows.length) return out({ ok: false, error: 'TEFAS fiyat verisi bos dondu (fon kodu ' + code + '). Kod dogru mu?' }, e);
     var hist = [];
     rows.forEach(function (x) {
       var t = toMs(x.tarih), f = parseFloat(x.fiyat);
@@ -634,11 +639,11 @@ function doGet(e) {
     var alloc = [];
     try {
       var d = new Date(); var tries = 0;
-      while (tries &lt; 6 &amp;&amp; !alloc.length) {
+      while (tries &lt; 14 &amp;&amp; !alloc.length) {
         var dd = new Date(d.getTime() - tries * 86400000);
         var al = listOf(post('dagilimSiraliGetirT', reqBody(kind, code, dd, dd)));
         if (al.length) {
-          var row = al[0]; dbg.dagilimAlanlari = Object.keys(row).join(',');
+          var row = al[0]; dbg.dagilimAlanlari = Object.keys(row).join(','); dbg.dagilimTarihi = row.tarih || row.TARIH || ymd(dd);
           Object.keys(row).forEach(function (k) {
             var v = parseFloat(row[k]);
             if (!isNaN(v) &amp;&amp; v &gt; 0 &amp;&amp; v &lt;= 100.5 &amp;&amp; !/tarih|kod|unvan|fiyat|sayi|buyukluk|sira|tur|id$/i.test(k)) alloc.push({ KIYMETTIP: k, PORTFOYORANI: v });
@@ -657,9 +662,9 @@ function doGet(e) {
     return out({ ok: true, data: {
       fundInfo: [{ FONUNVAN: last.fonUnvan || code, FONTUR: kind, FONKATEGORI: '', RISKDEGERI: risk, PORTBUYUKLUK: last.portfoyBuyukluk, YATIRIMCISAYI: last.kisiSayisi }],
       fundPrices: hist, fundAllocation: alloc, _debug: dbg
-    } });
+    } }, e);
   } catch (err) {
-    return out({ ok: false, error: String(err) });
+    return out({ ok: false, error: String(err) }, e);
   }
 }</pre>
           </details>
@@ -1075,6 +1080,7 @@ function doGet(e) {
     // bölümünde her seferinde yeniden istenmez. Başarısız denemeler 30 dk tekrar denenmez.
     const FUND_INFO_KEY = 'portfoy_fund_info_cache';
     const FUND_INFO_TTL = 24 * 3600 * 1000;
+    const FUND_INFO_PARTIAL_TTL = 6 * 3600 * 1000; // Dağılımı eksik kalan fonlar daha sık yeniden denenir.
     const FUND_INFO_FAIL_TTL = 30 * 60 * 1000;
     let _fundInfoMem = null;
     function loadFundInfoCache() {
@@ -1132,16 +1138,24 @@ function doGet(e) {
     }
     function cacheFundInfoFromAnalyze(a) {
       if (!a || !a.code) return null;
+      const key = String(a.code).toUpperCase();
+      const previous = loadFundInfoCache()[key] || null;
       const stats = computeHistoryStats(a.history);
+      const freshAllocation = (a.allocation || []).filter(x => x && Number(x.pct) > 0).map(x => ({ code: x.code, label: x.label, pct: Number(x.pct) }));
+      // Yeni yanıt dağılım içermiyorsa daha önce alınmış geçerli dağılımı silme.
+      const allocation = freshAllocation.length ? freshAllocation : ((previous && previous.allocation) || []);
       const entry = {
-        code: a.code, name: a.name || a.code, fundType: a.fundType || '', category: a.category || '',
-        riskValue: a.riskValue ? Number(a.riskValue) : null,
-        allocation: (a.allocation || []).map(x => ({ code: x.code, label: x.label, pct: x.pct })),
-        vol: stats ? stats.vol : null, mdd: stats ? stats.mdd : null, ret6m: stats ? stats.ret : null,
-        rets: periodReturns((a.history || []).map(h => ({ t: h.date, price: h.price }))),
-        v: 3, fetchedAt: Date.now()
+        code: key, name: a.name || a.code, fundType: a.fundType || '', category: a.category || '',
+        riskValue: a.riskValue ? Number(a.riskValue) : ((previous && previous.riskValue) || null),
+        allocation, hasAllocation: allocation.length > 0,
+        allocationFetchedAt: freshAllocation.length ? Date.now() : ((previous && previous.allocationFetchedAt) || null),
+        vol: stats ? stats.vol : ((previous && previous.vol) || null),
+        mdd: stats ? stats.mdd : ((previous && previous.mdd) || null),
+        ret6m: stats ? stats.ret : ((previous && previous.ret6m) || null),
+        rets: (a.history && a.history.length) ? periodReturns(a.history.map(h => ({ t: h.date, price: h.price }))) : ((previous && previous.rets) || {}),
+        v: 4, fetchedAt: Date.now()
       };
-      loadFundInfoCache()[String(a.code).toUpperCase()] = entry;
+      loadFundInfoCache()[key] = entry;
       saveFundInfoCache();
       return entry;
     }
@@ -1154,14 +1168,21 @@ function doGet(e) {
       const cache = loadFundInfoCache();
       const cur = cache[key];
       if (!force && cur) {
-        if (!cur.failedAt && Date.now() - cur.fetchedAt < FUND_INFO_TTL && cur.v >= 3) return cur;
+        if (!cur.failedAt && cur.v >= 4) {
+          const allocStamp = cur.allocationFetchedAt || cur.fetchedAt || 0;
+          const ttl = cur.hasAllocation ? FUND_INFO_TTL : FUND_INFO_PARTIAL_TTL;
+          if (Date.now() - allocStamp < ttl && Date.now() - cur.fetchedAt < FUND_INFO_TTL) return cur;
+        }
+        if (cur.lastFailedAt && Date.now() - cur.lastFailedAt < FUND_INFO_FAIL_TTL) return cur.failedAt ? null : cur;
         if (cur.failedAt && Date.now() - cur.failedAt < FUND_INFO_FAIL_TTL) return null;
       }
       const a = await fetchTefasFundAnalyze(key);
       if (a) return cacheFundInfoFromAnalyze(a);
-      cache[key] = { code: key, failedAt: Date.now() };
+      // Son istek başarısız olsa bile daha önce alınmış geçerli fon verisini silme.
+      if (cur && !cur.failedAt) cache[key] = { ...cur, lastFailedAt: Date.now() };
+      else cache[key] = { code: key, failedAt: Date.now() };
       saveFundInfoCache();
-      return null;
+      return (cur && !cur.failedAt) ? cur : null;
     }
     let fundInfoRefreshing = false;
     async function refreshAllFundInfo(force, quiet) {
@@ -1175,7 +1196,8 @@ function doGet(e) {
         const cur = loadFundInfoCache()[c];
         if (!cur) return true;
         if (cur.failedAt) return Date.now() - cur.failedAt >= FUND_INFO_FAIL_TTL;
-        return Date.now() - cur.fetchedAt >= FUND_INFO_TTL || !(cur.v >= 3);
+        if (cur.lastFailedAt && Date.now() - cur.lastFailedAt < FUND_INFO_FAIL_TTL) return false;
+        return !(cur.v >= 4) || !cur.hasAllocation || Date.now() - (cur.allocationFetchedAt || cur.fetchedAt || 0) >= FUND_INFO_TTL;
       });
       const fxCodes = [...new Set((loadUserData().portfolio || [])
         .filter(i => i.type === 'fx' && !isLiquidated(i, liqSet) && ['USD', 'EUR', 'GBP'].includes(String(i.code).toUpperCase()))
@@ -1470,7 +1492,7 @@ function doGet(e) {
       const rows = Object.entries(groups).sort((a, b) => b[1] - a[1]);
       let summary = `Toplam ${formatTL(total)} · ${fundCount} fondan ${fundWithData} tanesi için dağılım verisi var.`;
       if (riskValueSum > 0) summary += ` Ağırlıklı ortalama fon riski: <strong>${(riskWeighted / riskValueSum).toFixed(1)}/7</strong>.`;
-      if (fundCount > 0 && fundWithData < fundCount) summary += ` <span class="text-amber-600 font-semibold">Eksik fonlar için "Fon Bilgilerini Yenile"ye basın; alınamazsa ayarlardaki Apps Script adresini kontrol edin.</span>`;
+      if (fundCount > 0 && fundWithData < fundCount) summary += ` <span class="text-amber-600 font-semibold">${fundCount - fundWithData} fon için TEFAS dağılım verisi henüz doğrulanamadı; bu fonlar tahmini dağılıma eklenmez.</span>`;
       sumEl.innerHTML = summary;
       barsEl.innerHTML = rows.map(([label, v]) => {
         const pct = v / total * 100;
@@ -2008,6 +2030,37 @@ function doGet(e) {
       finally { clearTimeout(t); }
     }
 
+    // Google Apps Script ContentService redirects responses to googleusercontent.com.
+    // A normal fetch() can fail CORS on that redirect; JSONP executes the response as a script.
+    let tefasJsonpSequence = 0;
+    function fetchAppsScriptJsonp(baseUrl, params, timeoutMs = 25000) {
+      return new Promise((resolve, reject) => {
+        const callbackName = `__tefasJsonp_${Date.now()}_${++tefasJsonpSequence}`;
+        const url = new URL(baseUrl);
+        Object.entries(params || {}).forEach(([key, value]) => url.searchParams.set(key, String(value)));
+        url.searchParams.set('callback', callbackName);
+        const script = document.createElement('script');
+        let settled = false;
+        const cleanup = () => {
+          if (script.parentNode) script.parentNode.removeChild(script);
+          try { delete window[callbackName]; } catch (_) { window[callbackName] = undefined; }
+          clearTimeout(timer);
+        };
+        const finish = (fn, value) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          fn(value);
+        };
+        const timer = setTimeout(() => finish(reject, new Error('Apps Script JSONP zaman aşımı. Web App erişimini ve /exec adresini kontrol edin.')), timeoutMs);
+        window[callbackName] = data => finish(resolve, data);
+        script.async = true;
+        script.onerror = () => finish(reject, new Error('Apps Script yanıtı yüklenemedi. Dağıtım erişimi veya URL hatalı olabilir.'));
+        script.src = url.toString();
+        document.head.appendChild(script);
+      });
+    }
+
     async function fetchTefasFundPriceProxy(fundCode) {
       if (!fundCode) return null;
       const cleanCode = fundCode.toUpperCase().trim();
@@ -2114,21 +2167,16 @@ function doGet(e) {
       const scriptUrl = getSavedTefasAnalyzeScriptUrl();
       if (scriptUrl) {
         try {
-          const res = await fetchWithTimeout(`${scriptUrl}?code=${encodeURIComponent(cleanCode)}`, { cache: 'no-store' }, 12000);
-          if (!res || !res.ok) {
-            lastFundAnalyzeDebug.push(`Apps Script: HTTP ${res ? res.status : 'yanıt yok'}`);
+          const wrapped = await fetchAppsScriptJsonp(scriptUrl, { code: cleanCode }, 30000);
+          if (!wrapped || !wrapped.ok) {
+            lastFundAnalyzeDebug.push(`Apps Script JSONP: ${(wrapped && wrapped.error) || 'boş veya geçersiz yanıt'}`);
           } else {
-            const wrapped = await res.json();
-            if (!wrapped.ok) {
-              lastFundAnalyzeDebug.push(`Apps Script: ${wrapped.error || 'bilinmeyen hata'}`);
-            } else {
-              const parsed = parseTefasAnalyzeJson(wrapped.data, cleanCode);
-              if (parsed) {
-                lastFundAnalyzeDebug.push('Apps Script: başarılı ✅');
-                return parsed;
-              }
-              lastFundAnalyzeDebug.push('Apps Script: yanıt geldi ama beklenen "fundInfo" alanı yok');
+            const parsed = parseTefasAnalyzeJson(wrapped.data, cleanCode);
+            if (parsed) {
+              lastFundAnalyzeDebug.push('Apps Script JSONP: başarılı ✅');
+              return parsed;
             }
+            lastFundAnalyzeDebug.push('Apps Script JSONP: yanıt geldi ama beklenen "fundInfo" alanı yok');
           }
         } catch(e) {
           lastFundAnalyzeDebug.push(`Apps Script: ${e.message || e}`);
@@ -2702,16 +2750,16 @@ function doGet(e) {
       setSavedTefasAnalyzeScriptUrl(url);
       box.innerHTML = '<div class="text-slate-500">⏳ Test ediliyor...</div>';
       const out = [];
-      const call = async (qs) => {
-        let res;
-        try { res = await fetchWithTimeout(url + qs, { cache: 'no-store' }, 20000); }
-        catch (e) { return { err: 'ağ/CORS hatası: ' + (e.message || e) }; }
-        if (!res) return { err: 'yanıt gelmedi (zaman aşımı veya erişim engeli). Dağıtımda "Who has access" = <b>Anyone</b> olmalı.' };
-        const txt = await res.text();
-        let j; try { j = JSON.parse(txt); } catch (e) { return { err: 'JSON yerine sayfa döndü (HTTP ' + res.status + '). Genelde dağıtım "Anyone" erişimine açık değil veya yeni sürüm yayınlanmadı. Başlangıç: ' + escHtml(txt.slice(0, 80).replace(/\s+/g, ' ')) }; }
-        return { j };
+      const call = async (params) => {
+        try {
+          const j = await fetchAppsScriptJsonp(url, params, 30000);
+          if (!j || typeof j !== 'object') return { err: 'JSONP yanıtı boş veya geçersiz.' };
+          return { j };
+        } catch (e) {
+          return { err: escHtml(e.message || String(e)) + ' Dağıtımda Execute as: Me ve Who has access: Anyone olmalı; adres /exec ile bitmeli.' };
+        }
       };
-      const a = await call('?code=TGE');
+      const a = await call({ code: 'TGE' });
       if (a.err) out.push(line(false, 'TEFAS testi: ' + a.err));
       else if (!a.j.ok) out.push(line(false, 'TEFAS testi: script şu hatayı döndürdü: <b>' + escHtml(String(a.j.error || 'bilinmiyor')) + '</b>' + (/code veya symbol|id|gid/i.test(String(a.j.error)) ? ' — Bu, <b>eski kod</b> yayında demek: kodu aşağıdaki güncel kodla değiştirip Deploy → Manage deployments → Edit → <b>New version</b> yapın.' : '') + (/HTTP 403|HTTP 4\d\d|HTTP 5\d\d/.test(String(a.j.error)) ? ' TEFAS, Google sunucularından gelen isteği reddediyor olabilir.' : '')));
       else {
@@ -2724,7 +2772,7 @@ function doGet(e) {
           out.push(line(true, `TEFAS çalışıyor: ${escHtml(p.name)} · ${h.length} günlük fiyat geçmişi (en eski: ${first}). ` + (h.length && h[0].date > new Date(new Date().getFullYear() - 1, 0, 6).getTime() ? '<span class="text-amber-600">Geçmiş geçen yıl başına uzanmıyor; 2025 sütunları "—" kalacak.</span>' : 'Geçen yıl karşılaştırması için yeterli.') + dbgT));
         }
       }
-      const b = await call('?symbol=XU100.IS&range=1mo');
+      const b = await call({ symbol: 'XU100.IS', range: '1mo' });
       if (b.err) out.push(line(false, 'BIST 100 testi: ' + b.err));
       else if (!b.j.ok) out.push(line(false, 'BIST 100 testi: ' + escHtml(String(b.j.error || 'hata')) + ' (eski kod olabilir)'));
       else out.push(line(true, 'BIST 100 verisi çalışıyor (' + (b.j.series || []).length + ' gün).'));
