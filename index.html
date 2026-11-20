@@ -36,23 +36,7 @@
     }
     body { font-family: var(--font-body); background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; }
     .font-mono { font-family: var(--font-mono); }
-    .chart-container { position: relative; width: 100%; height: 280px; max-height: 360px; min-width: 0; }
-    .chart-frame { position: relative; display: block; width: 100%; min-width: 0; height: 300px; max-height: 42vh; }
-    .chart-frame canvas { display: block; width: 100% !important; height: 100% !important; max-width: 100%; }
-    #chartDetailModal, #compareModal { overflow-y: auto; -webkit-overflow-scrolling: touch; }
-    #chartDetailModal > div, #compareModal > div { width: 100%; min-width: 0; max-height: 94dvh; }
-    #chartDetailModal .max-h-\\[85vh\\] { max-height: 82dvh; }
-    @media (max-width: 767px) {
-      .chart-frame { height: 260px; max-height: 38vh; min-height: 220px; }
-      .chart-container { height: 250px; max-height: 38vh; min-width: 0; }
-      #chartDetailModal, #compareModal { align-items: flex-start; padding: 8px; }
-      #chartDetailModal > div, #compareModal > div { margin: auto 0; max-height: 96dvh; border-radius: 14px; }
-      #chartDetailModal .p-4.md\\:p-6 { padding: 12px; }
-    }
-    @media (max-width: 380px) {
-      .chart-frame { height: 230px; min-height: 210px; }
-      .chart-container { height: 220px; }
-    }
+    .chart-container { position: relative; width: 100%; height: 280px; max-height: 360px; }
     @media (min-width: 768px) { .chart-container { height: 320px; } }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; }
@@ -871,7 +855,7 @@ function doGet(e) {
         </div>
         <div id="chartDataQualityNote" class="text-xs bg-amber-50 border border-amber-200 text-amber-800 p-2.5 rounded-lg" style="display:none"></div>
         <div id="technicalAnalysisBar" class="flex flex-wrap items-center gap-2" style="display:none"></div>
-        <div class="chart-frame chart-frame-detail w-full bg-slate-50 border border-slate-200 rounded-2xl p-2 sm:p-3">
+        <div class="relative w-full h-72 md:h-80 bg-slate-50 border border-slate-200 rounded-2xl p-3">
           <canvas id="assetDetailChart"></canvas>
         </div>
         <div id="fundInfoPanel" style="display:none" class="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
@@ -946,7 +930,7 @@ function doGet(e) {
         <div id="compareNote" class="text-xs bg-amber-50 border border-amber-200 text-amber-800 p-2.5 rounded-lg">
           Not: <strong>Mevduat</strong> için yıllık faiz oranını, <strong>Enflasyon</strong> için aylık TÜFE değerlerini "Kıyas ayarları"ndan girmeniz gerekir. <strong>BIST 100</strong> için ayarlardaki Apps Script adresinin güncel kodla dağıtılmış olması gerekir. Altın için geçmiş fiyat kaynağı yok. TEFAS verileri ara sıra erişilemeyebilir.
         </div>
-        <div class="chart-frame chart-frame-compare w-full bg-slate-50 border border-slate-200 rounded-2xl p-2 sm:p-3">
+        <div class="relative w-full h-72 md:h-80 bg-slate-50 border border-slate-200 rounded-2xl p-3">
           <canvas id="compareChart"></canvas>
         </div>
         <div id="compareStatus" class="text-xs text-slate-400 text-center"></div>
@@ -2899,11 +2883,19 @@ function doGet(e) {
       else out.push(line(true, 'BIST 100 verisi çalışıyor (' + (b.j.series || []).length + ' gün).'));
       box.innerHTML = out.join('');
     }
+    // Varsayılan TEFAS Apps Script adresi: cihazlar arası localStorage farkından
+    // dolayı mobil uygulamada kutunun boş kalmasını önler.
+    const DEFAULT_TEFAS_ANALYZE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx3gyFUUWVdYiDKvtthLzRSauMyMv6jlh6-th3hMQgMCV6um0WMm_87TZui0ns4RXEroA/exec';
     function getSavedTefasAnalyzeScriptUrl() {
-      try { return localStorage.getItem('portfoy_tefas_analyze_script_url') || ''; } catch(e) { return ''; }
+      try {
+        const saved = (localStorage.getItem('portfoy_tefas_analyze_script_url') || '').trim();
+        return saved || DEFAULT_TEFAS_ANALYZE_SCRIPT_URL;
+      } catch(e) {
+        return DEFAULT_TEFAS_ANALYZE_SCRIPT_URL;
+      }
     }
     function setSavedTefasAnalyzeScriptUrl(url) {
-      try { localStorage.setItem('portfoy_tefas_analyze_script_url', url); } catch(e) {}
+      try { localStorage.setItem('portfoy_tefas_analyze_script_url', String(url || '').trim()); } catch(e) {}
     }
 
     function showToast(message, type = 'info') {
@@ -3882,14 +3874,6 @@ function doGet(e) {
     let activeChartDays = 90;
     let activeFundAnalyzeData = null;
     let detailChartInstance = null;
-    function resizeVisibleCharts() {
-      requestAnimationFrame(() => {
-        try { if (detailChartInstance) detailChartInstance.resize(); } catch (e) {}
-        try { if (compareChartInstance) compareChartInstance.resize(); } catch (e) {}
-        try { if (allocChartInstance) allocChartInstance.resize(); } catch (e) {}
-      });
-    }
-
 
     async function fetchFxHistoryReal(code, days) {
       try {
@@ -4397,19 +4381,7 @@ function doGet(e) {
           }
         }
       });
-      resizeVisibleCharts();
-      setTimeout(resizeVisibleCharts, 180);
     }
-
-    let chartResizeTimer = null;
-    window.addEventListener('resize', () => {
-      clearTimeout(chartResizeTimer);
-      chartResizeTimer = setTimeout(resizeVisibleCharts, 120);
-    }, { passive: true });
-    window.addEventListener('orientationchange', () => {
-      setTimeout(resizeVisibleCharts, 250);
-      setTimeout(resizeVisibleCharts, 650);
-    }, { passive: true });
 
     window.onload = function() {
       applyTheme(false);
@@ -4500,6 +4472,9 @@ function doGet(e) {
       document.getElementById('convAmount').oninput = calculateCurrencyConversion;
       document.getElementById('convFrom').onchange = calculateCurrencyConversion;
       document.getElementById('convTo').onchange = calculateCurrencyConversion;
+
+      const tefasUrlInput = document.getElementById('inputTefasAnalyzeScriptUrl');
+      if (tefasUrlInput && !tefasUrlInput.value.trim()) tefasUrlInput.value = getSavedTefasAnalyzeScriptUrl();
 
       document.getElementById('btnOpenSheetSettings').onclick = () => {
         document.getElementById('inputSheetUrl').value = getSavedSheetUrl();
